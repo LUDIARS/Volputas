@@ -1,0 +1,74 @@
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.analysis-grid h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.analysis-details {
+  grid-column: 1 / -1;
+}
+
+.version-info {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.dimension-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dimension-row {
+  padding: 0.5rem 0;
+}
+
+.dim-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.dim-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.dim-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.dim-bar-bg {
+  height: 8px;
+  background: var(--color-bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dim-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.dim-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 768px) {
+  .analysis-grid { grid-template-columns: 1fr; }
+  .analysis-details { grid-column: 1; }
+}

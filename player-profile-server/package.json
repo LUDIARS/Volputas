@@ -1,0 +1,26 @@
+{
+  "name": "player-profile-server",
+  "version": "1.0.0",
+  "description": "Player profile backend — playstyle & personality registration server",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "migrate": "node migrations/run.js",
+    "test": "node --test src/**/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "pg": "^8.13.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.1.0",
+    "uuid": "^10.0.0",
+    "helmet": "^8.0.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.4.0",
+    "node-jose": "^2.2.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

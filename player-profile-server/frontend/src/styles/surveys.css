@@ -1,0 +1,112 @@
+.surveys-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1.25rem;
+}
+
+.survey-list h3,
+.survey-form h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.survey-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.survey-item {
+  padding: 0.75rem;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.survey-item:hover { background: var(--color-surface-hover); }
+.survey-item.active {
+  border-color: var(--color-primary);
+  background: rgba(108, 99, 255, 0.08);
+}
+
+.survey-title { font-weight: 600; font-size: 0.9rem; }
+.survey-desc {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+.survey-meta {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  margin-top: 0.3rem;
+}
+
+.info-banner {
+  background: rgba(108, 99, 255, 0.1);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.questions {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.question-block {
+  padding: 1rem;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+}
+
+.question-text {
+  font-weight: 500;
+  margin-bottom: 0.6rem;
+}
+
+.scale-input {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.scale-input input[type="range"] { flex: 1; }
+.scale-label { font-size: 0.8rem; color: var(--color-text-muted); }
+.scale-value {
+  font-weight: 700;
+  color: var(--color-primary);
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.choice-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+}
+.choice-option.selected {
+  border-color: var(--color-primary);
+  background: rgba(108, 99, 255, 0.15);
+}
+.choice-option input[type="radio"] { display: none; }
+
+@media (max-width: 768px) {
+  .surveys-layout { grid-template-columns: 1fr; }
+}
