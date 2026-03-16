@@ -4,6 +4,7 @@ const profileModel = {
   async findByUserId(userId) {
     const { rows } = await db.query(
       `SELECT user_id, playstyle_tags, personality_data, preference_vector,
+              classification_data, subtype_data,
               preference_version, updated_at
        FROM player_profiles WHERE user_id = $1`,
       [userId]
@@ -31,15 +32,23 @@ const profileModel = {
     return rows[0];
   },
 
-  async updatePreferenceVector(userId, vector, tags) {
+  async updatePreferenceVector(userId, vector, tags, classification, subtypes) {
     const { rows } = await db.query(
       `UPDATE player_profiles
        SET preference_vector = $2,
            playstyle_tags = $3,
+           classification_data = $4,
+           subtype_data = $5,
            preference_version = preference_version + 1
        WHERE user_id = $1
        RETURNING *`,
-      [userId, vector, tags]
+      [
+        userId,
+        vector,
+        tags,
+        classification ? JSON.stringify(classification) : null,
+        subtypes ? JSON.stringify(subtypes) : null,
+      ]
     );
     return rows[0] || null;
   },
