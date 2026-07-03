@@ -10,11 +10,6 @@ pool.on('error', (err) => {
 const db = {
   query: (text, params) => pool.query(text, params),
 
-  getClient: async () => {
-    const client = await pool.connect();
-    return client;
-  },
-
   transaction: async (fn) => {
     const client = await pool.connect();
     try {

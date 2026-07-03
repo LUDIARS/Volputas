@@ -16,16 +16,6 @@ const surveyModel = {
     return rows[0] || null;
   },
 
-  async create({ title, description, questions }) {
-    const { rows } = await db.query(
-      `INSERT INTO surveys (title, description, questions)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [title, description || null, JSON.stringify(questions)]
-    );
-    return rows[0];
-  },
-
   async submitResponse({ surveyId, userId, answers }) {
     const { rows } = await db.query(
       `INSERT INTO survey_responses (survey_id, user_id, answers)
