@@ -64,6 +64,8 @@ npm run dev       # Vite開発サーバー起動
 
 詳細は [設計書](./player-profile-backend-design.md) を参照してください。
 
+Ludellus / Ludellus-Server のプレイログ設計 (能力推定・ゲームチューニング・サジェスト基盤) は [Ludellus プレイログ設計書](./ludellus-tuning-log-design.md) を参照してください。
+
 ## プロジェクト構成
 
 ```
