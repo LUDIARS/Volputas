@@ -1,14 +1,15 @@
 # Player Profile Backend
 
-ゲームプレイヤーのプレイスタイルや個性を登録・管理するバックエンドサーバーです。OpenID Connect 型認証、ゲームプレイロギング、嗜好分析基盤を提供します。
+ゲームプレイヤーのプレイスタイルや個性を登録・管理するバックエンドサーバーです。IdPフェデレーション + 自サービスJWT、ゲームプレイロギング、嗜好・感情分析基盤を提供します。
 
 ## 機能
 
-- **認証・ユーザー管理** — OpenID Connect (Authorization Code Flow + PKCE) によるID発行、Google / Discord / Steam 連携
+- **認証・ユーザー管理** — Google / Discordフェデレーション、one-time login ticket、RS256 JWT。SteamはOpenID 2.0専用実装まで無効
 - **プレイヤープロフィール** — プレイスタイルタグ、性格診断データ、嗜好ベクトルの管理
 - **ゲームプレイロギング** — イベント収集API、セッション管理、バッチ取り込み
 - **アンケート基盤** — 設問定義・回答収集、リッカート尺度・選択式・自由記述に対応
-- **嗜好分析エンジン** — プレイログとアンケートを統合し、8軸の嗜好ベクトル (Bartle Taxonomy 拡張) を自動生成
+- **嗜好・感情分析** — 既存12次元嗜好、独立15軸質問票、Discutere互換20次元affectを併記
+- **viewer reaction timeline** — 動画内時刻付きコメントを30秒ビンへ集約し、ビートごとの意図一致度とDesignGapを算出
 
 ## 技術スタック
 
@@ -36,6 +37,7 @@
 
 ```bash
 cd player-profile-server
+npm run setup:submodules  # checkoutがsubmodule取得済みなら末尾に -- --skip-git-update
 npm install
 npm run migrate   # DBマイグレーション実行
 npm run dev       # 開発サーバー起動
@@ -55,12 +57,25 @@ npm run dev       # Vite開発サーバー起動
 
 | カテゴリ | エンドポイント例 | 説明 |
 |----------|------------------|------|
-| 認証 | `GET /auth/login`, `POST /auth/token` | OAuth2フロー、トークン発行 |
+| 認証 | `GET /auth/login`, `POST /auth/ticket`, `POST /auth/token` | IdPフェデレーション、トークン発行 |
 | ユーザー | `GET /api/v1/users/me` | ユーザー情報CRUD |
 | プロフィール | `GET /api/v1/users/me/profile` | プレイスタイル・嗜好情報 |
 | ロギング | `POST /api/v1/sessions/:id/events` | ゲームイベント送信 |
 | アンケート | `POST /api/v1/surveys/:id/responses` | アンケート回答提出 |
-| 分析 | `GET /api/v1/analysis/me` | 嗜好分析結果取得 |
+| 分析 | `GET /api/v1/analysis/me` | 12次元 + 15軸 + 20次元の統合プロファイル |
+| 感情曲線 | `GET /api/v1/games/:gameId/timelines` | viewer reaction timeline一覧 |
+| ビート | `PUT /api/v1/games/:gameId/beat-script` | versioned beat script追加 |
+| Gap | `GET /api/v1/games/:gameId/timelines/:id/gap` | ビート別matchScore + gapTop |
+
+### 動画コメントから感情曲線を生成する
+
+Discutereがexportした`ExternalUtterance[]`（`videoOffsetMs`付き）を用意し、次を実行する。
+
+```bash
+npm run import:timeline -- comments.json --game journey --source-ref sm9 --bin-ms 30000
+```
+
+Bearer tokenでビートスクリプトを登録後、Gap APIを呼ぶ。`intended_affect`はsentiment-core同梱24語のみ、時刻対応は`markers.t_hint_ms: [startMs,endMs]`で手動指定する。コメント語彙のヒット率はtimelineの`analysis_meta.lexiconHitRate`で確認できる。
 
 詳細は [設計書](./player-profile-backend-design.md) を参照してください。
 

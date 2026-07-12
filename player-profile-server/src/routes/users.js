@@ -51,6 +51,10 @@ router.patch('/me', validate({
 // DELETE /api/v1/users/me
 router.delete('/me', async (req, res, next) => {
   try {
+    const ageSeconds = Math.floor(Date.now() / 1000) - Number(req.user.issuedAt || 0);
+    if (ageSeconds > 300) {
+      throw new AppError(401, 'RECENT_AUTH_REQUIRED', 'Account deletion requires a token issued within 5 minutes');
+    }
     const deleted = await userModel.softDelete(req.user.id);
     if (!deleted) {
       throw new AppError(404, 'NOT_FOUND', 'User not found');
@@ -75,7 +79,7 @@ router.get('/me/identities', async (req, res, next) => {
 // POST /api/v1/users/me/identities
 router.post('/me/identities', validate({
   body: {
-    provider: { required: true, type: 'string', enum: ['google', 'discord', 'steam'] },
+    provider: { required: true, type: 'string', enum: ['google', 'discord'] },
     provider_sub: { required: true, type: 'string' },
     email: { type: 'string' },
     raw_profile: { type: 'object' },

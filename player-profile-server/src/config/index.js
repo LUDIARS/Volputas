@@ -1,6 +1,24 @@
+function commaSeparated(value, fallback) {
+  return (value || fallback)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 const config = {
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+
+  auth: {
+    sources: commaSeparated(process.env.AUTH_SOURCES, 'google,discord'),
+  },
+
+  redis: {
+    url: process.env.REDIS_URL || '',
+  },
+
+  pseudoIdSecret: process.env.VOLUPTAS_PSEUDO_ID_SECRET || '',
 
   db: {
     host: process.env.DB_HOST || 'localhost',
@@ -36,10 +54,6 @@ const config = {
       userinfoUrl: 'https://discord.com/api/users/@me',
       callbackUrl: process.env.DISCORD_CALLBACK_URL || 'http://localhost:3000/auth/callback',
       scopes: ['identify', 'email'],
-    },
-    steam: {
-      apiKey: process.env.STEAM_API_KEY || '',
-      callbackUrl: process.env.STEAM_CALLBACK_URL || 'http://localhost:3000/auth/callback',
     },
   },
 

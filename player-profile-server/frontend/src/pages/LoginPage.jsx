@@ -1,41 +1,35 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { api, setTokens } from '../lib/api';
+import { api } from '../lib/api';
 import '../styles/login.css';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Handle callback with code & state in URL
-  const code = searchParams.get('code');
-  const state = searchParams.get('state');
-
-  if (code && state && !loading) {
-    handleCallback(code, state);
-  }
-
-  async function handleCallback(code, state) {
+  useEffect(() => {
+    const ticket = new URLSearchParams(window.location.hash.slice(1)).get('ticket');
+    if (!ticket) return;
+    let active = true;
     setLoading(true);
-    try {
-      const res = await fetch(`/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
-      const json = await res.json();
-      if (json.ok) {
-        login(json.data.access_token, json.data.refresh_token);
+    api('/auth/ticket', { method: 'POST', body: { ticket } })
+      .then(async (response) => {
+        if (!active) return;
+        window.history.replaceState(null, '', '/auth/complete');
+        await login(response.data.access_token, response.data.refresh_token);
         navigate('/');
-      } else {
-        setError(json.error?.message || 'Authentication failed');
-      }
-    } catch {
-      setError('Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  }
+      })
+      .catch(() => {
+        if (active) setError('Authentication failed or the login ticket expired');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [login, navigate]);
 
   async function handleProviderLogin(provider) {
     setLoading(true);
@@ -64,7 +58,7 @@ export default function LoginPage() {
         method: 'POST',
         body: { code: 'demo', code_verifier: 'demo', provider: 'google' },
       });
-      login(res.data.access_token, res.data.refresh_token);
+      await login(res.data.access_token, res.data.refresh_token);
       navigate('/');
     } catch (err) {
       setError('Demo login unavailable — configure an OAuth provider');
@@ -101,14 +95,6 @@ export default function LoginPage() {
             Sign in with Discord
           </button>
 
-          <button
-            className="provider-btn steam"
-            onClick={() => handleProviderLogin('steam')}
-            disabled={loading}
-          >
-            <span className="provider-icon">S</span>
-            Sign in with Steam
-          </button>
         </div>
 
         <div className="login-divider"><span>or</span></div>

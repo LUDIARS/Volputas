@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            player-profile-server/package-lock.json
+            player-profile-server/frontend/package-lock.json
+      - name: Build sentiment-core submodule
+        working-directory: player-profile-server
+        run: npm run setup:submodules -- --skip-git-update
+      - name: Install backend
+        working-directory: player-profile-server
+        run: npm ci
+      - name: Test backend
+        working-directory: player-profile-server
+        run: npm test
+      - name: Install frontend
+        working-directory: player-profile-server/frontend
+        run: npm ci
+      - name: Build frontend
+        working-directory: player-profile-server/frontend
+        run: npm run build

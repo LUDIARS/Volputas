@@ -3,6 +3,8 @@ const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const surveyModel = require('../models/surveyModel');
 const { AppError } = require('../middleware/errorHandler');
+const { recomputePreferenceAxes } = require('../services/preferenceAxes');
+const { recomputeAffectProfile } = require('../services/affectProfile');
 
 const router = Router();
 
@@ -49,6 +51,11 @@ router.post('/:id/responses', validate({
       userId: req.user.id,
       answers: req.body.answers,
     });
+
+    await Promise.all([
+      recomputePreferenceAxes(req.user.id),
+      recomputeAffectProfile(req.user.id),
+    ]);
 
     res.status(201).json({ ok: true, data: response });
   } catch (err) {

@@ -1,340 +1,190 @@
 const { Router } = require('express');
-const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('node:crypto');
 const config = require('../config');
-const userModel = require('../models/userModel');
-const identityModel = require('../models/identityModel');
+const { getIdentitySource } = require('../services/identity-sources');
+const identityService = require('../services/identityService');
+const { createOneTimeStore } = require('../services/oneTimeStore');
 const { issueTokens, refreshAccessToken, revokeAllTokens } = require('../services/tokenService');
 const { getJWKS } = require('../services/jwks');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 
-const router = Router();
+const STATE_TTL_SECONDS = 600;
+const TICKET_TTL_SECONDS = 60;
 
-// In-memory state store (use Redis in production)
-const stateStore = new Map();
-
-// GET /auth/login?provider=google
-router.get('/login', (req, res) => {
-  const { provider } = req.query;
-  const providerConfig = config.oauth[provider];
-
-  if (!providerConfig || !providerConfig.authorizationUrl) {
-    return res.status(400).json({
-      ok: false,
-      error: { code: 'INVALID_PROVIDER', message: `Unsupported provider: ${provider}` },
-    });
-  }
-
-  const state = crypto.randomBytes(32).toString('hex');
-  const codeChallenge = req.query.code_challenge;
-  const codeChallengeMethod = req.query.code_challenge_method || 'S256';
-
-  stateStore.set(state, {
-    provider,
-    codeChallenge,
-    codeChallengeMethod,
-    createdAt: Date.now(),
-  });
-
-  // Clean up old states (older than 10 minutes)
-  for (const [key, val] of stateStore) {
-    if (Date.now() - val.createdAt > 600_000) stateStore.delete(key);
-  }
-
-  const params = new URLSearchParams({
-    client_id: providerConfig.clientId,
-    redirect_uri: providerConfig.callbackUrl,
-    response_type: 'code',
-    scope: providerConfig.scopes.join(' '),
-    state,
-    access_type: 'offline',
-    prompt: 'consent',
-  });
-
-  res.json({
-    ok: true,
-    data: { authorizationUrl: `${providerConfig.authorizationUrl}?${params}` },
-  });
-});
-
-// GET /auth/callback — IdP callback
-router.get('/callback', async (req, res, next) => {
-  try {
-    const { code, state } = req.query;
-
-    if (!code || !state) {
-      return res.status(400).json({
-        ok: false,
-        error: { code: 'MISSING_PARAMS', message: 'code and state are required' },
-      });
-    }
-
-    const stateData = stateStore.get(state);
-    if (!stateData) {
-      return res.status(400).json({
-        ok: false,
-        error: { code: 'INVALID_STATE', message: 'Invalid or expired state parameter' },
-      });
-    }
-    stateStore.delete(state);
-
-    const provider = stateData.provider;
-    const providerConfig = config.oauth[provider];
-
-    // Exchange authorization code for tokens with IdP
-    const tokenResponse = await fetch(providerConfig.tokenUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: providerConfig.clientId,
-        client_secret: providerConfig.clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: providerConfig.callbackUrl,
-      }),
-    });
-
-    const tokenData = await tokenResponse.json();
-    if (!tokenResponse.ok) {
-      return res.status(502).json({
-        ok: false,
-        error: { code: 'IDP_ERROR', message: 'Failed to exchange code with identity provider' },
-      });
-    }
-
-    // Fetch user info from IdP
-    const userinfoResponse = await fetch(providerConfig.userinfoUrl, {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
-
-    const userInfo = await userinfoResponse.json();
-    if (!userinfoResponse.ok) {
-      return res.status(502).json({
-        ok: false,
-        error: { code: 'IDP_ERROR', message: 'Failed to fetch user info from identity provider' },
-      });
-    }
-
-    // Resolve provider sub and profile
-    const providerSub = resolveProviderSub(provider, userInfo);
-    const profileData = resolveProfileData(provider, userInfo);
-
-    // Look up or create user
-    let identity = await identityModel.findByProviderSub(provider, providerSub);
-    let userId;
-
-    if (identity) {
-      userId = identity.user_id;
-    } else {
-      // Create new user + identity
-      const newUserId = uuidv4();
-      await userModel.create({
-        id: newUserId,
-        displayName: profileData.displayName,
-        avatarUrl: profileData.avatarUrl,
-      });
-      await identityModel.create({
-        userId: newUserId,
-        provider,
-        providerSub,
-        email: profileData.email,
-        rawProfile: userInfo,
-      });
-      userId = newUserId;
-    }
-
-    // Issue service tokens
-    const tokens = await issueTokens(userId);
-
-    res.json({
-      ok: true,
-      data: {
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-        token_type: 'Bearer',
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// POST /auth/token — exchange code + code_verifier (PKCE flow for clients)
-router.post('/token', async (req, res, next) => {
-  try {
-    const { code, code_verifier, provider } = req.body;
-
-    if (!code || !code_verifier || !provider) {
-      return res.status(400).json({
-        ok: false,
-        error: { code: 'MISSING_PARAMS', message: 'code, code_verifier, and provider are required' },
-      });
-    }
-
-    const providerConfig = config.oauth[provider];
-    if (!providerConfig) {
-      return res.status(400).json({
-        ok: false,
-        error: { code: 'INVALID_PROVIDER', message: `Unsupported provider: ${provider}` },
-      });
-    }
-
-    // Exchange code with IdP using PKCE
-    const tokenResponse = await fetch(providerConfig.tokenUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: providerConfig.clientId,
-        code,
-        code_verifier,
-        grant_type: 'authorization_code',
-        redirect_uri: providerConfig.callbackUrl,
-      }),
-    });
-
-    const tokenData = await tokenResponse.json();
-    if (!tokenResponse.ok) {
-      return res.status(502).json({
-        ok: false,
-        error: { code: 'IDP_ERROR', message: 'Failed to exchange code with identity provider' },
-      });
-    }
-
-    // Fetch user info
-    const userinfoResponse = await fetch(providerConfig.userinfoUrl, {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
-    const userInfo = await userinfoResponse.json();
-
-    const providerSub = resolveProviderSub(provider, userInfo);
-    const profileData = resolveProfileData(provider, userInfo);
-
-    let identity = await identityModel.findByProviderSub(provider, providerSub);
-    let userId;
-
-    if (identity) {
-      userId = identity.user_id;
-    } else {
-      const newUserId = uuidv4();
-      await userModel.create({
-        id: newUserId,
-        displayName: profileData.displayName,
-        avatarUrl: profileData.avatarUrl,
-      });
-      await identityModel.create({
-        userId: newUserId,
-        provider,
-        providerSub,
-        email: profileData.email,
-        rawProfile: userInfo,
-      });
-      userId = newUserId;
-    }
-
-    const tokens = await issueTokens(userId);
-
-    res.json({
-      ok: true,
-      data: {
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-        token_type: 'Bearer',
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// POST /auth/refresh
-router.post('/refresh', validate({
-  body: { refresh_token: { required: true, type: 'string' } },
-}), async (req, res, next) => {
-  try {
-    const tokens = await refreshAccessToken(req.body.refresh_token);
-    res.json({
-      ok: true,
-      data: {
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-        token_type: 'Bearer',
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// POST /auth/logout
-router.post('/logout', authenticate, async (req, res, next) => {
-  try {
-    await revokeAllTokens(req.user.id);
-    res.json({ ok: true, data: { message: 'Logged out successfully' } });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// GET /auth/.well-known/jwks.json
-router.get('/.well-known/jwks.json', async (_req, res, next) => {
-  try {
-    const jwks = await getJWKS();
-    res.json(jwks);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// GET /auth/.well-known/openid-configuration
-router.get('/.well-known/openid-configuration', (req, res) => {
-  const baseUrl = config.jwt.issuer;
-  res.json({
-    issuer: baseUrl,
-    authorization_endpoint: `${baseUrl}/auth/login`,
-    token_endpoint: `${baseUrl}/auth/token`,
-    jwks_uri: `${baseUrl}/auth/.well-known/jwks.json`,
-    response_types_supported: ['code'],
-    subject_types_supported: ['public'],
-    id_token_signing_alg_values_supported: ['RS256'],
-  });
-});
-
-// Helper functions
-function resolveProviderSub(provider, userInfo) {
-  switch (provider) {
-    case 'google': return userInfo.sub;
-    case 'discord': return userInfo.id;
-    case 'steam': return userInfo.steamid;
-    default: return userInfo.sub || userInfo.id;
-  }
+function tokenEnvelope(tokens) {
+  return {
+    access_token: tokens.accessToken,
+    refresh_token: tokens.refreshToken,
+    token_type: 'Bearer',
+  };
 }
 
-function resolveProfileData(provider, userInfo) {
-  switch (provider) {
-    case 'google':
-      return {
-        displayName: userInfo.name || 'Player',
-        email: userInfo.email,
-        avatarUrl: userInfo.picture,
-      };
-    case 'discord':
-      return {
-        displayName: userInfo.username || 'Player',
-        email: userInfo.email,
-        avatarUrl: userInfo.avatar
-          ? `https://cdn.discordapp.com/avatars/${userInfo.id}/${userInfo.avatar}.png`
-          : null,
-      };
-    case 'steam':
-      return {
-        displayName: userInfo.personaname || 'Player',
-        email: null,
-        avatarUrl: userInfo.avatarfull,
-      };
-    default:
-      return { displayName: 'Player', email: null, avatarUrl: null };
+async function createUniqueSecret(store, namespace, value, ttlSeconds) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const secret = crypto.randomBytes(32).toString('hex');
+    if (await store.put(namespace, secret, value, ttlSeconds)) return secret;
   }
+  throw Object.assign(new Error(`Failed to allocate one-time ${namespace}`), {
+    statusCode: 503,
+    code: 'TEMPORARY_UNAVAILABLE',
+  });
 }
 
-module.exports = router;
+function createAuthRouter({
+  oneTimeStore = createOneTimeStore({ redisUrl: config.redis.url }),
+  resolveSource = getIdentitySource,
+  findOrCreateUser = identityService.findOrCreateUser,
+  issue = issueTokens,
+} = {}) {
+  const router = Router();
+
+  router.get('/login', async (req, res, next) => {
+    try {
+      const source = resolveSource(req.query.provider);
+      if (!source || source.kind !== 'oidc') {
+        return res.status(400).json({
+          ok: false,
+          error: { code: 'INVALID_PROVIDER', message: `Unsupported provider: ${req.query.provider}` },
+        });
+      }
+      const state = await createUniqueSecret(
+        oneTimeStore,
+        'oauth_state',
+        { provider: source.key, createdAt: Date.now() },
+        STATE_TTL_SECONDS
+      );
+      return res.json({ ok: true, data: { authorizationUrl: source.buildAuthorizationUrl(state) } });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.get('/callback', async (req, res, next) => {
+    try {
+      const { code, state } = req.query;
+      if (typeof code !== 'string' || typeof state !== 'string') {
+        return res.status(400).json({
+          ok: false,
+          error: { code: 'MISSING_PARAMS', message: 'code and state are required' },
+        });
+      }
+      const stateData = await oneTimeStore.consume('oauth_state', state);
+      if (!stateData) {
+        return res.status(400).json({
+          ok: false,
+          error: { code: 'INVALID_STATE', message: 'Invalid or expired state parameter' },
+        });
+      }
+      const source = resolveSource(stateData.provider);
+      if (!source || source.kind !== 'oidc') {
+        return res.status(400).json({
+          ok: false,
+          error: { code: 'INVALID_PROVIDER', message: `Unsupported provider: ${stateData.provider}` },
+        });
+      }
+      const identity = await source.resolveIdentity({ code });
+      const userId = await findOrCreateUser(
+        identity.provider,
+        identity.providerSub,
+        identity.profile,
+        identity.rawProfile
+      );
+      const ticket = await createUniqueSecret(
+        oneTimeStore,
+        'login_ticket',
+        { userId },
+        TICKET_TTL_SECONDS
+      );
+      const completeUrl = new URL('/auth/complete', config.frontendUrl);
+      completeUrl.hash = `ticket=${encodeURIComponent(ticket)}`;
+      return res.redirect(302, completeUrl.toString());
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.post('/ticket', async (req, res, next) => {
+    try {
+      const ticket = req.body?.ticket;
+      if (typeof ticket !== 'string' || ticket.length === 0) {
+        return res.status(400).json({
+          ok: false,
+          error: { code: 'MISSING_PARAMS', message: 'ticket is required' },
+        });
+      }
+      const ticketData = await oneTimeStore.consume('login_ticket', ticket);
+      if (!ticketData) {
+        return res.status(401).json({
+          ok: false,
+          error: { code: 'INVALID_TICKET', message: 'Invalid or expired login ticket' },
+        });
+      }
+      return res.json({ ok: true, data: tokenEnvelope(await issue(ticketData.userId)) });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.post('/token', async (req, res, next) => {
+    try {
+      const { code, code_verifier: codeVerifier, provider } = req.body;
+      if (!code || !codeVerifier || !provider) {
+        return res.status(400).json({
+          ok: false,
+          error: { code: 'MISSING_PARAMS', message: 'code, code_verifier, and provider are required' },
+        });
+      }
+      const source = resolveSource(provider);
+      if (!source || source.kind !== 'oidc') {
+        return res.status(400).json({
+          ok: false,
+          error: { code: 'INVALID_PROVIDER', message: `Unsupported provider: ${provider}` },
+        });
+      }
+      const identity = await source.resolveIdentity({ code, codeVerifier });
+      const userId = await findOrCreateUser(
+        identity.provider,
+        identity.providerSub,
+        identity.profile,
+        identity.rawProfile
+      );
+      return res.json({ ok: true, data: tokenEnvelope(await issue(userId)) });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.post('/refresh', validate({
+    body: { refresh_token: { required: true, type: 'string' } },
+  }), async (req, res, next) => {
+    try {
+      return res.json({ ok: true, data: tokenEnvelope(await refreshAccessToken(req.body.refresh_token)) });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.post('/logout', authenticate, async (req, res, next) => {
+    try {
+      await revokeAllTokens(req.user.id);
+      return res.json({ ok: true, data: { message: 'Logged out successfully' } });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.get('/.well-known/jwks.json', async (_req, res, next) => {
+    try {
+      return res.json(await getJWKS());
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  return router;
+}
+
+module.exports = createAuthRouter();
+module.exports.createAuthRouter = createAuthRouter;
+module.exports.createUniqueSecret = createUniqueSecret;

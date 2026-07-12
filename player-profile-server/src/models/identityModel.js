@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { pickProfileFields } = require('../services/profileFields');
 
 const identityModel = {
   async findByProviderSub(provider, providerSub) {
@@ -22,7 +23,13 @@ const identityModel = {
       `INSERT INTO federated_identities (user_id, provider, provider_sub, email, raw_profile)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, user_id, provider, provider_sub, email, linked_at`,
-      [userId, provider, providerSub, email || null, rawProfile ? JSON.stringify(rawProfile) : null]
+      [
+        userId,
+        provider,
+        providerSub,
+        email || null,
+        rawProfile ? JSON.stringify(pickProfileFields(provider, rawProfile)) : null,
+      ]
     );
     return rows[0];
   },
