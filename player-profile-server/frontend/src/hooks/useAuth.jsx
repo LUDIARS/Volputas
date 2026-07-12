@@ -28,15 +28,15 @@ export function AuthProvider({ children }) {
     fetchUser();
   }, [fetchUser]);
 
-  const login = useCallback((accessToken, refreshToken) => {
+  const login = useCallback(async (accessToken, refreshToken) => {
     setTokens(accessToken, refreshToken);
-    fetchUser();
+    await fetchUser();
   }, [fetchUser]);
 
   const logout = useCallback(async () => {
     try {
       await api('/auth/logout', { method: 'POST' });
-    } catch { /* ignore */ }
+    } catch { /* logout is best-effort; local credentials are always cleared */ }
     clearTokens();
     setUser(null);
   }, []);

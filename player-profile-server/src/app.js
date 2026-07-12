@@ -14,6 +14,7 @@ const logRoutes = require('./routes/logs');
 const surveyRoutes = require('./routes/surveys');
 const analysisRoutes = require('./routes/analysis');
 const healthRoutes = require('./routes/health');
+const timelineRoutes = require('./routes/timelines');
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use('/api/v1/sessions', rateLimit({
 }), logRoutes);
 app.use('/api/v1/surveys', surveyRoutes);
 app.use('/api/v1/analysis', analysisRoutes);
+app.use('/api/v1', timelineRoutes);
 
 // 404 handler
 app.use((_req, res) => {
@@ -84,6 +86,7 @@ async function start() {
   }
 }
 
-start();
+if (require.main === module) start();
 
 module.exports = app;
+module.exports.start = start;

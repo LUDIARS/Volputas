@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Voluptas game beat script",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "required": ["beat", "order", "intended_affect", "intended_intensity"],
+    "properties": {
+      "beat": { "type": "string", "minLength": 1 },
+      "order": { "type": "integer", "minimum": 1 },
+      "intended_affect": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+      "intended_intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+      "markers": {
+        "type": "object",
+        "properties": {
+          "t_hint_ms": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "additionalProperties": false
+  }
+}

@@ -2,7 +2,7 @@
 
 > **Version 1.0** | 2026-03-16  
 > ユーザーのプレイスタイル・個性登録サーバーの設計書  
-> OpenID Connect型認証 · ゲームプレイロギング · 嗜好分析基盤
+> IdPフェデレーション認証 · ゲームプレイロギング · 嗜好・感情分析基盤
 
 ---
 
@@ -22,7 +22,7 @@
 
 ## 1. 概要 (Overview)
 
-本ドキュメントは、ゲームプレイヤーのプレイスタイルや個性を登録・管理するバックエンドサーバーの設計を記述する。サービス独自のIDを発行し、Googleアカウント等の外部IdPと連携するOpenID Connect型の認証フローを採用する。
+本ドキュメントは、ゲームプレイヤーのプレイスタイルや個性を登録・管理するバックエンドサーバーの設計を記述する。サービス独自のSIDを発行し、Google/Discord等の外部IdPとフェデレーションする。Voluptas自身はOpenID Providerではなく、認証後は自サービスのRS256 JWTを発行する。
 
 また、ゲームプレイログやアンケートからユーザーの嗜好を分析する基盤も提供する。
 
@@ -102,9 +102,9 @@ player-profile-server/
 
 ## 3. 認証設計 (Authentication)
 
-### 3.1 OpenID Connect フロー
+### 3.1 IdPフェデレーションフロー
 
-本サービスは **Authorization Code Flow + PKCE** を採用する。クライアントはネイティブアプリも想定するため、client_secretを使わずPKCEを必須とする。
+ブラウザはIdPのAuthorization Codeをcallbackで受け、60秒有効のone-time login ticketだけをURL fragmentでSPAへ渡す。SPAは`POST /auth/ticket`でVoluptas JWTへ一度だけ交換する。ネイティブクライアント向け`POST /auth/token`はIdPへ`code_verifier`を渡すPKCE経路として維持する。OAuth stateはRedisで600秒保持し、`GETDEL`で一度だけ消費する（Redis未設定の開発環境のみprocess-local）。
 
 #### フローシーケンス
 
@@ -137,7 +137,7 @@ player-profile-server/
 |-----|-----------|-------------|------|
 | Google | `google` | sub, email, name, picture | メイン認証 |
 | Discord | `discord` | id, username, avatar | ゲーマーコミュニティ連携 |
-| Steam | `steam` | steamid, personaname | Steamライブラリ連携 |
+| Steam | — | — | 将来対応。OpenID 2.0専用実装が必要なため現行OAuth経路では無効 |
 
 ---
 
@@ -165,7 +165,7 @@ PostgreSQLを使用。主要テーブルとその関係を以下に示す。
 | provider | VARCHAR(50) | NOT NULL | IdP識別子 (google等) |
 | provider_sub | VARCHAR(255) | NOT NULL | IdPが発行したsub |
 | email | VARCHAR(255) | | IdPから取得したemail |
-| raw_profile | JSONB | | IdPプロファイル生データ |
+| raw_profile | JSONB | | allowlist済みIdPフィールドのみ（sub/id/name/username/picture/avatar/email/email_verified/locale） |
 | linked_at | TIMESTAMPTZ | NOT NULL | 連携日時 |
 
 > **ユニーク制約:** `(provider, provider_sub)`
@@ -235,11 +235,11 @@ PostgreSQLを使用。主要テーブルとその関係を以下に示す。
 |--------|------|------|------|
 | GET | `/auth/login` | OAuth2認証フロー開始 (providerクエリ必須) | — |
 | GET | `/auth/callback` | IdPコールバック処理 | — |
+| POST | `/auth/ticket` | one-time login ticketをVoluptas JWTへ交換 | — |
 | POST | `/auth/token` | code + code_verifierでトークン取得 | — |
 | POST | `/auth/refresh` | refresh_tokenでaccess_token再発行 | — |
 | POST | `/auth/logout` | トークン失効化 | Bearer |
 | GET | `/auth/.well-known/jwks.json` | JWKS公開鍵配信 | — |
-| GET | `/auth/.well-known/openid-configuration` | Discoveryドキュメント | — |
 
 ### 5.2 ユーザー / プロフィール API
 
@@ -247,7 +247,7 @@ PostgreSQLを使用。主要テーブルとその関係を以下に示す。
 |--------|------|------|------|
 | GET | `/api/v1/users/me` | 自分のユーザー情報取得 | Bearer |
 | PATCH | `/api/v1/users/me` | ユーザー情報更新 (display_name, avatar_url等) | Bearer |
-| DELETE | `/api/v1/users/me` | アカウント削除 (論理削除) | Bearer |
+| DELETE | `/api/v1/users/me` | アカウント削除 (論理削除、発行5分以内のBearer必須) | Bearer |
 | GET | `/api/v1/users/me/identities` | 連携IdP一覧 | Bearer |
 | POST | `/api/v1/users/me/identities` | 新規IdP連携追加 | Bearer |
 | DELETE | `/api/v1/users/me/identities/:provider` | IdP連携解除 | Bearer |
@@ -375,8 +375,8 @@ PostgreSQLを使用。主要テーブルとその関係を以下に示す。
 | CSRF | SameSite=Strict Cookie + CSRFトークン (ブラウザクライアント時) |
 | レートリミット | エンドポイント別に設定。ログイン試行: 5回/分、イベント送信: 100回/分 |
 | 入力検証 | 全エンドポイントでJSON Schemaバリデーション |
-| データ暗号化 | PIIはDB保存時にカラムレベル暗号化 (AES-256-GCM) |
-| GDPR/個人情報 | `DELETE /users/me` で全データ削除、データエクスポートAPI提供 |
+| データ暗号化 | **未実装**。現行`raw_profile`はallowlistで最小化。カラムレベル暗号化は別タスク |
+| GDPR/個人情報 | `DELETE /users/me`は論理削除。Discutereへexport済み疑似IDデータは削除範囲外（法務判断未確定） |
 | ロギング | アクセスログにPIIを含めない。SIDのみ記録 |
 
 ---
@@ -411,3 +411,4 @@ PostgreSQLを使用。主要テーブルとその関係を以下に示す。
 | バージョン | 日付 | 内容 |
 |------------|------|------|
 | 1.0 | 2026-03-16 | 初版作成 |
+| 1.1 | 2026-07-12 | OIDC OP表記をIdPフェデレーションへ訂正。login ticket、Redis state、Steam無効化、PII実装状況、Voluptas×Discutere統合を反映 |

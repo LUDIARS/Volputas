@@ -178,12 +178,6 @@ const EVENT_DIMENSION_MAP = {
     gamer_melvin: 0.3,
     mechanics_mimicry: 0.3,
   },
-  // Session heartbeat → distributed
-  session_heartbeat: {
-    gamer_timmy: 0.2,
-    mechanics_agon: 0.1,
-    story_banal: 0.3,
-  },
 };
 
 // =============================================================================
@@ -321,8 +315,8 @@ async function aggregatePlayEvents(userId, vector, counts) {
   }
 }
 
-async function integrateSurveyResponses(userId, vector, counts) {
-  const { rows } = await db.query(
+async function integrateSurveyResponses(userId, vector, counts, database = db) {
+  const { rows } = await database.query(
     `SELECT sr.answers, s.questions
      FROM survey_responses sr
      JOIN surveys s ON sr.survey_id = s.id
@@ -353,7 +347,16 @@ async function integrateSurveyResponses(userId, vector, counts) {
         vector[dimIndex] += normalizedScore * 10;
         counts[dimIndex] += 1;
       } else if (question.type === 'choice') {
-        vector[dimIndex] += 5;
+        const selected = Array.isArray(question.options)
+          ? question.options.find((option) => {
+            if (!option || typeof option !== 'object') return option === answer;
+            return option.value === answer || option.label === answer;
+          })
+          : null;
+        const choiceWeight = selected && typeof selected === 'object' && Number.isFinite(Number(selected.weight))
+          ? Number(selected.weight)
+          : 5;
+        vector[dimIndex] += choiceWeight;
         counts[dimIndex] += 1;
       }
     }
@@ -410,6 +413,7 @@ function detectSubtypes(vector, classification) {
   const gamerType = GAMER_TYPES[gamer.primary];
   if (!gamerType || !gamerType.subtypes) return {};
 
+  // This heuristic remains experimental until calibrated against labelled player data.
   // Determine subtype based on secondary pattern signals
   const mechanicsScores = classification.mechanics?.scores || {};
   const storyScores = classification.story?.scores || {};
@@ -484,4 +488,6 @@ module.exports = {
   GAMER_TYPES,
   MECHANICS_TYPES,
   STORY_TYPES,
+  EVENT_DIMENSION_MAP,
+  integrateSurveyResponses,
 };

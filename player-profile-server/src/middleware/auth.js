@@ -30,7 +30,7 @@ async function authenticate(req, res, next) {
       algorithms: ['RS256'],
     });
 
-    req.user = { id: payload.sub, jti: payload.jti };
+    req.user = { id: payload.sub, jti: payload.jti, issuedAt: payload.iat };
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {

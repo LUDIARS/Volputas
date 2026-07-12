@@ -37,6 +37,14 @@ export default function App() {
             }
           />
           <Route
+            path="/auth/complete"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
+          />
+          <Route
             element={
               <ProtectedRoute>
                 <Layout />

@@ -8,25 +8,49 @@ const {
   MECHANICS_TYPES,
   STORY_TYPES,
 } = require('../services/analysisEngine');
+const { getPreferenceAxes } = require('../services/preferenceAxes');
+const { getAffectProfile } = require('../services/affectProfile');
 
 const router = Router();
 
 router.use(authenticate);
 
 // POST /api/v1/analysis/me — trigger preference analysis for current user
+async function analysisResponse(userId) {
+  const [result, preferenceAxes, affectProfile] = await Promise.all([
+    analyzeUser(userId),
+    getPreferenceAxes(userId),
+    getAffectProfile(userId),
+  ]);
+  return {
+    dimensions: DIMENSIONS,
+    vector: result.vector,
+    tags: result.tags,
+    classification: result.classification,
+    subtypes: result.subtypes,
+    preference: {
+      dimensions: DIMENSIONS,
+      vector: result.vector,
+      tags: result.tags,
+      classification: result.classification,
+    },
+    preferenceAxes,
+    affectProfile,
+    experimental: { subtypes: result.subtypes },
+  };
+}
+
 router.post('/me', async (req, res, next) => {
   try {
-    const result = await analyzeUser(req.user.id);
-    res.json({
-      ok: true,
-      data: {
-        dimensions: DIMENSIONS,
-        vector: result.vector,
-        tags: result.tags,
-        classification: result.classification,
-        subtypes: result.subtypes,
-      },
-    });
+    res.json({ ok: true, data: await analysisResponse(req.user.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/me', async (req, res, next) => {
+  try {
+    res.json({ ok: true, data: await analysisResponse(req.user.id) });
   } catch (err) {
     next(err);
   }
