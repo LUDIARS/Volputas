@@ -62,10 +62,15 @@ npm run dev       # Vite開発サーバー起動
 | プロフィール | `GET /api/v1/users/me/profile` | プレイスタイル・嗜好情報 |
 | ロギング | `POST /api/v1/sessions/:id/events` | ゲームイベント送信 |
 | アンケート | `POST /api/v1/surveys/:id/responses` | アンケート回答提出 |
+| 代理入力 | `POST /api/v1/delegations`, `POST /api/v1/delegations/:id/claims` | 本人招待・構造化claim・個別承認 |
 | 分析 | `GET /api/v1/analysis/me` | 12次元 + 15軸 + 20次元の統合プロファイル |
 | 感情曲線 | `GET /api/v1/games/:gameId/timelines` | viewer reaction timeline一覧 |
 | ビート | `PUT /api/v1/games/:gameId/beat-script` | versioned beat script追加 |
 | Gap | `GET /api/v1/games/:gameId/timelines/:id/gap` | ビート別matchScore + gapTop |
+
+代理入力は本人のプロフィールへ直接書き込まず、期限・項目範囲付きの委任に基づくclaimとして保存する。
+本人が個別に承認した値だけが正本へ反映される。詳細は
+[代理入力とプロフィールclaim](./player-profile-server/spec/feature/delegated-profile-claims.md)を参照。
 
 ### 動画コメントから感情曲線を生成する
 

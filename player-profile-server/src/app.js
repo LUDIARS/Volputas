@@ -15,6 +15,7 @@ const surveyRoutes = require('./routes/surveys');
 const analysisRoutes = require('./routes/analysis');
 const healthRoutes = require('./routes/health');
 const timelineRoutes = require('./routes/timelines');
+const delegationRoutes = require('./routes/delegations');
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use('/api/v1/sessions', rateLimit({
 app.use('/api/v1/surveys', surveyRoutes);
 app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/v1', timelineRoutes);
+app.use('/api/v1/delegations', delegationRoutes);
 
 // 404 handler
 app.use((_req, res) => {
