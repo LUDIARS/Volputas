@@ -10,7 +10,8 @@
     "migrate": "node migrations/run.js",
     "test": "node --test src/**/*.test.js",
     "import:timeline": "node scripts/import-timeline.js",
-    "export:utterances": "node scripts/export-utterances.js"
+    "export:utterances": "node scripts/export-utterances.js",
+    "export:personas": "node scripts/export-personas.js"
   },
   "dependencies": {
     "@ludiars/sentiment-core": "file:./lib/lapilli/packages/sentiment-core",
