@@ -21,6 +21,31 @@ const sessionModel = {
     return rows[0] || null;
   },
 
+  async heartbeat(id, userId, { elapsedMs, activeMs, occurredAt }) {
+    const { rows } = await db.query(
+      `UPDATE play_sessions
+       SET last_heartbeat_at = GREATEST(COALESCE(last_heartbeat_at, started_at), $5::timestamptz),
+           elapsed_ms = GREATEST(elapsed_ms, $3),
+           active_ms = GREATEST(active_ms, LEAST($4, $3))
+       WHERE id = $1 AND user_id = $2 AND ended_at IS NULL
+       RETURNING *`,
+      [id, userId, elapsedMs, activeMs, occurredAt]
+    );
+    return rows[0] || null;
+  },
+
+  async closeStale(staleHours) {
+    const { rows } = await db.query(
+      `UPDATE play_sessions
+       SET ended_at = GREATEST(started_at, COALESCE(last_heartbeat_at, started_at))
+       WHERE ended_at IS NULL
+         AND COALESCE(last_heartbeat_at, started_at) < now() - ($1 * interval '1 hour')
+       RETURNING id`,
+      [staleHours]
+    );
+    return rows.length;
+  },
+
   async findById(id) {
     const { rows } = await db.query(
       'SELECT * FROM play_sessions WHERE id = $1',

@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const config = require('./config');
 const { errorHandler } = require('./middleware/errorHandler');
 const { initKeyStore } = require('./services/jwks');
+const { startSessionMaintenance } = require('./services/sessionMaintenance');
 
 // Route imports
 const authRoutes = require('./routes/auth');
@@ -16,6 +17,8 @@ const analysisRoutes = require('./routes/analysis');
 const healthRoutes = require('./routes/health');
 const timelineRoutes = require('./routes/timelines');
 const delegationRoutes = require('./routes/delegations');
+const impressionRoutes = require('./routes/impressions');
+const impressionReactionRoutes = require('./routes/impressionReactions');
 
 const app = express();
 
@@ -61,6 +64,8 @@ app.use('/api/v1/surveys', surveyRoutes);
 app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/v1', timelineRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
+app.use('/api/v1', impressionRoutes);
+app.use('/api/v1', impressionReactionRoutes);
 
 // 404 handler
 app.use((_req, res) => {
@@ -78,6 +83,7 @@ async function start() {
   try {
     await initKeyStore();
     console.log('JWKS key store initialized');
+    startSessionMaintenance();
 
     app.listen(config.port, () => {
       console.log(`Player Profile Server running on port ${config.port} [${config.nodeEnv}]`);

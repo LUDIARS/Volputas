@@ -8,6 +8,8 @@ import SessionsPage from './pages/SessionsPage';
 import SurveysPage from './pages/SurveysPage';
 import AnalysisPage from './pages/AnalysisPage';
 import SettingsPage from './pages/SettingsPage';
+import ImpressionPage from './pages/ImpressionPage';
+import VideoReviewUploadPage from './pages/VideoReviewUploadPage';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -57,6 +59,8 @@ export default function App() {
             <Route path="surveys" element={<SurveysPage />} />
             <Route path="analysis" element={<AnalysisPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="impressions/:id" element={<ImpressionPage />} />
+            <Route path="video-reviews/new" element={<VideoReviewUploadPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

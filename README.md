@@ -1,5 +1,7 @@
 # Player Profile Backend
 
+Spectatorの投稿・署名URL・media worker運用は[こちら](./player-profile-server/SPECTATOR_MEDIA.md)を参照してください。
+
 ゲームプレイヤーのプレイスタイルや個性を登録・管理するバックエンドサーバーです。IdPフェデレーション + 自サービスJWT、ゲームプレイロギング、嗜好・感情分析基盤を提供します。
 
 ## 機能
@@ -10,6 +12,7 @@
 - **アンケート基盤** — 設問定義・回答収集、リッカート尺度・選択式・自由記述に対応
 - **嗜好・感情分析** — 既存12次元嗜好、独立15軸質問票、Discutere互換20次元affectを併記
 - **viewer reaction timeline** — 動画内時刻付きコメントを30秒ビンへ集約し、ビートごとの意図一致度とDesignGapを算出
+- **動画レビュー** — Volputas 単体で録画済み動画をアップロードし、本人が「ここ良かった／ここ悪かった／コメント」を再生位置へ記録
 
 ## 技術スタック
 
@@ -61,6 +64,8 @@ npm run dev       # Vite開発サーバー起動
 | ユーザー | `GET /api/v1/users/me` | ユーザー情報CRUD |
 | プロフィール | `GET /api/v1/users/me/profile` | プレイスタイル・嗜好情報 |
 | ロギング | `POST /api/v1/sessions/:id/events` | ゲームイベント送信 |
+| 動画レビュー | `POST /api/v1/sessions/:id/impressions` | 動画アップロード予約 |
+| 動画リアクション | `GET/POST /api/v1/impressions/:id/reactions` | 本人の時刻付きスタンプ一覧・追加 |
 | アンケート | `POST /api/v1/surveys/:id/responses` | アンケート回答提出 |
 | 代理入力 | `POST /api/v1/delegations`, `POST /api/v1/delegations/:id/claims` | 本人招待・構造化claim・個別承認 |
 | 分析 | `GET /api/v1/analysis/me` | 12次元 + 15軸 + 20次元の統合プロファイル |

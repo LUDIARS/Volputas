@@ -1,0 +1,22 @@
+.video-review-page {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 760px;
+}
+
+.video-review-muted { color: var(--color-text-muted); }
+
+.video-review-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.video-review-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.video-review-progress { color: var(--color-accent); }
+
+.video-review-form button { justify-self: start; }

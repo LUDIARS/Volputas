@@ -27,6 +27,10 @@ export default function Layout() {
             <span className="nav-icon">&#9654;</span>
             <span>Play Logs</span>
           </NavLink>
+          <NavLink to="/video-reviews/new">
+            <span className="nav-icon">&#9679;</span>
+            <span>Video Review</span>
+          </NavLink>
           <NavLink to="/surveys">
             <span className="nav-icon">&#9998;</span>
             <span>Surveys</span>

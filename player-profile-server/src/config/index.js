@@ -5,6 +5,14 @@ function commaSeparated(value, fallback) {
     .filter(Boolean);
 }
 
+function positiveInteger(value, fallback) {
+  const parsed = Number.parseInt(value || fallback, 10);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`Expected a positive integer, received: ${value}`);
+  }
+  return parsed;
+}
+
 const config = {
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -27,6 +35,31 @@ const config = {
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || '',
     max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+  },
+
+  mediaStorage: {
+    endpoint: process.env.MEDIA_S3_ENDPOINT || '',
+    region: process.env.MEDIA_S3_REGION || '',
+    bucket: process.env.MEDIA_S3_BUCKET || '',
+    accessKeyId: process.env.MEDIA_S3_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.MEDIA_S3_SECRET_ACCESS_KEY || '',
+    forcePathStyle: process.env.MEDIA_S3_FORCE_PATH_STYLE !== 'false',
+    uploadExpiresSeconds: positiveInteger(process.env.MEDIA_UPLOAD_EXPIRES_SECONDS, '900'),
+    deliveryExpiresSeconds: positiveInteger(process.env.MEDIA_DELIVERY_EXPIRES_SECONDS, '300'),
+  },
+
+  spectator: {
+    staleSessionHours: positiveInteger(process.env.SPECTATOR_STALE_SESSION_HOURS, '24'),
+    maintenanceIntervalMinutes: positiveInteger(process.env.SPECTATOR_MAINTENANCE_INTERVAL_MINUTES, '60'),
+  },
+
+  mediaWorker: {
+    ffmpegPath: process.env.FFMPEG_PATH || 'ffmpeg',
+    ffprobePath: process.env.FFPROBE_PATH || 'ffprobe',
+    antivirusPath: process.env.CLAM_SCAN_PATH || process.env.CLAMDSCAN_PATH || 'clamscan',
+    pollSeconds: positiveInteger(process.env.MEDIA_WORKER_POLL_SECONDS, '5'),
+    originalRetentionDays: positiveInteger(process.env.MEDIA_ORIGINAL_RETENTION_DAYS, '30'),
+    workRoot: process.env.MEDIA_WORK_ROOT || '',
   },
 
   jwt: {
