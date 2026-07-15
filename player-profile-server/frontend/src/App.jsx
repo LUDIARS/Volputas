@@ -10,6 +10,7 @@ import AnalysisPage from './pages/AnalysisPage';
 import SettingsPage from './pages/SettingsPage';
 import ImpressionPage from './pages/ImpressionPage';
 import VideoReviewUploadPage from './pages/VideoReviewUploadPage';
+import GameReviewPage from './pages/GameReviewPage';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="impressions/:id" element={<ImpressionPage />} />
             <Route path="video-reviews/new" element={<VideoReviewUploadPage />} />
+            <Route path="game-reviews/new" element={<GameReviewPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
