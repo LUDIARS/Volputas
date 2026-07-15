@@ -25,6 +25,20 @@ Docker imageにはFFmpeg、FFprobe、ClamAV、media worker scriptが含まれま
 
 workerは起動時に`ffmpeg -version`、`ffprobe -version`、`clamscan --version`を実行し、依存不足ならfail-fastします。APIはmedia設定不足時、添付付き投稿だけを`503 MEDIA_STORAGE_UNAVAILABLE`で拒否します。
 
+### ローカル一括起動
+
+Dockerが利用できる開発環境では、PostgreSQL、Redis、MinIO、migration、API、media workerをまとめて起動できます。
+
+```bash
+cp .env.media-dev.example .env.media-dev
+npm run stack:media:config
+npm run stack:media:up
+```
+
+APIは`http://127.0.0.1:53000`、MinIO S3 APIは`http://127.0.0.1:59000`、consoleは`http://127.0.0.1:59001`です。停止は`npm run stack:media:down`です。`.env.media-dev`の値はローカル専用であり、共有環境ではすべて変更してください。
+
+コンテナ内部の`MEDIA_S3_ENDPOINT`とブラウザへ返す`MEDIA_S3_PUBLIC_ENDPOINT`は分離します。これによりworkerはCompose内のMinIOへ接続し、署名URLはホストブラウザから到達できます。
+
 ## Volputas 単体の動画レビュー
 
 ログイン後の `Video Review` から、ローカルの MP4 / MKV / WebM をアップロードできます。上限は 200MB・2時間です。Spectator の直前リプレイ投稿は従来どおり30秒上限で、クライアントメタデータの `source` をサーバーが明示的に判定します。
@@ -36,3 +50,5 @@ workerは起動時に`ffmpeg -version`、`ffprobe -version`、`clamscan --versio
 - `negative`: ここ悪かった
 
 リアクションは `impression_reactions` に `video_offset_ms`、`kind`、本人入力の `content`、`recorded_at` を保存します。API は `GET/POST /api/v1/impressions/:id/reactions` と `DELETE /api/v1/impressions/:id/reactions/:reactionId` です。すべて既存の Volputas 認証を通し、対象 impression の所有者だけが操作できます。
+
+`GET /api/v1/impressions/:id/reactions/raw` はSpectatorと同じ `spectator.reaction-raw/v2` 契約を返します。`POST /api/v1/impressions/:id/reactions/timeline` は現在の本人入力を既存の `video_comments` affect timelineへ集約・upsertします。Web画面からraw JSON保存と感情曲線生成を実行できます。

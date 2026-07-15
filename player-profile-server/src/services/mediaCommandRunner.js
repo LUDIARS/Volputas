@@ -48,9 +48,13 @@ class MediaCommandRunner {
     ]);
   }
 
-  async transcodeVideo(input, output) {
+  async transcodeVideo(input, output, maximumDurationMs) {
+    if (!Number.isSafeInteger(maximumDurationMs) || maximumDurationMs <= 0) {
+      throw new ProcessingError('Video conversion duration limit is invalid.', true);
+    }
     await this.runFfmpeg([
-      '-nostdin', '-y', '-v', 'error', '-i', input, '-map_metadata', '-1', '-t', '30',
+      '-nostdin', '-y', '-v', 'error', '-i', input, '-map_metadata', '-1',
+      '-t', String(maximumDurationMs / 1000),
       '-map', '0:v:0', '-map', '0:a:0?', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output,
     ]);

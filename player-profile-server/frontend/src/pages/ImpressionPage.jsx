@@ -26,6 +26,7 @@ export default function ImpressionPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [analysisMessage, setAnalysisMessage] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -87,7 +88,49 @@ export default function ImpressionPage() {
   function seek(videoOffsetMs) {
     if (!videoRef.current) return;
     videoRef.current.currentTime = videoOffsetMs / 1000;
-    videoRef.current.play().catch(() => {});
+    videoRef.current.play().catch((playError) => {
+      if (playError.name !== 'NotAllowedError') setError(`動画を再生できませんでした: ${playError.message}`);
+    });
+  }
+
+  async function downloadRawData() {
+    setBusy(true);
+    setError('');
+    try {
+      const response = await api(`/api/v1/impressions/${encodeURIComponent(id)}/reactions/raw`);
+      const url = URL.createObjectURL(new Blob(
+        [`${JSON.stringify(response.data, null, 2)}\n`],
+        { type: 'application/json;charset=utf-8' }
+      ));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `volputas-reactions-${id}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (requestError) {
+      setError(requestError.message || 'raw dataを出力できませんでした。');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createTimeline() {
+    setBusy(true);
+    setError('');
+    setAnalysisMessage('');
+    try {
+      const response = await api(`/api/v1/impressions/${encodeURIComponent(id)}/reactions/timeline`, {
+        method: 'POST',
+        body: { bin_ms: 30_000 },
+      });
+      setAnalysisMessage(`感情曲線を更新しました（timeline ${response.data.id}）。`);
+    } catch (requestError) {
+      setError(requestError.message || '感情曲線を生成できませんでした。');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function removeImpression() {
@@ -159,6 +202,11 @@ export default function ImpressionPage() {
             <button className="btn-outline" type="button" disabled={!videoReady || busy || !comment.trim()} onClick={() => addReaction('comment')}>コメントを記録</button>
             <button className="reaction-positive" type="button" disabled={!videoReady || busy} onClick={() => addReaction('positive')}>ここ良かった</button>
             <button className="reaction-negative" type="button" disabled={!videoReady || busy} onClick={() => addReaction('negative')}>ここ悪かった</button>
+          </div>
+          <div className="reaction-analysis">
+            <button className="btn-outline" type="button" disabled={busy || reactions.length === 0} onClick={downloadRawData}>raw JSONを保存</button>
+            <button className="btn-accent" type="button" disabled={busy || reactions.length === 0} onClick={createTimeline}>感情曲線を生成</button>
+            {analysisMessage && <span>{analysisMessage}</span>}
           </div>
           <ol className="reaction-list">
             {reactions.map((reaction) => (

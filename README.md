@@ -66,6 +66,8 @@ npm run dev       # Vite開発サーバー起動
 | ロギング | `POST /api/v1/sessions/:id/events` | ゲームイベント送信 |
 | 動画レビュー | `POST /api/v1/sessions/:id/impressions` | 動画アップロード予約 |
 | 動画リアクション | `GET/POST /api/v1/impressions/:id/reactions` | 本人の時刻付きスタンプ一覧・追加 |
+| リアクションraw data | `GET /api/v1/impressions/:id/reactions/raw` | Spectator互換のversioned self-report JSON |
+| リアクション感情曲線 | `POST /api/v1/impressions/:id/reactions/timeline` | 現在の本人入力をaffect timelineへ集約・保存 |
 | アンケート | `POST /api/v1/surveys/:id/responses` | アンケート回答提出 |
 | 代理入力 | `POST /api/v1/delegations`, `POST /api/v1/delegations/:id/claims` | 本人招待・構造化claim・個別承認 |
 | 分析 | `GET /api/v1/analysis/me` | 12次元 + 15軸 + 20次元の統合プロファイル |

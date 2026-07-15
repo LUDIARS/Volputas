@@ -1,16 +1,5 @@
 import { api } from './api';
-
-const MIME_BY_EXTENSION = Object.freeze({
-  mp4: 'video/mp4',
-  mkv: 'video/x-matroska',
-  webm: 'video/webm',
-});
-
-function videoMimeType(file) {
-  if (['video/mp4', 'video/x-matroska', 'video/webm'].includes(file.type)) return file.type;
-  const extension = file.name.split('.').pop()?.toLowerCase();
-  return MIME_BY_EXTENSION[extension] || null;
-}
+import { validateVideoFile } from './videoReviewFile';
 
 function readDurationMs(file) {
   return new Promise((resolve, reject) => {
@@ -43,11 +32,7 @@ async function sha256(file) {
 }
 
 async function prepareVideo(file) {
-  const mimeType = videoMimeType(file);
-  if (!mimeType) throw new Error('MP4、MKV、WebM の動画を選択してください。');
-  if (file.size < 1 || file.size > 200 * 1024 * 1024) {
-    throw new Error('動画サイズは 200MB 以下にしてください。');
-  }
+  const mimeType = validateVideoFile(file);
   const [durationMs, checksum] = await Promise.all([readDurationMs(file), sha256(file)]);
   if (durationMs > 2 * 60 * 60 * 1000) throw new Error('動画の長さは 2 時間以下にしてください。');
   return { mimeType, durationMs, checksum };

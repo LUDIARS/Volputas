@@ -39,6 +39,7 @@ const config = {
 
   mediaStorage: {
     endpoint: process.env.MEDIA_S3_ENDPOINT || '',
+    publicEndpoint: process.env.MEDIA_S3_PUBLIC_ENDPOINT || process.env.MEDIA_S3_ENDPOINT || '',
     region: process.env.MEDIA_S3_REGION || '',
     bucket: process.env.MEDIA_S3_BUCKET || '',
     accessKeyId: process.env.MEDIA_S3_ACCESS_KEY_ID || '',

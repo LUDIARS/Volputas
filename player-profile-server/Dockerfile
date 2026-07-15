@@ -5,6 +5,7 @@ RUN apk add --no-cache clamav ffmpeg
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+COPY lib/lapilli/tsconfig.base.json ./lib/lapilli/tsconfig.base.json
 COPY lib/lapilli/packages/sentiment-core/package.json ./lib/lapilli/packages/sentiment-core/package.json
 COPY lib/lapilli/packages/sentiment-core/src/ ./lib/lapilli/packages/sentiment-core/src/
 COPY lib/lapilli/packages/sentiment-core/data/ ./lib/lapilli/packages/sentiment-core/data/

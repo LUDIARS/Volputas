@@ -43,6 +43,7 @@
 
 .reaction-panel { display: grid; gap: 1rem; }
 .reaction-buttons { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.reaction-analysis { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; color: var(--color-accent); }
 .reaction-positive { background: var(--color-accent); color: #0f1117; font-weight: 600; }
 .reaction-negative { background: var(--color-danger); color: #fff; font-weight: 600; }
 .reaction-list { display: grid; gap: 0.5rem; list-style: none; }

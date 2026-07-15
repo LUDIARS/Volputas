@@ -81,7 +81,7 @@ class MediaProcessor {
       throw new ProcessingError(`Video duration is missing or exceeds ${maximumVideoDurationMs} milliseconds.`, true);
     }
     const output = path.join(directory, `${asset.id}.mp4`);
-    await this.commandRunner.transcodeVideo(input, output);
+    await this.commandRunner.transcodeVideo(input, output, maximumVideoDurationMs);
     const deliveryObjectKey = `processed/${impressionId}/${asset.id}.mp4`;
     const deliverySizeBytes = await this.storage.uploadProcessed(deliveryObjectKey, output, 'video/mp4');
     return {

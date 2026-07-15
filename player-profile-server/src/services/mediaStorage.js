@@ -28,12 +28,16 @@ class S3MediaStorage {
 
   createUpload(objectKey, sha256) {
     this.requireConfigured();
-    return presignPut(this.config, objectKey, sha256, this.config.uploadExpiresSeconds);
+    return presignPut(this.publicConfig(), objectKey, sha256, this.config.uploadExpiresSeconds);
   }
 
   createDownload(objectKey) {
     this.requireConfigured();
-    return presignGet(this.config, objectKey, this.config.deliveryExpiresSeconds);
+    return presignGet(this.publicConfig(), objectKey, this.config.deliveryExpiresSeconds);
+  }
+
+  publicConfig() {
+    return { ...this.config, endpoint: this.config.publicEndpoint || this.config.endpoint };
   }
 
   async head(objectKey) {

@@ -16,9 +16,11 @@ function createImpressionReactionRepository(database = db) {
   return {
     async getVideoContext(impressionId, userId) {
       const { rows } = await database.query(
-        `SELECT pi.id, pi.status AS impression_status,
-                ia.status AS asset_status, ia.duration_ms
+        `SELECT pi.id, pi.status AS impression_status, pi.capture_anchor_id, pi.captured_at,
+                ps.game_id, ia.status AS asset_status, ia.duration_ms, ia.sha256,
+                ia.mime_type, ia.clip_started_at, ia.clip_ended_at
          FROM play_impressions pi
+         JOIN play_sessions ps ON ps.id = pi.session_id
          LEFT JOIN impression_assets ia
            ON ia.impression_id = pi.id AND ia.kind = 'video'
          WHERE pi.id = $1 AND pi.user_id = $2 AND pi.deleted_at IS NULL`,
@@ -30,6 +32,13 @@ function createImpressionReactionRepository(database = db) {
         impressionStatus: rows[0].impression_status,
         assetStatus: rows[0].asset_status,
         durationMs: rows[0].duration_ms === null ? null : Number(rows[0].duration_ms),
+        captureAnchorId: rows[0].capture_anchor_id,
+        capturedAt: rows[0].captured_at,
+        gameId: rows[0].game_id,
+        videoSha256: rows[0].sha256,
+        videoMimeType: rows[0].mime_type,
+        clipStartedAt: rows[0].clip_started_at,
+        clipEndedAt: rows[0].clip_ended_at,
       };
     },
 

@@ -2,8 +2,9 @@ const { Router } = require('express');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const reactionService = require('../services/impressionReactionService');
+const reactionAnalysisService = require('../services/impressionReactionAnalysisService');
 
-function createImpressionReactionRouter(service = reactionService) {
+function createImpressionReactionRouter(service = reactionService, analysisService = reactionAnalysisService) {
   const router = Router();
   router.use(authenticate);
   const impressionParams = { id: { required: true, type: 'uuid' } };
@@ -25,6 +26,28 @@ function createImpressionReactionRouter(service = reactionService) {
         body: req.body,
       });
       return res.status(201).json({ ok: true, data: reaction });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.get('/impressions/:id/reactions/raw', validate({ params: impressionParams }), async (req, res, next) => {
+    try {
+      const raw = await analysisService.rawData({ impressionId: req.params.id, userId: req.user.id });
+      return res.json({ ok: true, data: raw });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.post('/impressions/:id/reactions/timeline', validate({ params: impressionParams }), async (req, res, next) => {
+    try {
+      const timeline = await analysisService.createTimeline({
+        impressionId: req.params.id,
+        userId: req.user.id,
+        binMs: req.body?.bin_ms ?? 30_000,
+      });
+      return res.status(201).json({ ok: true, data: timeline });
     } catch (error) {
       return next(error);
     }
