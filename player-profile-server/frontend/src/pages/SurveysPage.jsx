@@ -87,21 +87,25 @@ export default function SurveysPage() {
         );
       }
       case 'choice': {
-        const options = q.options?.choices || [];
+        const options = Array.isArray(q.options) ? q.options : [];
         return (
           <div className="choice-options">
-            {options.map((opt, i) => (
-              <label key={i} className={`choice-option ${value === opt ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name={q.id}
-                  value={opt}
-                  checked={value === opt}
-                  onChange={() => setAnswer(q.id, opt)}
-                />
-                {opt}
-              </label>
-            ))}
+            {options.map((opt, i) => {
+              const optValue = opt && typeof opt === 'object' ? (opt.value ?? opt.label) : opt;
+              const optLabel = opt && typeof opt === 'object' ? (opt.label ?? opt.value) : opt;
+              return (
+                <label key={i} className={`choice-option ${value === optValue ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name={q.id}
+                    value={optValue}
+                    checked={value === optValue}
+                    onChange={() => setAnswer(q.id, optValue)}
+                  />
+                  {optLabel}
+                </label>
+              );
+            })}
           </div>
         );
       }

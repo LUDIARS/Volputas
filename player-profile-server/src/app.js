@@ -13,6 +13,7 @@ const profileRoutes = require('./routes/profiles');
 const logRoutes = require('./routes/logs');
 const surveyRoutes = require('./routes/surveys');
 const analysisRoutes = require('./routes/analysis');
+const steamRoutes = require('./routes/steam');
 const healthRoutes = require('./routes/health');
 const timelineRoutes = require('./routes/timelines');
 const delegationRoutes = require('./routes/delegations');
@@ -58,6 +59,7 @@ app.use('/api/v1/sessions', rateLimit({
   message: { ok: false, error: { code: 'RATE_LIMIT', message: 'Too many events' } },
 }), logRoutes);
 app.use('/api/v1/surveys', surveyRoutes);
+app.use('/api/v1/users/me/steam', steamRoutes);
 app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/v1', timelineRoutes);
 app.use('/api/v1/delegations', delegationRoutes);

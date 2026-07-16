@@ -5,6 +5,7 @@ const surveyModel = require('../models/surveyModel');
 const { AppError } = require('../middleware/errorHandler');
 const { recomputePreferenceAxes } = require('../services/preferenceAxes');
 const { recomputeAffectProfile } = require('../services/affectProfile');
+const { analyzeUser } = require('../services/analysisEngine');
 
 const router = Router();
 
@@ -55,6 +56,7 @@ router.post('/:id/responses', validate({
     await Promise.all([
       recomputePreferenceAxes(req.user.id),
       recomputeAffectProfile(req.user.id),
+      analyzeUser(req.user.id),
     ]);
 
     res.status(201).json({ ok: true, data: response });

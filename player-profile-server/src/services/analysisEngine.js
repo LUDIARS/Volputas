@@ -315,6 +315,27 @@ async function aggregatePlayEvents(userId, vector, counts) {
   }
 }
 
+// Choice questions may carry a `scoring` map ({ answerValue: -1..1 }), shared with the
+// 15-axis preferenceAxes engine (see preferenceAxes.js scoreQuestion). When present it takes
+// precedence and is rescaled to this engine's 0..10 domain. Falls back to the legacy
+// per-option `weight` (already 0..10) for surveys authored before `scoring` existed.
+function choiceWeight(question, answer) {
+  const configured = question.scoring?.[String(answer)];
+  if (Number.isFinite(Number(configured))) {
+    const clamped = Math.max(-1, Math.min(1, Number(configured)));
+    return (clamped + 1) * 5;
+  }
+  const selected = Array.isArray(question.options)
+    ? question.options.find((option) => {
+      if (!option || typeof option !== 'object') return option === answer;
+      return option.value === answer || option.label === answer;
+    })
+    : null;
+  return selected && typeof selected === 'object' && Number.isFinite(Number(selected.weight))
+    ? Number(selected.weight)
+    : 5;
+}
+
 async function integrateSurveyResponses(userId, vector, counts, database = db) {
   const { rows } = await database.query(
     `SELECT sr.answers, s.questions
@@ -347,16 +368,7 @@ async function integrateSurveyResponses(userId, vector, counts, database = db) {
         vector[dimIndex] += normalizedScore * 10;
         counts[dimIndex] += 1;
       } else if (question.type === 'choice') {
-        const selected = Array.isArray(question.options)
-          ? question.options.find((option) => {
-            if (!option || typeof option !== 'object') return option === answer;
-            return option.value === answer || option.label === answer;
-          })
-          : null;
-        const choiceWeight = selected && typeof selected === 'object' && Number.isFinite(Number(selected.weight))
-          ? Number(selected.weight)
-          : 5;
-        vector[dimIndex] += choiceWeight;
+        vector[dimIndex] += choiceWeight(question, answer);
         counts[dimIndex] += 1;
       }
     }
