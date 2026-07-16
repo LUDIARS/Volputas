@@ -171,20 +171,40 @@ const SCORED_QUESTIONS = [
 
 // 好きなゲームの傾向 — スコアリングせず回答をそのまま残す (favorite-titles は freetext なので
 // affectProfile.js が既存の仕組みでそのまま20次元affectベクトルにも取り込む)。
+// genre/experience の選択肢は Discutere の合成ペルソナ生成 (src/flow/survey.ts の GENRES /
+// EMOTION_SEEKS) と同じ語彙に揃え、サービス間で集計・比較しやすくしている。
 const DESCRIPTIVE_QUESTIONS = [
   {
     id: 'favorite-genre',
     type: 'choice',
     text: '好きなゲームジャンルを教えてください',
     options: [
-      { value: 'rpg', label: 'RPG' },
-      { value: 'action', label: 'アクション' },
-      { value: 'simulation', label: 'シミュレーション' },
-      { value: 'puzzle', label: 'パズル' },
-      { value: 'fighting_pvp', label: '対戦・格闘' },
       { value: 'roguelike', label: 'ローグライク' },
-      { value: 'party_social', label: 'ソーシャル・パーティ' },
+      { value: 'gacha', label: 'ガチャ・ソシャゲ' },
+      { value: 'fps', label: 'FPS' },
+      { value: 'rpg', label: 'RPG' },
+      { value: 'puzzle', label: 'パズル' },
+      { value: 'action', label: 'アクション' },
+      { value: 'strategy', label: 'ストラテジー' },
+      { value: 'horror', label: 'ホラー' },
+      { value: 'simulation', label: 'シミュレーション' },
+      { value: 'fighting', label: '対戦・格闘' },
       { value: 'other', label: 'その他' },
+    ],
+  },
+  {
+    id: 'favorite-experience',
+    type: 'choice',
+    text: 'ゲームに一番求める体験はどれですか?',
+    options: [
+      { value: 'excitement', label: '興奮' },
+      { value: 'tension', label: '緊張' },
+      { value: 'achievement', label: '達成感' },
+      { value: 'healing', label: '癒し' },
+      { value: 'immersion', label: '没入' },
+      { value: 'social', label: '交流' },
+      { value: 'collection', label: '収集' },
+      { value: 'growth', label: '成長' },
     ],
   },
   {
