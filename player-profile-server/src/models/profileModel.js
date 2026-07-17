@@ -52,6 +52,22 @@ const profileModel = {
     );
     return rows[0] || null;
   },
+
+  // 本人が承認したMemoria由来の性格軸を personality_data にマージする。
+  // 既存の personality_data (例: 本人が手入力したMBTI等) は消さず、memoria_axes キーだけ
+  // 置き換える (COALESCE + jsonb || で読み-書きの競合なくアトミックにマージ)。
+  async mergePersonalityAxes(userId, axes) {
+    const { rows } = await db.query(
+      `INSERT INTO player_profiles (user_id, personality_data)
+       VALUES ($1, jsonb_build_object('memoria_axes', $2::jsonb, 'memoria_axes_updated_at', now()))
+       ON CONFLICT (user_id) DO UPDATE SET
+         personality_data = COALESCE(player_profiles.personality_data, '{}'::jsonb)
+           || jsonb_build_object('memoria_axes', $2::jsonb, 'memoria_axes_updated_at', now())
+       RETURNING *`,
+      [userId, JSON.stringify(axes)]
+    );
+    return rows[0];
+  },
 };
 
 module.exports = profileModel;
