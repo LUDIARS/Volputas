@@ -10,6 +10,8 @@
 | `delegation_audit_events` | user | Voluptas | PostgreSQL | 必要 | 本人・代理人のみ参照。claim値やtokenを記録しない |
 | `player_affect_profiles` | user-derived | Voluptas分析 | PostgreSQL | 必要 | 20D派生値。仮名化exportのみ |
 | `game_beat_scripts` | master | Voluptas運用者 | PostgreSQL | 不要 | versioned controlled vocabulary |
+| `steam_profiles` | user | 本人が連携したSteam公開プロフィール | PostgreSQL | 必要 | 本人単位アクセス。公開プロフィール(communityvisibilitystate=3)のみ連携許可 |
+| `steam_owned_games` | user-derived | Steam Web API (GetOwnedGames) スナップショット | PostgreSQL | 必要 | 本人単位アクセス。同期のたびに全置換、ジャンル等の追加取得は行わない |
 
 Voluptas固有のプロフィール・委任データはサービスDBに保持する。表示名、メール、provider subjectなど
 認証系個人データを委任・claimテーブルへ複製しない。DiscutereへはHMAC仮名IDと本人承認済み派生値だけを渡す。

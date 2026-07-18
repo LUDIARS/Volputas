@@ -20,6 +20,10 @@ const config = {
 
   pseudoIdSecret: process.env.VOLUPTAS_PSEUDO_ID_SECRET || '',
 
+  steam: {
+    apiKey: process.env.STEAM_API_KEY || '',
+  },
+
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),

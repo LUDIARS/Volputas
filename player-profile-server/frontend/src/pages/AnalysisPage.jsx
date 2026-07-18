@@ -36,10 +36,31 @@ const PATTERN_LABELS = {
   },
 };
 
+// 15-axis style preferences (shared with Discutere's PREFERENCE_AXES, see
+// src/services/preferenceAxisDefinitions.js). Scores are -1..1; kept in this fixed order.
+const AXIS_LABELS = [
+  ['mtg.timmy', 'Timmy/Tammy'],
+  ['mtg.johnny', 'Johnny/Jenny'],
+  ['mtg.spike', 'Spike'],
+  ['style.achiever', 'Achiever'],
+  ['style.explorer', 'Explorer'],
+  ['style.socializer', 'Socializer'],
+  ['style.competitor', 'Competitor'],
+  ['style.collector', 'Collector'],
+  ['style.narrative', 'Narrative'],
+  ['style.relaxation', 'Relaxation'],
+  ['style.mastery', 'Mastery'],
+  ['style.onboarding_need', 'Onboarding Need'],
+  ['style.autonomy', 'Autonomy'],
+  ['style.routine_tolerance', 'Routine Tolerance'],
+  ['style.monetization_sensitivity', 'Monetization Sensitivity'],
+];
+
 export default function AnalysisPage() {
   const [profile, setProfile] = useState(null);
   const [dimensions, setDimensions] = useState([]);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [preferenceAxes, setPreferenceAxes] = useState(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -50,12 +71,14 @@ export default function AnalysisPage() {
 
   async function loadData() {
     try {
-      const [profileRes, dimRes] = await Promise.all([
+      const [profileRes, dimRes, analysisRes] = await Promise.all([
         api('/api/v1/users/me/profile'),
         api('/api/v1/analysis/dimensions'),
+        api('/api/v1/analysis/me'),
       ]);
       setProfile(profileRes.data);
       setDimensions(dimRes.data);
+      setPreferenceAxes(analysisRes.data.preferenceAxes || {});
     } catch { /* ignore */ }
     setLoading(false);
   }
@@ -66,6 +89,7 @@ export default function AnalysisPage() {
     try {
       const res = await api('/api/v1/analysis/me', { method: 'POST' });
       setAnalysisResult(res.data);
+      setPreferenceAxes(res.data.preferenceAxes || {});
       // Refresh profile
       const profileRes = await api('/api/v1/users/me/profile');
       setProfile(profileRes.data);
@@ -193,6 +217,31 @@ export default function AnalysisPage() {
                   })}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* 15-axis style preferences */}
+        {preferenceAxes && Object.keys(preferenceAxes).length > 0 && (
+          <div className="card analysis-details">
+            <h3>Playstyle Axes (15)</h3>
+            <p className="muted">MTG Timmy/Johnny/Spike + Bartle-style preferences, shared with Discutere</p>
+            <div className="dimension-bars">
+              {AXIS_LABELS.filter(([id]) => preferenceAxes[id] !== undefined).map(([id, label]) => {
+                const score = preferenceAxes[id];
+                const pct = Math.max(0, Math.min(1, (score + 1) / 2));
+                return (
+                  <div key={id} className="dimension-row">
+                    <div className="dim-header">
+                      <span className="dim-name">{label}</span>
+                      <span className="dim-value">{score.toFixed(2)}</span>
+                    </div>
+                    <div className="dim-bar-bg">
+                      <div className="dim-bar-fill" style={{ width: `${pct * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
