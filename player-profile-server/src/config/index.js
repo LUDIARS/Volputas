@@ -24,6 +24,11 @@ const config = {
     apiKey: process.env.STEAM_API_KEY || '',
   },
 
+  memoriaLink: {
+    // memoria_links.token_ciphertext を AES-256-GCM で暗号化する鍵の元。 SHA-256 で32byteに正規化する。
+    encryptionKey: process.env.MEMORIA_LINK_ENCRYPTION_KEY || '',
+  },
+
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),

@@ -17,6 +17,7 @@ const steamRoutes = require('./routes/steam');
 const healthRoutes = require('./routes/health');
 const timelineRoutes = require('./routes/timelines');
 const delegationRoutes = require('./routes/delegations');
+const memoriaRoutes = require('./routes/memoria');
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use('/api/v1/sessions', rateLimit({
 }), logRoutes);
 app.use('/api/v1/surveys', surveyRoutes);
 app.use('/api/v1/users/me/steam', steamRoutes);
+app.use('/api/v1/users/me/memoria', memoriaRoutes);
 app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/v1', timelineRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
