@@ -4,6 +4,17 @@ const { validate } = require('../middleware/validate');
 const sessionModel = require('../models/sessionModel');
 const eventModel = require('../models/eventModel');
 const { AppError } = require('../middleware/errorHandler');
+const { validateLudellusEvent } = require('../services/trialResultSchema');
+const { runPostSessionJobs } = require('../services/sessionJobs');
+
+// Reject malformed ludellus.* payloads (trial_result / calibration_result).
+// Non-ludellus events return no errors and pass through unchanged.
+function assertLudellusPayload(eventType, eventData, label = 'event_data') {
+  const errors = validateLudellusEvent(eventType, eventData);
+  if (errors.length > 0) {
+    throw new AppError(400, 'INVALID_EVENT', `${label}: ${errors.join('; ')}`);
+  }
+}
 
 const router = Router();
 
@@ -37,6 +48,10 @@ router.patch('/:id', validate({
     if (!session) {
       throw new AppError(404, 'NOT_FOUND', 'Session not found or already ended');
     }
+    // Fire-and-forget the derived-metrics jobs (ability snapshot + content-stats
+    // calibration). Best-effort: never blocks or fails the session-end response
+    // (§12 session-end trigger). runPostSessionJobs swallows its own errors.
+    runPostSessionJobs(session).catch(() => {});
     res.json({ ok: true, data: session });
   } catch (err) {
     next(err);
@@ -57,6 +72,8 @@ router.post('/:id/events', validate({
     if (!session || session.user_id !== req.user.id) {
       throw new AppError(404, 'NOT_FOUND', 'Session not found');
     }
+
+    assertLudellusPayload(req.body.event_type, req.body.event_data);
 
     const event = await eventModel.create({
       sessionId: req.params.id,
@@ -80,6 +97,19 @@ router.post('/:id/events/batch', validate({
     if (!session || session.user_id !== req.user.id) {
       throw new AppError(404, 'NOT_FOUND', 'Session not found');
     }
+
+    req.body.events.forEach((event, i) => {
+      if (!event || typeof event !== 'object') {
+        throw new AppError(400, 'INVALID_EVENT', `events[${i}] must be an object`);
+      }
+      if (typeof event.event_type !== 'string' || !event.event_type) {
+        throw new AppError(400, 'INVALID_EVENT', `events[${i}].event_type is required`);
+      }
+      if (!event.event_data || typeof event.event_data !== 'object' || Array.isArray(event.event_data)) {
+        throw new AppError(400, 'INVALID_EVENT', `events[${i}].event_data must be an object`);
+      }
+      assertLudellusPayload(event.event_type, event.event_data, `events[${i}]`);
+    });
 
     const events = await eventModel.createBatch(req.params.id, req.body.events);
     res.status(201).json({ ok: true, data: { count: events.length, events } });
