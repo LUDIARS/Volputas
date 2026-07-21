@@ -17,6 +17,7 @@ const steamRoutes = require('./routes/steam');
 const healthRoutes = require('./routes/health');
 const timelineRoutes = require('./routes/timelines');
 const tuningRoutes = require('./routes/tuning');
+const abilityRoutes = require('./routes/ability');
 const delegationRoutes = require('./routes/delegations');
 const memoriaRoutes = require('./routes/memoria');
 
@@ -66,6 +67,7 @@ app.use('/api/v1/users/me/memoria', memoriaRoutes);
 app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/v1', timelineRoutes);
 app.use('/api/v1', tuningRoutes);
+app.use('/api/v1', abilityRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
 
 // 404 handler
