@@ -1,4 +1,6 @@
--- Migration 008: Ludellus tuning-log schema.
+-- Migration 009: Ludellus tuning-log schema.
+-- (Renumbered from 008 to avoid colliding with 008_memoria_personality_link.sql
+--  which landed on main; the migration runner applies files in filename order.)
 -- Content master, per-player ability snapshots and per-player tuning params
 -- that back reaction-speed / language-comprehension estimation and the
 -- GET /api/v1/games/:gameId/tuning/me endpoint.
