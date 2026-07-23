@@ -1,5 +1,8 @@
 'use strict';
 
+const SURVEY_ID = 'gamer-preferences';
+const SURVEY_VERSION = '1.0.0';
+
 // Shared 4-point agreement scale. Reused across every scored question so the content stays
 // compact — each question only needs to define *what* trait it measures via `dimension`
 // (12-dim Gamer/Mechanics/Story pattern, see src/services/analysisEngine.js) and/or `axis`
@@ -237,4 +240,10 @@ const SURVEY_DESCRIPTION =
   '好きなジャンルやタイトルもあわせて教えてください。' +
   'Steamのゲーム記録を連携したい場合は設定画面から連携できます。';
 
-module.exports = { SURVEY_TITLE, SURVEY_DESCRIPTION, QUESTIONS };
+module.exports = {
+  SURVEY_ID,
+  SURVEY_VERSION,
+  SURVEY_TITLE,
+  SURVEY_DESCRIPTION,
+  QUESTIONS,
+};
