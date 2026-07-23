@@ -8,6 +8,7 @@
 - **プレイヤープロフィール** — プレイスタイルタグ、性格診断データ、嗜好ベクトルの管理
 - **ゲームプレイロギング** — イベント収集API、セッション管理、バッチ取り込み
 - **アンケート基盤** — 設問定義・回答収集、リッカート尺度・選択式・自由記述に対応
+- **ローカルアンケート** — PostgreSQL/JWT不要。OKF回答をprivate data submoduleの回答者別branchへ保存
 - **嗜好・感情分析** — 既存12次元嗜好、独立15軸質問票、Discutere互換20次元affectを併記
 - **viewer reaction timeline** — 動画内時刻付きコメントを30秒ビンへ集約し、ビートごとの意図一致度とDesignGapを算出
 
@@ -42,6 +43,33 @@ npm install
 npm run migrate   # DBマイグレーション実行
 npm run dev       # 開発サーバー起動
 ```
+
+### DBなしでアンケートに回答する
+
+ローカル経路はVoluptas serverを起動しない。Node.js 20、Git、GitHub CLIが必要で、
+GitHub CLIの現在の認証ユーザーを本人として扱う。機微な回答の保存先
+`LUDIARS/Voluptas-Data` はprivate repositoryのため、事前にアクセス権が必要。
+
+```bash
+cd player-profile-server
+gh auth login
+npm run setup:survey-data
+npm run survey:local
+```
+
+既定動作は、設問定義と回答をOKF v0.1 Markdownとして
+`private/survey-data` submoduleへ生成し、GitHub numeric user IDをキーにした
+`responses/github-<id>` branchへexact-path commit + pushする。token、email、raw profileは
+保存しない。JSONファイルから回答する場合と、commit/pushせずローカル保存だけ行う場合:
+
+```bash
+npm run survey:local -- --answers ./answers.json
+npm run survey:local -- --answers ./answers.json --save-only
+```
+
+詳細は
+[local-only OKF survey](./player-profile-server/spec/feature/local-okf-survey.md)と
+[setup guide](./player-profile-server/spec/setup/local-okf-survey.md)を参照。
 
 ### フロントエンド
 

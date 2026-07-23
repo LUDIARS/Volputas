@@ -5,6 +5,8 @@
   "main": "src/app.js",
   "scripts": {
     "setup:submodules": "node scripts/setup-submodules.js",
+    "setup:survey-data": "node scripts/setup-survey-data.js",
+    "survey:local": "node scripts/run-local-survey.js",
     "start": "node src/app.js",
     "dev": "node --watch src/app.js",
     "migrate": "node migrations/run.js",
