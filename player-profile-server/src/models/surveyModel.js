@@ -16,6 +16,30 @@ const surveyModel = {
     return rows[0] || null;
   },
 
+  async findForGlab(category) {
+    const values = [];
+    const categoryClause = category ? ' AND category = $1' : '';
+    if (category) values.push(category);
+    const { rows } = await db.query(
+      `SELECT id, title, description, questions, category, created_at
+       FROM surveys
+       WHERE is_active = true AND visible_to_glab = true${categoryClause}
+       ORDER BY created_at DESC`,
+      values
+    );
+    return rows;
+  },
+
+  async findForGlabById(id) {
+    const { rows } = await db.query(
+      `SELECT id, title, description, questions, category, created_at
+       FROM surveys
+       WHERE id = $1 AND is_active = true AND visible_to_glab = true`,
+      [id]
+    );
+    return rows[0] || null;
+  },
+
   async create({ title, description, questions }) {
     const { rows } = await db.query(
       `INSERT INTO surveys (title, description, questions)

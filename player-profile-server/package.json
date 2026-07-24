@@ -7,7 +7,9 @@
     "setup:submodules": "node scripts/setup-submodules.js",
     "setup:survey-data": "node scripts/setup-survey-data.js",
     "survey:local": "node scripts/run-local-survey.js",
+    "prestart": "npm run migrate",
     "start": "node src/app.js",
+    "predev": "npm run migrate",
     "dev": "node --watch src/app.js",
     "migrate": "node migrations/run.js",
     "test": "node --test src/**/*.test.js",
@@ -28,7 +30,10 @@
     "helmet": "^8.0.0",
     "cors": "^2.8.5",
     "express-rate-limit": "^7.4.0",
-    "ioredis": "^5.4.1"
+    "ioredis": "^5.4.1",
+    "paseto": "^3.1.4",
+    "ws": "^8.21.1",
+    "zod": "^4.3.6"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -1,7 +1,7 @@
 ---
 type: data
 title: "Voluptas data schema classification"
-description: "Voluptas のデータごとの権威ソース、保存先、保護境界を定義する。ローカルアンケート回答は private data submodule を正本とする。"
+description: "Voluptas のデータごとの権威ソース、保存先、保護境界を定義する。local OKFとCorpus回答のidentity domainを分離する。"
 service: voluptas
 domain: persistence
 tags:
@@ -15,7 +15,10 @@ related:
   - ../plan/local-okf-survey-data.md
   - ../feature/local-okf-survey.md
   - ../interface/local-survey-git-workflow.md
-updated: 2026-07-23
+  - ../plan/corpus-survey-integration.md
+  - ../feature/corpus-survey-integration.md
+  - ../interface/corpus-survey-backend.md
+updated: 2026-07-24
 ---
 
 # Voluptas data schema classification
@@ -26,7 +29,9 @@ updated: 2026-07-23
 | `player_profiles` | user | 本人承認済みVoluptas profile | PostgreSQL | 必要 | 本人更新。代理claimはaccept後のみ反映 |
 | ローカルアンケート定義 | master | 本人branch内の OKF v0.1 definition snapshot | `private/survey-data/surveys/*.md` | 必要 | private repository、version固定、回答と同じ本人branch/commitで保存 |
 | ローカルアンケート回答 | user | 回答者が生成した OKF v0.1 response | `private/survey-data/responses/github-<id>/*.md` | 必要 | GitHub numeric ID単位branch、本人の回答だけ、exact-path staging、回答非ログ化 |
-| `surveys` / `survey_responses` | compatibility | 既存Voluptas server mode | PostgreSQL | 必要 | 既存API向け互換経路。ローカル回答の正本にはしない |
+| Corpus公開アンケート設問 | master | Voluptas | Voluptas PostgreSQL `surveys.questions` | 保護不要 | `is_active=true`かつ`visible_to_glab=true`だけをcategory allowlistで公開 |
+| Corpus回答・回答済み状態 | user | Cernereログイン中の本人 | Cernere `volputas_survey_responses` / `volputas_survey_answers` | 必要 | Cernere `sub`本人単位、Voluptas project command限定、TEXT/INTEGER正規化 |
+| `survey_responses` | compatibility | 既存Voluptas server mode | Voluptas PostgreSQL | 必要 | 既存Voluptas JWT API向け。local OKF/Corpus回答の正本にはしない |
 | `profile_delegation_grants` | user | 委任した本人 | PostgreSQL | 必要 | field scope、期限、利用上限、失効。招待tokenはhashのみ |
 | `profile_claims` | user | 提案者。正本化権限は本人 | PostgreSQL | 必要 | 正本と分離、構造化allowlist、本人個別承認、処分済み生値は日次purgeで30日後削除 |
 | `delegation_audit_events` | user | Voluptas | PostgreSQL | 必要 | 本人・代理人のみ参照。claim値やtokenを記録しない |
@@ -49,6 +54,11 @@ submodule の `survey_id`、`survey_version`、response commit SHAを参照す�
 既存の `/api/v1/surveys`、`surveys`、`survey_responses` は server mode の互換経路として残る。
 既存DBを自動移行・削除せず、ローカルCLIもDB接続を要求しない。互換DBからOKFへ移す場合は、
 本人同一性の変換と同意を伴う明示的な一括移行として別途設計する。
+
+Corpus経路では、Voluptas PostgreSQLの`surveys`を設問catalogの正本、Cernereの
+`volputas_survey_responses` / `volputas_survey_answers`を本人回答の正本とする。
+Cernere `sub`とlocal CLIのGitHub numeric IDを自動照合せず、Corpus回答をprivate OKF branchや
+Voluptas `survey_responses`へdual-writeしない。
 
 ## 保護境界
 
