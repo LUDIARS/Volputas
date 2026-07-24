@@ -9,6 +9,7 @@
 - **ゲームプレイロギング** — イベント収集API、セッション管理、バッチ取り込み
 - **アンケート基盤** — 設問定義・回答収集、リッカート尺度・選択式・自由記述に対応
 - **ローカルアンケート** — PostgreSQL/JWT不要。OKF回答をprivate data submoduleの回答者別branchへ保存
+- **Corpus連携** — GLABのCorpus frontend panelへCernere project-token保護APIを提供
 - **嗜好・感情分析** — 既存12次元嗜好、独立15軸質問票、Discutere互換20次元affectを併記
 - **viewer reaction timeline** — 動画内時刻付きコメントを30秒ビンへ集約し、ビートごとの意図一致度とDesignGapを算出
 
@@ -40,9 +41,11 @@
 cd player-profile-server
 npm run setup:submodules  # checkoutがsubmodule取得済みなら末尾に -- --skip-git-update
 npm install
-npm run migrate   # DBマイグレーション実行
-npm run dev       # 開発サーバー起動
 ```
+
+backendの起動・再起動はプロジェクト本体folderからExcubitor経由で行う。
+Excubitorの`npm run dev`実行前に`predev`がDB migrationを適用し、失敗時はlistenしない。
+worktree、複製folder、直接の`npm run dev`からサービスを起動しない。
 
 ### DBなしでアンケートに回答する
 
@@ -79,6 +82,23 @@ npm install
 npm run dev       # Vite開発サーバー起動
 ```
 
+Voluptas backendとfrontendは別package・別buildである。ExcubitorのVoluptas backend componentは
+frontendをbuild/serveしない。Corpus上のレビューUIはGLAB plugin pack
+`plugins/volputas/`が所有し、Voluptasには
+`/api/v1/integrations/glab/surveys`だけで接続する。standalone React frontendは
+Voluptas単体利用向けに独立して残す。
+
+### Corpus / GLAB
+
+Voluptasは認証不要の`/.well-known/corpus-service.json`を公開する。GLAB connectorは
+Excubitor topologyの`VOLPUTAS_URL`からbackendへ接続し、Cernere user access tokenを
+`projectKey=volputas`の短命PASETOへ交換して転送する。
+
+Voluptas側では`CERNERE_BASE_URL`と`VOLPUTAS_AUDIENCE`を公開設定として使い、
+`CERNERE_PROJECT_CLIENT_ID` / `CERNERE_PROJECT_CLIENT_SECRET`はExcubitorが起動ごとに
+注入する。実credentialを`.env`やrepositoryへ保存しない。詳細は
+[Corpus survey integration](./player-profile-server/spec/feature/corpus-survey-integration.md)を参照。
+
 ## API概要
 
 ベースパス: `/api/v1`
@@ -90,6 +110,7 @@ npm run dev       # Vite開発サーバー起動
 | プロフィール | `GET /api/v1/users/me/profile` | プレイスタイル・嗜好情報 |
 | ロギング | `POST /api/v1/sessions/:id/events` | ゲームイベント送信 |
 | アンケート | `POST /api/v1/surveys/:id/responses` | アンケート回答提出 |
+| Corpusレビュー | `GET /api/v1/integrations/glab/surveys` | Cernere本人認証済みの設問一覧・回答 |
 | 代理入力 | `POST /api/v1/delegations`, `POST /api/v1/delegations/:id/claims` | 本人招待・構造化claim・個別承認 |
 | 分析 | `GET /api/v1/analysis/me` | 12次元 + 15軸 + 20次元の統合プロファイル |
 | 感情曲線 | `GET /api/v1/games/:gameId/timelines` | viewer reaction timeline一覧 |

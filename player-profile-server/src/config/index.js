@@ -1,3 +1,5 @@
+const { normalizeOptionalBaseUrl } = require('./baseUrl');
+
 function commaSeparated(value, fallback) {
   return (value || fallback)
     .split(',')
@@ -5,10 +7,36 @@ function commaSeparated(value, fallback) {
     .filter(Boolean);
 }
 
+function databaseConfig(env) {
+  if (env.VOLPUTAS_DATABASE_URL?.trim()) {
+    return {
+      connectionString: env.VOLPUTAS_DATABASE_URL.trim(),
+      max: parseInt(env.DB_POOL_MAX || '20', 10),
+      connectionTimeoutMillis: 5_000,
+    };
+  }
+  return {
+    host: env.DB_HOST || 'localhost',
+    port: parseInt(env.DB_PORT || '5432', 10),
+    database: env.DB_NAME || 'player_profile',
+    user: env.DB_USER || 'postgres',
+    password: env.DB_PASSWORD || '',
+    max: parseInt(env.DB_POOL_MAX || '20', 10),
+    connectionTimeoutMillis: 5_000,
+  };
+}
+
 const config = {
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+
+  cernere: {
+    baseUrl: normalizeOptionalBaseUrl(process.env.CERNERE_BASE_URL, 'CERNERE_BASE_URL'),
+    projectClientId: process.env.CERNERE_PROJECT_CLIENT_ID?.trim() || '',
+    projectClientSecret: process.env.CERNERE_PROJECT_CLIENT_SECRET || '',
+    audience: normalizeOptionalBaseUrl(process.env.VOLPUTAS_AUDIENCE, 'VOLPUTAS_AUDIENCE'),
+  },
 
   auth: {
     sources: commaSeparated(process.env.AUTH_SOURCES, 'google,discord'),
@@ -29,14 +57,7 @@ const config = {
     encryptionKey: process.env.MEMORIA_LINK_ENCRYPTION_KEY || '',
   },
 
-  db: {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    database: process.env.DB_NAME || 'player_profile',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '',
-    max: parseInt(process.env.DB_POOL_MAX || '20', 10),
-  },
+  db: databaseConfig(process.env),
 
   jwt: {
     issuer: process.env.JWT_ISSUER || 'http://localhost:3000',
