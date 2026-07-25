@@ -66,6 +66,22 @@ class CernereProjectSocketClient {
     this.pending = new Map();
     this.closed = false;
     this.closePromise = null;
+    // Single lifecycle queue: every start/stop transition runs to completion
+    // before the next one begins, so concurrent callers can never interleave
+    // two connect attempts (or a connect and a shutdown) on this client.
+    this.lifecycleChain = Promise.resolve();
+  }
+
+  // Serializes lifecycle transitions. Prior failures never poison the queue.
+  runExclusive(task) {
+    const run = this.lifecycleChain.then(() => task());
+    this.lifecycleChain = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  // Explicit lifecycle entry point (the "start" half of start/stop).
+  async start() {
+    await this.ensureConnected();
   }
 
   async request(module, action, payload) {
@@ -92,6 +108,13 @@ class CernereProjectSocketClient {
         if (this.pending.get(requestId) !== pending) return;
         this.pending.delete(requestId);
         reject(new CernereIntegrationError(`Cernere request timed out: ${module}.${action}`));
+        // A silent request is indistinguishable from a half-open TCP peer, so
+        // the connection is retired instead of reused. Reusing it would make
+        // every later request time out against the same dead socket.
+        this.retireConnection(
+          connection,
+          new CernereIntegrationError('Cernere project WebSocket retired after a request timeout'),
+        );
       }, this.requestTimeoutMs);
       timer.unref?.();
       pending.timer = timer;
@@ -114,12 +137,22 @@ class CernereProjectSocketClient {
     });
   }
 
+  isReady(connection = this.connection) {
+    return this.isOpen(connection) && connection.authenticated;
+  }
+
   async ensureConnected() {
     this.assertActive();
-    if (this.isOpen(this.connection) && this.connection.authenticated) return;
+    if (this.isReady()) return;
     if (!this.connectPromise) {
       let attempt;
-      attempt = this.connect().finally(() => {
+      attempt = this.runExclusive(() => {
+        // Re-checked inside the queue: the state may have changed while this
+        // attempt waited behind another transition.
+        if (this.closed) throw clientClosedError();
+        if (this.isReady()) return undefined;
+        return this.connect();
+      }).finally(() => {
         if (this.connectPromise === attempt) this.connectPromise = null;
       });
       this.connectPromise = attempt;
@@ -155,6 +188,7 @@ class CernereProjectSocketClient {
       generation,
       authenticated: false,
       closed: false,
+      retired: false,
       finishAuthentication: null,
       closedPromise,
       resolveClosed,
@@ -242,7 +276,12 @@ class CernereProjectSocketClient {
   }
 
   handleMessage(connection, raw) {
-    if (this.connection !== connection || connection.closed || this.closed) return;
+    if (
+      this.connection !== connection
+      || connection.closed
+      || connection.retired
+      || this.closed
+    ) return;
     let value;
     try {
       value = JSON.parse(String(raw));
@@ -334,8 +373,25 @@ class CernereProjectSocketClient {
     return Boolean(
       connection
       && !connection.closed
+      && !connection.retired
       && connection.socket.readyState === this.openState,
     );
+  }
+
+  // Detaches a connection from the client immediately, then closes it in the
+  // background. The generation counter guarantees that anything still in
+  // flight on the retired socket can no longer touch a newer generation's
+  // pending requests, and the next request reconnects from scratch.
+  retireConnection(connection, error) {
+    if (!connection || connection.retired || connection.closed) return;
+    connection.retired = true;
+    connection.authenticated = false;
+    if (this.connection === connection) {
+      this.connection = null;
+      this.socket = null;
+    }
+    this.rejectPending(error, connection.generation);
+    this.requestSocketClose(connection);
   }
 
   requestSocketClose(connection) {
@@ -411,18 +467,20 @@ class CernereProjectSocketClient {
     this.closed = true;
     const error = clientClosedError();
     this.loginController?.abort();
-    const connection = this.connection;
     const connectPromise = this.connectPromise;
     const connectionsAtClose = [...this.connections];
-    connection?.finishAuthentication?.reject(error);
+    for (const activeConnection of connectionsAtClose) {
+      activeConnection.finishAuthentication?.reject(error);
+    }
     this.rejectPending(error);
+    // Signalled synchronously so an in-flight connect cannot outlive close();
+    // the queued drain below only waits for the sockets to finish closing.
+    const drains = connectionsAtClose.map((activeConnection) => (
+      this.waitForSocketClose(activeConnection)
+    ));
 
     this.closePromise = (async () => {
-      await Promise.all(
-        connectionsAtClose.map((activeConnection) => (
-          this.waitForSocketClose(activeConnection)
-        )),
-      );
+      await Promise.all(drains);
       if (connectPromise) {
         try {
           await connectPromise;
@@ -430,6 +488,9 @@ class CernereProjectSocketClient {
           // Terminal shutdown intentionally consumes the in-flight connect failure.
         }
       }
+      // Join the lifecycle queue so any transition started before close() has
+      // fully settled before the client reports itself stopped.
+      await this.runExclusive(() => undefined).catch(() => undefined);
       while (this.connections.size > 0) {
         await Promise.all(
           [...this.connections].map((activeConnection) => (
