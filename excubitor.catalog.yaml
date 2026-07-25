@@ -1,0 +1,24 @@
+services:
+  - code: volputas
+    name: Volputas
+    domain: vo-m${DOMAIN_ROOT}
+    tier: personal
+    project_code: volputas
+    subdomain: vo-m
+    component: local-tool
+    port: 8892
+    repo: LUDIARS/Voluptas
+    runtime: node
+    cwd: ${ARS_ROOT}/Voluptas/player-profile-server
+    command: npm run start:local
+    allow_hot_reload: false
+    depends_on: []
+    autostart: false
+    env:
+      PORT: "8892"
+    health:
+      type: http
+      url: http://localhost:8892/health
+      interval_sec: 30
+    provides:
+      VOLPUTAS_URL: http://${host}:${port}

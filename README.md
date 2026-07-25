@@ -1,6 +1,34 @@
 # Player Profile Backend
 
-ゲームプレイヤーのプレイスタイルや個性を登録・管理するバックエンドサーバーです。IdPフェデレーション + 自サービスJWT、ゲームプレイロギング、嗜好・感情分析基盤を提供します。
+ローカル専用アンケートツールです。従来のIdPフェデレーション、ゲームプレイロギング、
+嗜好・感情分析バックエンドも同じリポジトリ内に残していますが、既定のExcubitor起動は
+無認証のローカルモードを使用します。
+
+## ローカル専用アンケート
+
+既定のVolputasは、Cernere・OAuth・PostgreSQLを使わないローカルツールとして
+Excubitorから起動する。初回起動後にSettingsで次を設定する。
+
+- 任意のGitHubリポジトリをcloneした、データリポジトリの絶対パス
+- 回答フォルダに使うGitHub名
+
+設定保存時に対象リポジトリの`git config user.name`と`user.email`を検証する。
+標準アンケートが未作成なら`surveys/gamer-preference.json`へ作成し、既存JSONは
+上書きしない。画面は常にデータリポジトリ内のJSONを読み込む。
+
+回答は次の構造で保存する。
+
+```text
+Volputas-Data/
+├── surveys/
+│   └── gamer-preference.json
+└── <GitHub名>/
+    └── responses/
+        └── gamer-preference.json
+```
+
+回答JSONにはGitHub名とGit Authorを記録する。アプリは自動commit/pushを行わないため、
+レビュー後に通常のGitフローでデータリポジトリへ反映する。
 
 ## 機能
 
