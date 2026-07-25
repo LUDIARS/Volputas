@@ -5,6 +5,9 @@
   "main": "src/app.js",
   "scripts": {
     "setup:submodules": "node scripts/setup-submodules.js",
+    "build:frontend": "npm --prefix frontend run build",
+    "prestart:local": "npm run build:frontend",
+    "start:local": "node src/localApp.js",
     "start": "node src/app.js",
     "dev": "node --watch src/app.js",
     "migrate": "node migrations/run.js",
