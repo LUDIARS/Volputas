@@ -28,18 +28,28 @@ export default function SurveyQuestionInput({ question, value, onChange }) {
   if (question.type === 'scale') {
     const minimum = question.options?.min ?? 1;
     const maximum = question.options?.max ?? 5;
+    const values = Array.from(
+      { length: maximum - minimum + 1 },
+      (_, index) => minimum + index
+    );
     return (
-      <div className="scale-input">
-        <span className="scale-label">{minimum}</span>
-        <input
-          type="range"
-          min={minimum}
-          max={maximum}
-          value={value ?? minimum}
-          onChange={(event) => onChange(Number(event.target.value))}
-        />
-        <span className="scale-label">{maximum}</span>
-        <span className="scale-value">{value ?? minimum}</span>
+      <div className="scale-options">
+        {values.map((scaleValue) => (
+          <label
+            key={scaleValue}
+            className={`scale-option ${value === scaleValue ? 'selected' : ''}`}
+          >
+            <input
+              type="radio"
+              name={question.id}
+              value={scaleValue}
+              checked={value === scaleValue}
+              onChange={() => onChange(scaleValue)}
+            />
+            {scaleValue}
+          </label>
+        ))}
+        {value === undefined && <span className="scale-unanswered">未回答</span>}
       </div>
     );
   }

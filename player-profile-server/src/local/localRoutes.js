@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { AppError } = require('../middleware/errorHandler');
 const { validateLocalConfig } = require('./localConfigStore');
+const { listSurveysWithResponseStatus } = require('./surveyResponseStatus');
 
 function asAppError(error, statusCode = 400) {
   if (error instanceof AppError) return error;
@@ -74,10 +75,16 @@ function createLocalRoutes({
 
   router.get('/surveys', async (_req, res, next) => {
     try {
-      const { gitAuthor } = await configuredContext();
+      const { config, gitAuthor } = await configuredContext();
+      const surveys = await surveyDefinitionStore.list(gitAuthor.repositoryRoot);
       return res.json({
         ok: true,
-        data: await surveyDefinitionStore.list(gitAuthor.repositoryRoot),
+        data: await listSurveysWithResponseStatus({
+          surveys,
+          responseStore,
+          repositoryRoot: gitAuthor.repositoryRoot,
+          githubName: config.githubName,
+        }),
       });
     } catch (error) {
       return next(asAppError(error));

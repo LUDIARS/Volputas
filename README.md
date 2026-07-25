@@ -14,7 +14,8 @@ Excubitorから起動する。初回起動後にSettingsで次を設定する。
 
 設定保存時に対象リポジトリの`git config user.name`と`user.email`を検証する。
 標準アンケートが未作成なら`surveys/gamer-preference.json`へ作成し、既存JSONは
-上書きしない。画面は常にデータリポジトリ内のJSONを読み込む。
+上書きしない。画面はデータリポジトリ内の`surveys/*.json`をすべて読み込み、
+アンケート一覧として表示する。
 
 回答は次の構造で保存する。
 
@@ -29,6 +30,10 @@ Volputas-Data/
 
 回答JSONにはGitHub名とGit Authorを記録する。アプリは自動commit/pushを行わないため、
 レビュー後に通常のGitフローでデータリポジトリへ反映する。
+
+一覧の回答状態は`<GitHub名>/responses/<survey-id>.json`の存在から算出する。
+回答ファイルがあれば`answered`、なければ`unanswered`とし、状態だけを保存する
+別ファイルは作成しない。
 
 ## 機能
 
