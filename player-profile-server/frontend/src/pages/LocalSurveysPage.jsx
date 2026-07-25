@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import SurveyQuestionInput from '../components/SurveyQuestionInput';
 import { localApi } from '../lib/localApi';
 import '../styles/surveys.css';
@@ -14,53 +14,47 @@ function countAnswers(survey, answers) {
 }
 
 export default function LocalSurveysPage() {
-  const [surveys, setSurveys] = useState([]);
-  const [survey, setSurvey] = useState(null);
+  const {
+    configured,
+    markSurveyAnswered,
+    surveys,
+    surveysLoading,
+  } = useOutletContext();
+  const [searchParams] = useSearchParams();
+  const surveyId = searchParams.get('survey');
+  const survey = surveys.find((item) => item.id === surveyId) || null;
   const [answers, setAnswers] = useState({});
-  const [configured, setConfigured] = useState(false);
   const [savedPath, setSavedPath] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(true);
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  async function selectSurvey(selectedSurvey) {
-    setSurvey(selectedSurvey);
+  useEffect(() => {
+    let active = true;
     setAnswers({});
     setSavedPath('');
     setSuccess('');
     setError('');
+    if (!survey) return () => {
+      active = false;
+    };
+
     setLoadingResponse(true);
-    try {
-      const response = await localApi(`/api/local/surveys/${selectedSurvey.id}/response`);
-      if (response?.answers) setAnswers(response.answers);
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setLoadingResponse(false);
-    }
-  }
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const configData = await localApi('/api/local/config');
-        const isConfigured = configData.configured && !configData.configurationError;
-        setConfigured(isConfigured);
-        if (!isConfigured) return;
-
-        const loadedSurveys = await localApi('/api/local/surveys');
-        setSurveys(loadedSurveys);
-        if (loadedSurveys[0]) await selectSurvey(loadedSurveys[0]);
-      } catch (requestError) {
-        setError(requestError.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+    localApi(`/api/local/surveys/${survey.id}/response`)
+      .then((response) => {
+        if (active && response?.answers) setAnswers(response.answers);
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError.message);
+      })
+      .finally(() => {
+        if (active) setLoadingResponse(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [survey?.id]);
 
   function setAnswer(questionId, value) {
     setAnswers((current) => ({ ...current, [questionId]: value }));
@@ -78,20 +72,7 @@ export default function LocalSurveysPage() {
       });
       setSavedPath(result.filePath);
       setSuccess('回答をVolputasDataへ保存しました');
-      setSurveys((current) => current.map((item) => (
-        item.id === survey.id
-          ? {
-              ...item,
-              responseStatus: 'answered',
-              responseUpdatedAt: result.response.updatedAt,
-            }
-          : item
-      )));
-      setSurvey((current) => ({
-        ...current,
-        responseStatus: 'answered',
-        responseUpdatedAt: result.response.updatedAt,
-      }));
+      markSurveyAnswered(survey.id, result.response.updatedAt);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -99,7 +80,7 @@ export default function LocalSurveysPage() {
     }
   }
 
-  if (loading) return <div className="loading-spinner">Loading...</div>;
+  if (surveysLoading) return <div className="loading-spinner">Loading...</div>;
   if (!configured) {
     return (
       <div>
@@ -107,22 +88,36 @@ export default function LocalSurveysPage() {
           <h2>Surveys</h2>
           <p>回答前にローカル設定が必要です。</p>
         </div>
-        {error && <div className="error-message">{error}</div>}
         <div className="card empty-state">
-          <Link to="/settings">SettingsでデータリポジトリとGitHub名を設定する</Link>
+          <Link to="/settings">LOCAL ONLYの歯車からデータリポジトリを設定する</Link>
         </div>
       </div>
     );
   }
-  if (surveys.length === 0) {
-    return <div className="empty-state">利用できるアンケートがありません。</div>;
+  if (!surveyId) {
+    return (
+      <div>
+        <div className="page-header">
+          <h2>Surveys</h2>
+          <p>左のSurveysから回答するアンケートを選択してください。</p>
+        </div>
+      </div>
+    );
+  }
+  if (!survey) {
+    return <div className="error-message">指定されたアンケートが見つかりません。</div>;
   }
 
   return (
     <div>
-      <div className="page-header">
-        <h2>Surveys</h2>
-        <p>アンケートを選択して回答します。保存済みの回答はいつでも更新できます。</p>
+      <div className="page-header survey-page-title">
+        <div>
+          <h2>{survey.title}</h2>
+          <p>{survey.description}</p>
+        </div>
+        <span className={`response-status ${survey.responseStatus}`}>
+          {survey.responseStatus === 'answered' ? '回答済み' : '未回答'}
+        </span>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -133,72 +128,32 @@ export default function LocalSurveysPage() {
         </div>
       )}
 
-      <div className="surveys-layout">
-        <aside className="card survey-list">
-          <h3>アンケート一覧</h3>
-          <div className="survey-items">
-            {surveys.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`survey-item ${survey?.id === item.id ? 'active' : ''}`}
-                onClick={() => selectSurvey(item)}
-              >
-                <div className="survey-item-header">
-                  <span className="survey-title">{item.title}</span>
-                  <span className={`response-status ${item.responseStatus}`}>
-                    {item.responseStatus === 'answered' ? '回答済み' : '未回答'}
-                  </span>
+      {loadingResponse ? (
+        <div className="loading-spinner">回答を読み込み中...</div>
+      ) : (
+        <form className="card local-survey-form" onSubmit={save}>
+          <div className="survey-progress">
+            {countAnswers(survey, answers)} / {survey.questions.length} 回答済み
+          </div>
+          <div className="questions">
+            {survey.questions.map((question, index) => (
+              <div key={question.id} className="question-block">
+                <div className="question-text">
+                  <span className="question-number">{index + 1}.</span> {question.text}
                 </div>
-                <div className="survey-meta">{item.questions.length}問</div>
-              </button>
+                <SurveyQuestionInput
+                  question={question}
+                  value={answers[question.id]}
+                  onChange={(value) => setAnswer(question.id, value)}
+                />
+              </div>
             ))}
           </div>
-        </aside>
-
-        <section>
-          {survey && (
-            <>
-              <div className="card selected-survey-header">
-                <div>
-                  <h3>{survey.title}</h3>
-                  <p>{survey.description}</p>
-                </div>
-                <span className={`response-status ${survey.responseStatus}`}>
-                  {survey.responseStatus === 'answered' ? '回答済み' : '未回答'}
-                </span>
-              </div>
-
-              {loadingResponse ? (
-                <div className="loading-spinner">回答を読み込み中...</div>
-              ) : (
-                <form className="card local-survey-form" onSubmit={save}>
-                  <div className="survey-progress">
-                    {countAnswers(survey, answers)} / {survey.questions.length} 回答済み
-                  </div>
-                  <div className="questions">
-                    {survey.questions.map((question, index) => (
-                      <div key={question.id} className="question-block">
-                        <div className="question-text">
-                          <span className="question-number">{index + 1}.</span> {question.text}
-                        </div>
-                        <SurveyQuestionInput
-                          question={question}
-                          value={answers[question.id]}
-                          onChange={(value) => setAnswer(question.id, value)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <button type="submit" className="btn-primary" disabled={saving}>
-                    {saving ? '保存中...' : '回答を保存'}
-                  </button>
-                </form>
-              )}
-            </>
-          )}
-        </section>
-      </div>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving ? '保存中...' : '回答を保存'}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

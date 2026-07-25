@@ -9,6 +9,11 @@ const GAMER_SURVEY = Object.freeze({
   id: GAMER_SURVEY_ID,
   title: SURVEY_TITLE,
   description: SURVEY_DESCRIPTION,
+  category: {
+    id: 'player-profile',
+    label: 'プレイヤープロフィール',
+    order: 10,
+  },
   questions: QUESTIONS,
 });
 

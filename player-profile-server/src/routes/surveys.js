@@ -12,9 +12,9 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/v1/surveys — list active surveys
-router.get('/', async (_req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const surveys = await surveyModel.findActive();
+    const surveys = await surveyModel.findActiveForUser(req.user.id);
     res.json({ ok: true, data: surveys });
   } catch (err) {
     next(err);

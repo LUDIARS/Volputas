@@ -21,6 +21,11 @@ test('initializes survey JSON once and then reads it from the data repository', 
   const surveys = await store.list(repositoryRoot);
   assert.equal(surveys.length, 1);
   assert.equal(surveys[0].id, 'gamer-preference');
+  assert.deepEqual(surveys[0].category, {
+    id: 'player-profile',
+    label: 'プレイヤープロフィール',
+    order: 10,
+  });
   assert.equal(surveys[0].questions.length, 28);
   assert.equal((await store.find(repositoryRoot, 'gamer-preference')).title, surveys[0].title);
 });
@@ -50,6 +55,15 @@ test('rejects malformed or duplicate-question survey definitions', () => {
       id: 'bad-choice',
       title: 'Bad choice',
       questions: [{ id: 'q', type: 'choice', text: 'Choose', options: [{}] }],
+    }),
+    { code: 'INVALID_SURVEY_DEFINITION' }
+  );
+  assert.throws(
+    () => validateSurveyDefinition({
+      id: 'bad-category',
+      title: 'Bad category',
+      category: { id: 'not valid', label: '', order: 1.5 },
+      questions: [{ id: 'q', type: 'freetext', text: 'Question' }],
     }),
     { code: 'INVALID_SURVEY_DEFINITION' }
   );

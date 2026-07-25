@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { localApi } from '../lib/localApi';
 import '../styles/settings.css';
 import '../styles/local.css';
@@ -9,6 +10,7 @@ const EMPTY_FORM = {
 };
 
 export default function LocalSettingsPage() {
+  const { reloadSurveys } = useOutletContext();
   const [form, setForm] = useState(EMPTY_FORM);
   const [gitAuthor, setGitAuthor] = useState(null);
   const [configurationError, setConfigurationError] = useState('');
@@ -42,6 +44,7 @@ export default function LocalSettingsPage() {
       const data = await localApi('/api/local/config', { method: 'PUT', body: form });
       setForm(data.config);
       setGitAuthor(data.gitAuthor);
+      await reloadSurveys();
       setSuccess('設定を保存しました');
     } catch (requestError) {
       setError(requestError.message);

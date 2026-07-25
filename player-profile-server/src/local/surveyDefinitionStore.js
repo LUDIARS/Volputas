@@ -3,6 +3,7 @@ const path = require('node:path');
 const { GAMER_SURVEY } = require('./surveyCatalog');
 
 const SURVEY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const CATEGORY_ID_PATTERN = SURVEY_ID_PATTERN;
 const SUPPORTED_QUESTION_TYPES = new Set(['choice', 'scale', 'freetext']);
 
 function validateSurveyDefinition(value, source = 'survey definition') {
@@ -20,6 +21,23 @@ function validateSurveyDefinition(value, source = 'survey definition') {
     throw Object.assign(new Error(`${source} has no title`), {
       code: 'INVALID_SURVEY_DEFINITION',
     });
+  }
+  if (value.category !== undefined) {
+    const category = value.category;
+    if (
+      !category
+      || typeof category !== 'object'
+      || Array.isArray(category)
+      || typeof category.id !== 'string'
+      || !CATEGORY_ID_PATTERN.test(category.id)
+      || typeof category.label !== 'string'
+      || !category.label.trim()
+      || (category.order !== undefined && !Number.isInteger(category.order))
+    ) {
+      throw Object.assign(new Error(`${source} has an invalid category`), {
+        code: 'INVALID_SURVEY_DEFINITION',
+      });
+    }
   }
   if (!Array.isArray(value.questions) || value.questions.length === 0) {
     throw Object.assign(new Error(`${source} has no questions`), {
