@@ -34,7 +34,7 @@ test('requires complete answers that follow the survey definition', () => {
   );
 });
 
-test('stores responses below the GitHub-name folder with Git author metadata', async (t) => {
+test('stores responses below answers/GitHub-name with Git author metadata', async (t) => {
   const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-responses-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const store = new LocalResponseStore(() => new Date('2026-07-25T00:00:00.000Z'));
@@ -53,7 +53,7 @@ test('stores responses below the GitHub-name folder with Git author metadata', a
 
   assert.equal(
     result.filePath,
-    path.join(repositoryRoot, 'neco', 'responses', 'sample.json')
+    path.join(repositoryRoot, 'answers', 'neco', 'sample.json')
   );
   assert.equal(result.response.respondent.gitAuthor.name, 'Neco');
   assert.equal(

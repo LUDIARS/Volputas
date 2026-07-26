@@ -57,7 +57,7 @@ function validateAnswers(survey, answers) {
 
 function responsePath(repositoryRoot, githubName, surveyId) {
   const root = path.resolve(repositoryRoot);
-  const target = path.resolve(root, githubName, 'responses', `${surveyId}.json`);
+  const target = path.resolve(root, 'answers', githubName, `${surveyId}.json`);
   const relative = path.relative(root, target);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
     throw Object.assign(new Error('Survey response path escapes the data repository'), {

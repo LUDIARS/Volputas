@@ -67,7 +67,7 @@ test('local workflow initializes repository survey JSON and writes a Git-attribu
   assert.equal(survey.questions.length, 28);
   assert.equal(
     result.filePath,
-    path.join(repositoryPath, 'neco', 'responses', 'gamer-preference.json')
+    path.join(repositoryPath, 'answers', 'neco', 'gamer-preference.json')
   );
   assert.equal(result.response.respondent.gitAuthor.name, 'Neco');
   assert.equal(result.response.dataRepository.remoteUrl, 'git@github.com:neco/Volputas-Data.git');

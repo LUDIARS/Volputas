@@ -23,15 +23,15 @@ Excubitorから起動する。初回起動後にSettingsで次を設定する。
 Volputas-Data/
 ├── surveys/
 │   └── gamer-preference.json
-└── <GitHub名>/
-    └── responses/
+└── answers/
+    └── <GitHub名>/
         └── gamer-preference.json
 ```
 
 回答JSONにはGitHub名とGit Authorを記録する。アプリは自動commit/pushを行わないため、
 レビュー後に通常のGitフローでデータリポジトリへ反映する。
 
-一覧の回答状態は`<GitHub名>/responses/<survey-id>.json`の存在から算出する。
+一覧の回答状態は`answers/<GitHub名>/<survey-id>.json`の存在から算出する。
 回答ファイルがあれば`answered`、なければ`unanswered`とし、状態だけを保存する
 別ファイルは作成しない。
 
