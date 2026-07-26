@@ -5,6 +5,11 @@ const {
   validateLocalConfig,
 } = require('./localConfigStore');
 const { listSurveysWithResponseStatus } = require('./surveyResponseStatus');
+const {
+  validateEmotionCurveInput,
+  validateGameplayInput,
+  validateVoiceInput,
+} = require('./profileInputSchemas');
 
 function asAppError(error, statusCode = 400) {
   if (error instanceof AppError) return error;
@@ -15,8 +20,13 @@ function createLocalRoutes({
   configStore,
   gitCli,
   gitAuthorReader,
+  emotionCurveStore,
+  gameplayStore,
+  mediaStore,
+  personaService,
   responseStore,
   surveyDefinitionStore,
+  voiceStore,
 }) {
   const router = Router();
 
@@ -42,6 +52,51 @@ function createLocalRoutes({
     }
     const gitAuthor = await gitAuthorReader.read(config.dataRepositoryPath);
     return { config, gitAuthor };
+  }
+
+  function profileRecord(input, config, gitAuthor) {
+    return {
+      ...input,
+      respondent: {
+        name: config.name,
+        gitAuthor: {
+          name: gitAuthor.name,
+          email: gitAuthor.email,
+        },
+      },
+      dataRepository: { remoteUrl: gitAuthor.remoteUrl },
+    };
+  }
+
+  function collectionRoutes(routePath, store, validate) {
+    router.get(routePath, async (_req, res, next) => {
+      try {
+        const { config, gitAuthor } = await configuredContext();
+        return res.json({
+          ok: true,
+          data: await store.list({
+            repositoryRoot: gitAuthor.repositoryRoot,
+            name: config.name,
+          }),
+        });
+      } catch (error) {
+        return next(asAppError(error));
+      }
+    });
+
+    router.post(routePath, async (req, res, next) => {
+      try {
+        const { config, gitAuthor } = await configuredContext();
+        const result = await store.write({
+          repositoryRoot: gitAuthor.repositoryRoot,
+          name: config.name,
+          data: profileRecord(validate(req.body), config, gitAuthor),
+        });
+        return res.status(201).json({ ok: true, data: result });
+      } catch (error) {
+        return next(asAppError(error));
+      }
+    });
   }
 
   router.get('/config', async (_req, res, next) => {
@@ -143,6 +198,78 @@ function createLocalRoutes({
         answers: req.body?.answers,
       });
       return res.json({ ok: true, data: result });
+    } catch (error) {
+      return next(asAppError(error));
+    }
+  });
+
+  collectionRoutes('/gameplay', gameplayStore, validateGameplayInput);
+  collectionRoutes('/voices', voiceStore, validateVoiceInput);
+  collectionRoutes('/emotion-curves', emotionCurveStore, validateEmotionCurveInput);
+
+  router.put('/media/:kind/:recordId', async (req, res, next) => {
+    try {
+      const { config, gitAuthor } = await configuredContext();
+      const contentType = String(req.headers['content-type'] || '').split(';')[0].trim();
+      const result = await mediaStore.save({
+        repositoryRoot: gitAuthor.repositoryRoot,
+        name: config.name,
+        kind: req.params.kind,
+        recordId: req.params.recordId,
+        contentType,
+        stream: req,
+      });
+      return res.status(201).json({
+        ok: true,
+        data: { bytes: result.bytes, contentType: result.contentType },
+      });
+    } catch (error) {
+      return next(asAppError(error));
+    }
+  });
+
+  router.get('/media/:kind/:recordId', async (req, res, next) => {
+    try {
+      const { config, gitAuthor } = await configuredContext();
+      const media = await mediaStore.resolve({
+        repositoryRoot: gitAuthor.repositoryRoot,
+        name: config.name,
+        kind: req.params.kind,
+        recordId: req.params.recordId,
+      });
+      if (!media) throw new AppError(404, 'MEDIA_NOT_FOUND', 'Media not found');
+      res.type(media.contentType);
+      return res.sendFile(media.filePath);
+    } catch (error) {
+      return next(asAppError(error));
+    }
+  });
+
+  router.get('/persona', async (_req, res, next) => {
+    try {
+      const { config, gitAuthor } = await configuredContext();
+      return res.json({
+        ok: true,
+        data: await personaService.status({
+          repositoryRoot: gitAuthor.repositoryRoot,
+          name: config.name,
+        }),
+      });
+    } catch (error) {
+      return next(asAppError(error));
+    }
+  });
+
+  router.post('/persona/analyze', async (_req, res, next) => {
+    try {
+      const { config, gitAuthor } = await configuredContext();
+      return res.json({
+        ok: true,
+        data: await personaService.analyze({
+          repositoryRoot: gitAuthor.repositoryRoot,
+          name: config.name,
+        }),
+      });
     } catch (error) {
       return next(asAppError(error));
     }

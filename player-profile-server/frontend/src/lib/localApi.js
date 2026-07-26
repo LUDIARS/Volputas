@@ -16,3 +16,21 @@ export async function localApi(path, { method = 'GET', body } = {}) {
   }
   return payload.data;
 }
+
+export async function localUpload(path, file) {
+  const response = await fetch(path, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+  });
+  const payload = await response.json().catch(() => ({
+    ok: false,
+    error: { message: `Upload failed with status ${response.status}` },
+  }));
+  if (!response.ok || !payload.ok) {
+    const error = new Error(payload.error?.message || 'Media upload failed');
+    error.code = payload.error?.code;
+    throw error;
+  }
+  return payload.data;
+}

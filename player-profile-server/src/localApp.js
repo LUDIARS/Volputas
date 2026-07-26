@@ -8,14 +8,22 @@ const { GitAuthorReader } = require('./local/gitAuthorReader');
 const { LocalResponseStore } = require('./local/localResponseStore');
 const { SurveyDefinitionStore } = require('./local/surveyDefinitionStore');
 const { createLocalRoutes } = require('./local/localRoutes');
+const { PersonaService } = require('./local/personaService');
+const { ProfileMediaStore } = require('./local/profileMediaStore');
+const { ProfileRecordStore } = require('./local/profileRecordStore');
 const { errorHandler } = require('./middleware/errorHandler');
 
 function createLocalApp({
   configStore = new LocalConfigStore(),
   gitCli = new GitCli(),
   gitAuthorReader = new GitAuthorReader(),
+  emotionCurveStore = new ProfileRecordStore('emotion-curves'),
+  gameplayStore = new ProfileRecordStore('gameplay'),
+  mediaStore = new ProfileMediaStore(),
   responseStore = new LocalResponseStore(),
   surveyDefinitionStore = new SurveyDefinitionStore(),
+  voiceStore = new ProfileRecordStore('voices'),
+  personaService,
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
   serveFrontend = true,
 } = {}) {
@@ -26,6 +34,11 @@ function createLocalApp({
   }
 
   const app = express();
+  const resolvedPersonaService = personaService || new PersonaService({
+    emotionCurveStore,
+    gameplayStore,
+    voiceStore,
+  });
   app.use(helmet());
   app.use(express.json({ limit: '1mb' }));
   app.get('/health', (_req, res) => {
@@ -35,8 +48,13 @@ function createLocalApp({
     configStore,
     gitCli,
     gitAuthorReader,
+    emotionCurveStore,
+    gameplayStore,
+    mediaStore,
+    personaService: resolvedPersonaService,
     responseStore,
     surveyDefinitionStore,
+    voiceStore,
   }));
 
   if (serveFrontend) {
