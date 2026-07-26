@@ -55,9 +55,9 @@ function validateAnswers(survey, answers) {
   return normalized;
 }
 
-function responsePath(repositoryRoot, githubName, surveyId) {
+function responsePath(repositoryRoot, name, surveyId) {
   const root = path.resolve(repositoryRoot);
-  const target = path.resolve(root, 'answers', githubName, `${surveyId}.json`);
+  const target = path.resolve(root, 'answers', name, `${surveyId}.json`);
   const relative = path.relative(root, target);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
     throw Object.assign(new Error('Survey response path escapes the data repository'), {
@@ -72,8 +72,8 @@ class LocalResponseStore {
     this.now = now;
   }
 
-  async read({ repositoryRoot, githubName, surveyId }) {
-    const filePath = responsePath(repositoryRoot, githubName, surveyId);
+  async read({ repositoryRoot, name, surveyId }) {
+    const filePath = responsePath(repositoryRoot, name, surveyId);
     try {
       return JSON.parse(await fs.readFile(filePath, 'utf8'));
     } catch (error) {
@@ -87,18 +87,18 @@ class LocalResponseStore {
     }
   }
 
-  async write({ repositoryRoot, githubName, author, survey, answers }) {
+  async write({ repositoryRoot, name, author, survey, answers }) {
     const normalizedAnswers = validateAnswers(survey, answers);
-    const filePath = responsePath(repositoryRoot, githubName, survey.id);
+    const filePath = responsePath(repositoryRoot, name, survey.id);
     const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
     const response = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       survey: {
         id: survey.id,
         title: survey.title,
       },
       respondent: {
-        githubName,
+        name,
         gitAuthor: {
           name: author.name,
           email: author.email,

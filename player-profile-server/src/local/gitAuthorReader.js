@@ -1,20 +1,10 @@
-const { execFile } = require('node:child_process');
-const { promisify } = require('node:util');
 const path = require('node:path');
-
-const execFileAsync = promisify(execFile);
+const { defaultGitRunner } = require('./gitCli');
 
 function isGitHubRemote(value) {
   return /^git@github\.com:[^/]+\/[^/]+(?:\.git)?$/i.test(value)
     || /^ssh:\/\/git@github\.com\/[^/]+\/[^/]+(?:\.git)?$/i.test(value)
     || /^https:\/\/github\.com\/[^/]+\/[^/]+(?:\.git)?$/i.test(value);
-}
-
-async function defaultGitRunner(args) {
-  return execFileAsync('git', args, {
-    encoding: 'utf8',
-    windowsHide: true,
-  });
 }
 
 class GitAuthorReader {

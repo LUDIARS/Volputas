@@ -3,11 +3,33 @@ const os = require('node:os');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 
-const GITHUB_NAME_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
+const WINDOWS_RESERVED_NAME_PATTERN =
+  /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
+
+function isSafeAnswerOwnerName(value) {
+  return Boolean(
+    value
+    && value !== '.'
+    && value !== '..'
+    && !/[<>:"/\\|?*\u0000-\u001f]/.test(value)
+    && !/[. ]$/.test(value)
+    && !WINDOWS_RESERVED_NAME_PATTERN.test(value)
+  );
+}
 
 function defaultConfigPath() {
   const baseDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), '.config');
   return path.join(baseDirectory, 'Volputas', 'local-config.json');
+}
+
+function validateDataRepositoryPath(value) {
+  const dataRepositoryPath = value?.trim();
+  if (!dataRepositoryPath || !path.isAbsolute(dataRepositoryPath)) {
+    throw Object.assign(new Error('Data repository path must be an absolute path'), {
+      code: 'INVALID_DATA_REPOSITORY_PATH',
+    });
+  }
+  return path.resolve(dataRepositoryPath);
 }
 
 function validateLocalConfig(value) {
@@ -17,24 +39,19 @@ function validateLocalConfig(value) {
     });
   }
 
-  const dataRepositoryPath = value.dataRepositoryPath?.trim();
-  const githubName = value.githubName?.trim();
+  const dataRepositoryPath = validateDataRepositoryPath(value.dataRepositoryPath);
+  const name = (value.name ?? value.githubName)?.trim();
 
-  if (!dataRepositoryPath || !path.isAbsolute(dataRepositoryPath)) {
-    throw Object.assign(new Error('Data repository path must be an absolute path'), {
-      code: 'INVALID_DATA_REPOSITORY_PATH',
-    });
-  }
-  if (!githubName || !GITHUB_NAME_PATTERN.test(githubName)) {
-    throw Object.assign(new Error('GitHub name must be a valid GitHub account name'), {
-      code: 'INVALID_GITHUB_NAME',
+  if (!isSafeAnswerOwnerName(name)) {
+    throw Object.assign(new Error('Git Author name cannot be used as an answer folder name'), {
+      code: 'INVALID_ANSWER_OWNER_NAME',
     });
   }
 
   return {
-    schemaVersion: 1,
-    dataRepositoryPath: path.resolve(dataRepositoryPath),
-    githubName,
+    schemaVersion: 2,
+    dataRepositoryPath,
+    name,
   };
 }
 
@@ -79,8 +96,9 @@ class LocalConfigStore {
 }
 
 module.exports = {
-  GITHUB_NAME_PATTERN,
   LocalConfigStore,
   defaultConfigPath,
+  isSafeAnswerOwnerName,
+  validateDataRepositoryPath,
   validateLocalConfig,
 };

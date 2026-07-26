@@ -3,6 +3,7 @@ const helmet = require('helmet');
 const fs = require('node:fs');
 const path = require('node:path');
 const { LocalConfigStore } = require('./local/localConfigStore');
+const { GitCli } = require('./local/gitCli');
 const { GitAuthorReader } = require('./local/gitAuthorReader');
 const { LocalResponseStore } = require('./local/localResponseStore');
 const { SurveyDefinitionStore } = require('./local/surveyDefinitionStore');
@@ -11,6 +12,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 
 function createLocalApp({
   configStore = new LocalConfigStore(),
+  gitCli = new GitCli(),
   gitAuthorReader = new GitAuthorReader(),
   responseStore = new LocalResponseStore(),
   surveyDefinitionStore = new SurveyDefinitionStore(),
@@ -31,6 +33,7 @@ function createLocalApp({
   });
   app.use('/api/local', createLocalRoutes({
     configStore,
+    gitCli,
     gitAuthorReader,
     responseStore,
     surveyDefinitionStore,

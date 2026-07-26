@@ -2,13 +2,13 @@ async function listSurveysWithResponseStatus({
   surveys,
   responseStore,
   repositoryRoot,
-  githubName,
+  name,
 }) {
   return Promise.all(
     surveys.map(async (survey) => {
       const response = await responseStore.read({
         repositoryRoot,
-        githubName,
+        name,
         surveyId: survey.id,
       });
       return {

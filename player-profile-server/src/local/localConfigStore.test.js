@@ -8,22 +8,36 @@ const {
   validateLocalConfig,
 } = require('./localConfigStore');
 
-test('validates absolute repository paths and GitHub account names', () => {
+test('validates absolute repository paths and portable Git Author folder names', () => {
   const result = validateLocalConfig({
     dataRepositoryPath: path.resolve('Volputas-Data'),
-    githubName: 'neco-user',
+    name: 'k.mitarai',
   });
-  assert.equal(result.githubName, 'neco-user');
-  assert.equal(result.schemaVersion, 1);
+  assert.equal(result.name, 'k.mitarai');
+  assert.equal(result.schemaVersion, 2);
 
   assert.throws(
-    () => validateLocalConfig({ dataRepositoryPath: 'relative', githubName: 'neco' }),
+    () => validateLocalConfig({ dataRepositoryPath: 'relative', name: 'neco' }),
     { code: 'INVALID_DATA_REPOSITORY_PATH' }
   );
   assert.throws(
-    () => validateLocalConfig({ dataRepositoryPath: path.resolve('data'), githubName: '../neco' }),
-    { code: 'INVALID_GITHUB_NAME' }
+    () => validateLocalConfig({ dataRepositoryPath: path.resolve('data'), name: '../neco' }),
+    { code: 'INVALID_ANSWER_OWNER_NAME' }
   );
+  assert.throws(
+    () => validateLocalConfig({ dataRepositoryPath: path.resolve('data'), name: 'CON' }),
+    { code: 'INVALID_ANSWER_OWNER_NAME' }
+  );
+});
+
+test('migrates the legacy githubName setting to Name', () => {
+  const config = validateLocalConfig({
+    dataRepositoryPath: path.resolve('Volputas-Data'),
+    githubName: 'legacy-name',
+  });
+  assert.equal(config.name, 'legacy-name');
+  assert.equal(config.githubName, undefined);
+  assert.equal(config.schemaVersion, 2);
 });
 
 test('writes and reads local configuration atomically', async (t) => {
@@ -32,12 +46,12 @@ test('writes and reads local configuration atomically', async (t) => {
   const store = new LocalConfigStore(path.join(directory, 'config.json'));
   const expected = {
     dataRepositoryPath: path.join(directory, 'Volputas-Data'),
-    githubName: 'neco',
+    name: 'neco',
   };
 
   assert.equal(await store.read(), null);
   await store.write(expected);
   const actual = await store.read();
-  assert.equal(actual.githubName, expected.githubName);
+  assert.equal(actual.name, expected.name);
   assert.equal(actual.dataRepositoryPath, path.resolve(expected.dataRepositoryPath));
 });

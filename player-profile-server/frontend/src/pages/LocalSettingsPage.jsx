@@ -6,12 +6,12 @@ import '../styles/local.css';
 
 const EMPTY_FORM = {
   dataRepositoryPath: '',
-  githubName: '',
 };
 
 export default function LocalSettingsPage() {
   const { reloadSurveys } = useOutletContext();
   const [form, setForm] = useState(EMPTY_FORM);
+  const [gitStatus, setGitStatus] = useState(null);
   const [gitAuthor, setGitAuthor] = useState(null);
   const [configurationError, setConfigurationError] = useState('');
   const [error, setError] = useState('');
@@ -20,11 +20,17 @@ export default function LocalSettingsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    localApi('/api/local/config')
-      .then((data) => {
-        if (data.config) setForm(data.config);
-        setGitAuthor(data.gitAuthor);
-        setConfigurationError(data.configurationError || '');
+    Promise.all([
+      localApi('/api/local/config'),
+      localApi('/api/local/environment'),
+    ])
+      .then(([configData, environmentData]) => {
+        if (configData.config) {
+          setForm({ dataRepositoryPath: configData.config.dataRepositoryPath });
+        }
+        setGitAuthor(configData.gitAuthor);
+        setConfigurationError(configData.configurationError || '');
+        setGitStatus(environmentData.git);
       })
       .catch((requestError) => setError(requestError.message))
       .finally(() => setLoading(false));
@@ -42,14 +48,28 @@ export default function LocalSettingsPage() {
     setConfigurationError('');
     try {
       const data = await localApi('/api/local/config', { method: 'PUT', body: form });
-      setForm(data.config);
+      setForm({ dataRepositoryPath: data.config.dataRepositoryPath });
       setGitAuthor(data.gitAuthor);
       await reloadSurveys();
-      setSuccess('設定を保存しました');
+      setSuccess(`設定を保存しました。回答フォルダ名: ${data.config.name}`);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function chooseRepository() {
+    const selectedPath = await window.volputasDesktop?.chooseDataRepository();
+    if (selectedPath) updateField('dataRepositoryPath', selectedPath);
+  }
+
+  async function openSetupScripts() {
+    try {
+      const result = await window.volputasDesktop?.openSetupScripts();
+      if (result) setError(result);
+    } catch (requestError) {
+      setError(requestError.message);
     }
   }
 
@@ -59,7 +79,7 @@ export default function LocalSettingsPage() {
     <div>
       <div className="page-header">
         <h2>Local Settings</h2>
-        <p>回答を保存するGitリポジトリとGitHub名を設定します。</p>
+        <p>回答を保存するGitリポジトリを選択します。NameはGit Authorから自動設定されます。</p>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -68,34 +88,46 @@ export default function LocalSettingsPage() {
 
       <div className="settings-grid local-settings-grid">
         <form className="card" onSubmit={save}>
-          <h3>Volputas-Data</h3>
+          <h3>VolputasData</h3>
+          <div className={`git-cli-status ${gitStatus?.available ? 'available' : 'unavailable'}`}>
+            <strong>Git CLI</strong>
+            <span>
+              {gitStatus?.available
+                ? `${gitStatus.version} — PATH確認済み`
+                : gitStatus?.error || '確認中'}
+            </span>
+          </div>
           <div className="form-group">
             <label className="field-label" htmlFor="data-repository-path">
               データリポジトリのローカルパス
             </label>
-            <input
-              id="data-repository-path"
-              value={form.dataRepositoryPath}
-              onChange={(event) => updateField('dataRepositoryPath', event.target.value)}
-              placeholder="例: E:\Data\Volputas-Data"
-              required
-            />
+            <div className="repository-path-input">
+              <input
+                id="data-repository-path"
+                value={form.dataRepositoryPath}
+                onChange={(event) => updateField('dataRepositoryPath', event.target.value)}
+                placeholder="例: E:\Data\VolputasData"
+                required
+              />
+              {window.volputasDesktop && (
+                <button type="button" className="btn-outline" onClick={chooseRepository}>
+                  選択
+                </button>
+              )}
+            </div>
           </div>
-          <div className="form-group">
-            <label className="field-label" htmlFor="github-name">
-              GitHub名
-            </label>
-            <input
-              id="github-name"
-              value={form.githubName}
-              onChange={(event) => updateField('githubName', event.target.value)}
-              placeholder="octocat"
-              required
-            />
-          </div>
-          <button type="submit" className="btn-primary" disabled={saving}>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={saving || !gitStatus?.available}
+          >
             {saving ? '保存中...' : '設定を保存'}
           </button>
+          {window.volputasDesktop && (
+            <button type="button" className="btn-outline setup-script-button" onClick={openSetupScripts}>
+              VolputasDataセットアップスクリプトを開く
+            </button>
+          )}
         </form>
 
         <section className="card">
@@ -113,7 +145,7 @@ export default function LocalSettingsPage() {
             </dl>
           ) : (
             <p className="muted">
-              設定保存時に、対象リポジトリのgit user.nameとuser.emailを確認します。
+              設定保存時に、対象リポジトリのgit user.nameとuser.emailを自動取得します。
             </p>
           )}
         </section>

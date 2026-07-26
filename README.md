@@ -10,7 +10,7 @@
 Excubitorから起動する。初回起動後にSettingsで次を設定する。
 
 - 任意のGitHubリポジトリをcloneした、データリポジトリの絶対パス
-- 回答フォルダに使うGitHub名
+- 回答フォルダに使うName（Git Authorから自動設定）
 
 設定保存時に対象リポジトリの`git config user.name`と`user.email`を検証する。
 標準アンケートが未作成なら`surveys/gamer-preference.json`へ作成し、既存JSONは
@@ -24,16 +24,40 @@ Volputas-Data/
 ├── surveys/
 │   └── gamer-preference.json
 └── answers/
-    └── <GitHub名>/
+    └── <Name>/
         └── gamer-preference.json
 ```
 
-回答JSONにはGitHub名とGit Authorを記録する。アプリは自動commit/pushを行わないため、
+回答JSONにはNameとGit Authorを記録する。アプリは自動commit/pushを行わないため、
 レビュー後に通常のGitフローでデータリポジトリへ反映する。
 
-一覧の回答状態は`answers/<GitHub名>/<survey-id>.json`の存在から算出する。
+Nameはデータリポジトリの`git config user.name`から自動設定する。
+一覧の回答状態は`answers/<Name>/<survey-id>.json`の存在から算出する。
 回答ファイルがあれば`answered`、なければ`unanswered`とし、状態だけを保存する
 別ファイルは作成しない。
+
+## デスクトップ版
+
+Electron版はGit CLIがPATHから実行できることを確認し、選択したVolputasData
+リポジトリの`git config user.name`を回答フォルダのNameへ自動設定する。
+Git AuthorのNameとEmail、GitHubのorigin remoteが不足している場合は設定を保存しない。
+
+```sh
+cd player-profile-server
+npm ci --include=dev
+npm run desktop:make
+```
+
+WindowsではSquirrelインストーラー、macOS/LinuxではZIPを作成する。
+VolputasDataのcloneと設定JSON作成をまとめたサンプルは次に置く。パッケージ版にも
+`resources/setup-samples`として同梱する。
+
+- Windows: `desktop/setup-samples/setup-volputas-data.ps1`
+- macOS / Linux: `desktop/setup-samples/setup-volputas-data.sh`
+
+公開GitHub Releasesを更新元として、パッケージ版は起動時と10分ごとに更新を確認する。
+自動更新対象はElectronが対応するWindowsとmacOS。macOSの更新配布には署名が必要。
+`npm run desktop:publish`はGitHub Releaseをドラフト作成するため、成果物確認後に公開する。
 
 ## 機能
 

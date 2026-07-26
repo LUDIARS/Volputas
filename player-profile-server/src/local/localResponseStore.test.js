@@ -34,14 +34,14 @@ test('requires complete answers that follow the survey definition', () => {
   );
 });
 
-test('stores responses below answers/GitHub-name with Git author metadata', async (t) => {
+test('stores responses below answers/Name with Git author metadata', async (t) => {
   const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-responses-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const store = new LocalResponseStore(() => new Date('2026-07-25T00:00:00.000Z'));
 
   const result = await store.write({
     repositoryRoot,
-    githubName: 'neco',
+    name: 'neco',
     author: {
       name: 'Neco',
       email: 'neco@example.test',
@@ -55,6 +55,8 @@ test('stores responses below answers/GitHub-name with Git author metadata', asyn
     result.filePath,
     path.join(repositoryRoot, 'answers', 'neco', 'sample.json')
   );
+  assert.equal(result.response.schemaVersion, 2);
+  assert.equal(result.response.respondent.name, 'neco');
   assert.equal(result.response.respondent.gitAuthor.name, 'Neco');
   assert.equal(
     result.response.dataRepository.remoteUrl,
@@ -62,7 +64,7 @@ test('stores responses below answers/GitHub-name with Git author metadata', asyn
   );
   assert.equal(result.response.updatedAt, '2026-07-25T00:00:00.000Z');
   assert.deepEqual(
-    await store.read({ repositoryRoot, githubName: 'neco', surveyId: 'sample' }),
+    await store.read({ repositoryRoot, name: 'neco', surveyId: 'sample' }),
     result.response
   );
 });

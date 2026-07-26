@@ -17,7 +17,7 @@ test('marks each survey answered or unanswered from its response file', async ()
     ],
     responseStore,
     repositoryRoot: 'C:\\data',
-    githubName: 'neco',
+    name: 'neco',
   });
 
   assert.deepEqual(result, [

@@ -44,7 +44,7 @@ test('local workflow initializes repository survey JSON and writes a Git-attribu
   const configStore = new LocalConfigStore(path.join(root, 'config.json'));
   const config = await configStore.write({
     dataRepositoryPath: repositoryPath,
-    githubName: 'neco',
+    name: 'neco',
   });
   const author = await new GitAuthorReader().read(config.dataRepositoryPath);
   const surveyStore = new SurveyDefinitionStore();
@@ -58,7 +58,7 @@ test('local workflow initializes repository survey JSON and writes a Git-attribu
   );
   const result = await responseStore.write({
     repositoryRoot: author.repositoryRoot,
-    githubName: config.githubName,
+    name: config.name,
     author,
     survey,
     answers,
