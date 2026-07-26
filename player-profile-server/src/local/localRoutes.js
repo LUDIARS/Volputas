@@ -42,15 +42,18 @@ function createLocalRoutes({
   });
 
   async function configuredContext() {
-    const config = await configStore.read();
-    if (!config) {
+    const storedConfig = await configStore.read();
+    if (!storedConfig) {
       throw new AppError(
         409,
         'LOCAL_CONFIG_REQUIRED',
         'Set the data repository and GitHub name in Settings first'
       );
     }
-    const gitAuthor = await gitAuthorReader.read(config.dataRepositoryPath);
+    const gitAuthor = await gitAuthorReader.read(storedConfig.dataRepositoryPath);
+    const config = storedConfig.name === gitAuthor.name
+      ? storedConfig
+      : await configStore.write({ ...storedConfig, name: gitAuthor.name });
     return { config, gitAuthor };
   }
 
@@ -101,20 +104,23 @@ function createLocalRoutes({
 
   router.get('/config', async (_req, res, next) => {
     try {
-      const config = await configStore.read();
-      if (!config) {
+      const storedConfig = await configStore.read();
+      if (!storedConfig) {
         return res.json({ ok: true, data: { configured: false, config: null, gitAuthor: null } });
       }
 
       try {
-        const gitAuthor = await gitAuthorReader.read(config.dataRepositoryPath);
+        const gitAuthor = await gitAuthorReader.read(storedConfig.dataRepositoryPath);
+        const config = storedConfig.name === gitAuthor.name
+          ? storedConfig
+          : await configStore.write({ ...storedConfig, name: gitAuthor.name });
         return res.json({ ok: true, data: { configured: true, config, gitAuthor } });
       } catch (error) {
         return res.json({
           ok: true,
           data: {
             configured: true,
-            config,
+            config: storedConfig,
             gitAuthor: null,
             configurationError: error.message,
           },
