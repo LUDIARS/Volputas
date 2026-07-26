@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import ProfileFeatureLayout from '../components/ProfileFeatureLayout';
 import ProfileField from '../components/ProfileField';
-import { localApi } from '../lib/localApi';
+import { useProfileClient } from '../lib/profileClient';
 
 const INITIAL_FORM = {
   gameTitle: '',
@@ -21,6 +21,7 @@ const SENTIMENTS = {
 };
 
 export default function VoicePage() {
+  const client = useProfileClient();
   const [form, setForm] = useState(INITIAL_FORM);
   const [records, setRecords] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -28,8 +29,8 @@ export default function VoicePage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    localApi('/api/local/voices').then(setRecords).catch((reason) => setError(reason.message));
-  }, []);
+    client.list('voices').then(setRecords).catch((reason) => setError(reason.message));
+  }, [client]);
 
   function update(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -41,7 +42,7 @@ export default function VoicePage() {
     setError('');
     setSuccess('');
     try {
-      const result = await localApi('/api/local/voices', { method: 'POST', body: form });
+      const result = await client.create('voices', form);
       setRecords((current) => [result.record, ...current]);
       setForm(INITIAL_FORM);
       setSuccess('ユーザの声を保存しました。');

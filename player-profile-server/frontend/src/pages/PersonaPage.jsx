@@ -1,23 +1,24 @@
 import { useEffect, useState } from 'react';
 import RadarChart from '../components/RadarChart';
-import { localApi } from '../lib/localApi';
+import { useProfileClient } from '../lib/profileClient';
 
 export default function PersonaPage() {
+  const client = useProfileClient();
   const [status, setStatus] = useState(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    localApi('/api/local/persona').then(setStatus).catch((reason) => setError(reason.message));
-  }, []);
+    client.personaStatus().then(setStatus).catch((reason) => setError(reason.message));
+  }, [client]);
 
   async function analyze() {
     setRunning(true);
     setError('');
     setMessage('');
     try {
-      const result = await localApi('/api/local/persona/analyze', { method: 'POST' });
+      const result = await client.analyzePersona();
       setStatus((current) => ({ ...current, analysis: result.analysis, stale: false }));
       setMessage(result.recomputed
         ? '更新された入力を使ってペルソナを再分析しました。'

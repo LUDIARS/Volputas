@@ -5,7 +5,7 @@ const {
   validateEmotionCurveInput,
   validateGameplayInput,
   validateVoiceInput,
-} = require('./profileInputSchemas');
+} = require('../services/profileEvidenceSchemas');
 
 test('dedication uses only supplied gameplay evidence and reports confidence', () => {
   assert.deepEqual(calculateDedication({

@@ -1,24 +1,9 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { createHash, randomUUID } = require('node:crypto');
-const { analyzePersona } = require('./personaAnalysisEngine');
-const { collectionDirectory, insideRepository } = require('./profileDataPaths');
-
-function canonicalize(value) {
-  if (Array.isArray(value)) return value.map(canonicalize);
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.keys(value).sort().map((key) => [key, canonicalize(value[key])])
-    );
-  }
-  return value;
-}
-
-function fingerprintSources(sources) {
-  return createHash('sha256')
-    .update(JSON.stringify(canonicalize(sources)))
-    .digest('hex');
-}
+const { randomUUID } = require('node:crypto');
+const { analyzePersona } = require('../services/personaEvidenceAnalysis');
+const { collectionDirectory, insideRepository } = require('../services/profileDataPaths');
+const { canonicalize, fingerprintSources } = require('../services/personaFingerprint');
 
 async function readJsonFiles(directory) {
   let entries;

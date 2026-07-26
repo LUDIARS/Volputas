@@ -1,7 +1,7 @@
 const fs = require('node:fs/promises');
 const { randomUUID } = require('node:crypto');
 const path = require('node:path');
-const { collectionDirectory, recordPath } = require('./profileDataPaths');
+const { collectionDirectory, recordPath } = require('../services/profileDataPaths');
 
 class ProfileRecordStore {
   constructor(collection, now = () => new Date()) {

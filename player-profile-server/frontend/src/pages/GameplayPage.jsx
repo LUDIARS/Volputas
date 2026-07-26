@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import ProfileFeatureLayout from '../components/ProfileFeatureLayout';
 import ProfileField from '../components/ProfileField';
-import { localApi, localUpload } from '../lib/localApi';
+import ProfileMedia from '../components/ProfileMedia';
+import { useProfileClient } from '../lib/profileClient';
 
 const INITIAL_FORM = {
   gameTitle: '',
@@ -24,6 +25,7 @@ function confidenceLabel(value) {
 }
 
 export default function GameplayPage() {
+  const client = useProfileClient();
   const [form, setForm] = useState(INITIAL_FORM);
   const [file, setFile] = useState(null);
   const [records, setRecords] = useState([]);
@@ -32,8 +34,8 @@ export default function GameplayPage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    localApi('/api/local/gameplay').then(setRecords).catch((reason) => setError(reason.message));
-  }, []);
+    client.list('gameplay').then(setRecords).catch((reason) => setError(reason.message));
+  }, [client]);
 
   function update(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -46,13 +48,13 @@ export default function GameplayPage() {
     setError('');
     setSuccess('');
     try {
-      const result = await localApi('/api/local/gameplay', {
-        method: 'POST',
-        body: { ...form, screenshotFileName: file?.name || '' },
-      });
+      const result = await client.create(
+        'gameplay',
+        { ...form, screenshotFileName: file?.name || '' }
+      );
       if (file) {
         try {
-          await localUpload(`/api/local/media/screenshots/${result.record.id}`, file);
+          await client.upload('screenshots', result.record.id, file);
         } catch (uploadError) {
           throw new Error(`記録は保存しましたが画像を保存できませんでした: ${uploadError.message}`);
         }
@@ -139,7 +141,12 @@ export default function GameplayPage() {
             {record.completionPercent !== null && <span className="tag">達成 {record.completionPercent}%</span>}
           </div>
           {record.screenshotFileName && (
-            <img className="gameplay-screenshot" src={`/api/local/media/screenshots/${record.id}`} alt={`${record.gameTitle} screenshot`} />
+            <ProfileMedia
+              className="gameplay-screenshot"
+              kind="screenshots"
+              recordId={record.id}
+              alt={`${record.gameTitle} screenshot`}
+            />
           )}
           {record.userInfo && <p className="record-comment">{record.userInfo}</p>}
         </article>

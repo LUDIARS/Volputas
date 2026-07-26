@@ -50,6 +50,9 @@ test('reports Git PATH status and derives the answer folder Name from Git Author
     response.json());
   assert.deepEqual(environment.data.git, gitStatus);
 
+  const runtime = await fetch(`${origin}/api/runtime`).then((response) => response.json());
+  assert.deepEqual(runtime.data, { mode: 'local', authentication: 'none' });
+
   const configured = await fetch(`${origin}/api/local/config`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },

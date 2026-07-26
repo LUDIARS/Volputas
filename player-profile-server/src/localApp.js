@@ -1,6 +1,5 @@
 const express = require('express');
 const helmet = require('helmet');
-const fs = require('node:fs');
 const path = require('node:path');
 const { LocalConfigStore } = require('./local/localConfigStore');
 const { GitCli } = require('./local/gitCli');
@@ -9,7 +8,8 @@ const { LocalResponseStore } = require('./local/localResponseStore');
 const { SurveyDefinitionStore } = require('./local/surveyDefinitionStore');
 const { createLocalRoutes } = require('./local/localRoutes');
 const { PersonaService } = require('./local/personaService');
-const { ProfileMediaStore } = require('./local/profileMediaStore');
+const { ProfileMediaStore } = require('./services/profileMediaStore');
+const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
 const { ProfileRecordStore } = require('./local/profileRecordStore');
 const { errorHandler } = require('./middleware/errorHandler');
 
@@ -27,11 +27,7 @@ function createLocalApp({
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
   serveFrontend = true,
 } = {}) {
-  if (serveFrontend && !fs.existsSync(path.join(frontendDirectory, 'index.html'))) {
-    throw Object.assign(new Error('Frontend build is missing; run the local start script through npm'), {
-      code: 'FRONTEND_BUILD_MISSING',
-    });
-  }
+  if (serveFrontend) assertFrontendBuild(frontendDirectory);
 
   const app = express();
   const resolvedPersonaService = personaService || new PersonaService({
@@ -43,6 +39,9 @@ function createLocalApp({
   app.use(express.json({ limit: '1mb' }));
   app.get('/health', (_req, res) => {
     res.json({ ok: true, service: 'volputas', mode: 'local' });
+  });
+  app.get('/api/runtime', (_req, res) => {
+    res.json({ ok: true, data: { mode: 'local', authentication: 'none' } });
   });
   app.use('/api/local', createLocalRoutes({
     configStore,
@@ -58,8 +57,7 @@ function createLocalApp({
   }));
 
   if (serveFrontend) {
-    app.use(express.static(frontendDirectory));
-    app.get('*', (_req, res) => res.sendFile(path.join(frontendDirectory, 'index.html')));
+    mountFrontend(app, frontendDirectory);
   }
 
   app.use((_req, res) => {

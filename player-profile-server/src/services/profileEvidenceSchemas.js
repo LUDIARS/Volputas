@@ -1,3 +1,4 @@
+// Shared validation contract for local and authenticated profile evidence.
 function requiredText(value, label, maximum = 200) {
   const normalized = typeof value === 'string' ? value.trim() : '';
   if (!normalized) {

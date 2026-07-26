@@ -9,7 +9,7 @@ const {
   validateEmotionCurveInput,
   validateGameplayInput,
   validateVoiceInput,
-} = require('./profileInputSchemas');
+} = require('../services/profileEvidenceSchemas');
 
 function asAppError(error, statusCode = 400) {
   if (error instanceof AppError) return error;

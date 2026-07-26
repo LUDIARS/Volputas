@@ -1,8 +1,40 @@
-# Player Profile Backend
+# Volputas
 
-ローカル専用アンケートツールです。従来のIdPフェデレーション、ゲームプレイロギング、
-嗜好・感情分析バックエンドも同じリポジトリ内に残していますが、既定のExcubitor起動は
-無認証のローカルモードを使用します。
+ゲームアンケート、ゲームプレイ情報、ユーザの声、動画上の感情曲線、ペルソナ分析を
+扱うプレイヤーリサーチツールです。同じReact UIを、Git-backedのローカルモードと
+Cernere認証を使うオンラインモードで利用できます。既定のExcubitor起動は無認証の
+ローカルモードです。
+
+## データモード
+
+| モード | 認証 | データの正本 |
+|---|---|---|
+| ローカル | なし | 指定したVolputasData Gitリポジトリ |
+| オンライン | Cernere OIDC | Cernereの`volputas` managed project |
+
+オンラインでは、アンケート回答、ゲームプレイ情報、ユーザの声、感情曲線、
+ペルソナ分析、メディア参照情報をCernereが所有します。スクリーンショットと動画の
+バイト列だけは、巨大なバイナリをJSONへ格納しないためVolputasの保護ストレージへ置き、
+Cernere側の所有者・種別・サイズ・参照情報を通さない限り取得できません。
+
+オンライン起動に必要な設定は次のとおりです。
+
+```dotenv
+CERNERE_BASE_URL=https://cernere.example.com
+CERNERE_PROJECT_CLIENT_ID=...
+CERNERE_PROJECT_CLIENT_SECRET=...
+CERNERE_OIDC_CLIENT_ID=...
+CERNERE_OIDC_CLIENT_SECRET=...
+CERNERE_OIDC_CALLBACK_URL=https://volputas.example.com/auth/callback
+FRONTEND_URL=https://volputas.example.com
+AUTH_SOURCES=cernere
+VOLPUTAS_MEDIA_ROOT=/var/lib/volputas/profile-media
+```
+
+Cernere側へ`migrations/036_volputas_survey_responses.sql`と
+`037_volputas_profile_evidence_schema.sql`を適用し、Volputas用project credentialsと
+OIDC clientを発行してから設定します。`npm start`とDockerイメージは共通React UIも
+ビルド・配信します。
 
 ## ローカル専用アンケート
 

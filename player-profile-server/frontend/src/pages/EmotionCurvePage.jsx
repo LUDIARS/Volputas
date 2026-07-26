@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ProfileFeatureLayout from '../components/ProfileFeatureLayout';
 import ProfileField from '../components/ProfileField';
-import { localApi, localUpload } from '../lib/localApi';
+import ProfileMedia from '../components/ProfileMedia';
+import { useProfileClient } from '../lib/profileClient';
 
 const EMPTY_ENTRY = { timeSeconds: '0', valence: '0', arousal: '3', comment: '' };
 const INITIAL_FORM = {
@@ -20,6 +21,7 @@ function formatTime(seconds) {
 }
 
 export default function EmotionCurvePage() {
+  const client = useProfileClient();
   const [form, setForm] = useState(INITIAL_FORM);
   const [entries, setEntries] = useState([{ ...EMPTY_ENTRY }]);
   const [file, setFile] = useState(null);
@@ -31,8 +33,8 @@ export default function EmotionCurvePage() {
   const previewUrl = useMemo(() => file ? URL.createObjectURL(file) : '', [file]);
 
   useEffect(() => {
-    localApi('/api/local/emotion-curves').then(setRecords).catch((reason) => setError(reason.message));
-  }, []);
+    client.list('emotion-curves').then(setRecords).catch((reason) => setError(reason.message));
+  }, [client]);
 
   useEffect(() => () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -63,12 +65,12 @@ export default function EmotionCurvePage() {
     setError('');
     setSuccess('');
     try {
-      const result = await localApi('/api/local/emotion-curves', {
-        method: 'POST',
-        body: { ...form, entries, videoFileName: file.name },
-      });
+      const result = await client.create(
+        'emotion-curves',
+        { ...form, entries, videoFileName: file.name }
+      );
       try {
-        await localUpload(`/api/local/media/videos/${result.record.id}`, file);
+        await client.upload('videos', result.record.id, file);
       } catch (uploadError) {
         throw new Error(`記録は保存しましたが動画を保存できませんでした: ${uploadError.message}`);
       }
@@ -187,7 +189,14 @@ export default function EmotionCurvePage() {
             <div><h4>{record.gameTitle}</h4><span>{record.sessionLabel || 'セッション名なし'}</span></div>
             {record.daysAfterPlay !== null && <span className="tag">プレイ後 {record.daysAfterPlay} 日</span>}
           </div>
-          <video className="emotion-video" src={`/api/local/media/videos/${record.id}`} controls preload="metadata" />
+          <ProfileMedia
+            as="video"
+            className="emotion-video"
+            kind="videos"
+            recordId={record.id}
+            controls
+            preload="metadata"
+          />
           <div className="emotion-timeline">
             {record.entries.map((entry, index) => (
               <div className="emotion-point" key={`${entry.timeSeconds}-${index}`}>

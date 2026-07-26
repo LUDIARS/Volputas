@@ -10,6 +10,7 @@ const {
   insideRepository,
 } = require('./profileDataPaths');
 
+// Media policy is identical in local and authenticated modes.
 const MEDIA_RULES = {
   screenshots: {
     contentTypes: {
@@ -84,6 +85,13 @@ class ProfileMediaStore {
       }
     }
     return null;
+  }
+
+  async remove(context) {
+    const media = await this.resolve(context);
+    if (!media) return false;
+    await fsPromises.unlink(media.filePath);
+    return true;
   }
 }
 

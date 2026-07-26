@@ -2,9 +2,14 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const fs = require('node:fs');
+const path = require('node:path');
 const config = require('./config');
 const { errorHandler } = require('./middleware/errorHandler');
 const { initKeyStore } = require('./services/jwks');
+const { closeProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
+const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
+const { assertOnlineConfiguration } = require('./services/onlineConfiguration');
 
 // Route imports
 const authRoutes = require('./routes/auth');
@@ -17,8 +22,10 @@ const steamRoutes = require('./routes/steam');
 const healthRoutes = require('./routes/health');
 const timelineRoutes = require('./routes/timelines');
 const delegationRoutes = require('./routes/delegations');
+const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
 
 const app = express();
+const frontendDirectory = path.resolve(__dirname, '../frontend/dist');
 
 // Security middleware
 app.use(helmet());
@@ -47,6 +54,9 @@ app.use('/auth', rateLimit({
 
 // Health routes (no auth)
 app.use('/health', healthRoutes);
+app.get('/api/runtime', (_req, res) => {
+  res.json({ ok: true, data: { mode: 'online', authentication: 'cernere' } });
+});
 
 // API v1 routes
 app.use('/api/v1/users', userRoutes);
@@ -63,6 +73,11 @@ app.use('/api/v1/users/me/steam', steamRoutes);
 app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/v1', timelineRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
+app.use('/api/v1/profile-data', profileEvidenceRoutes);
+
+if (fs.existsSync(path.join(frontendDirectory, 'index.html'))) {
+  mountFrontend(app, frontendDirectory);
+}
 
 // 404 handler
 app.use((_req, res) => {
@@ -78,12 +93,20 @@ app.use(errorHandler);
 // Start server
 async function start() {
   try {
+    assertOnlineConfiguration(config);
+    assertFrontendBuild(frontendDirectory);
     await initKeyStore();
     console.log('JWKS key store initialized');
 
-    app.listen(config.port, () => {
+    const server = app.listen(config.port, () => {
       console.log(`Player Profile Server running on port ${config.port} [${config.nodeEnv}]`);
     });
+    const shutdown = () => {
+      closeProfileEvidenceStore();
+      server.close();
+    };
+    process.once('SIGINT', shutdown);
+    process.once('SIGTERM', shutdown);
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

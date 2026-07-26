@@ -1,3 +1,7 @@
+const path = require('node:path');
+const port = process.env.PORT || 3000;
+const frontendUrl = process.env.FRONTEND_URL || `http://localhost:${port}`;
+
 function commaSeparated(value, fallback) {
   return (value || fallback)
     .split(',')
@@ -6,12 +10,18 @@ function commaSeparated(value, fallback) {
 }
 
 const config = {
-  port: process.env.PORT || 3000,
+  port,
   nodeEnv: process.env.NODE_ENV || 'development',
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendUrl,
+
+  cernere: {
+    baseUrl: (process.env.CERNERE_BASE_URL || '').replace(/\/+$/, ''),
+    projectClientId: process.env.CERNERE_PROJECT_CLIENT_ID?.trim() || '',
+    projectClientSecret: process.env.CERNERE_PROJECT_CLIENT_SECRET || '',
+  },
 
   auth: {
-    sources: commaSeparated(process.env.AUTH_SOURCES, 'google,discord'),
+    sources: commaSeparated(process.env.AUTH_SOURCES, 'cernere'),
   },
 
   redis: {
@@ -22,6 +32,11 @@ const config = {
 
   steam: {
     apiKey: process.env.STEAM_API_KEY || '',
+  },
+
+  profileMedia: {
+    root: process.env.VOLPUTAS_MEDIA_ROOT
+      || path.resolve(__dirname, '../../data/profile-media'),
   },
 
   db: {
@@ -41,6 +56,16 @@ const config = {
   },
 
   oauth: {
+    cernere: {
+      clientId: process.env.CERNERE_OIDC_CLIENT_ID || '',
+      clientSecret: process.env.CERNERE_OIDC_CLIENT_SECRET || '',
+      authorizationUrl: `${(process.env.CERNERE_BASE_URL || '').replace(/\/+$/, '')}/oidc/authorize`,
+      tokenUrl: `${(process.env.CERNERE_BASE_URL || '').replace(/\/+$/, '')}/oidc/token`,
+      userinfoUrl: `${(process.env.CERNERE_BASE_URL || '').replace(/\/+$/, '')}/oidc/userinfo`,
+      callbackUrl: process.env.CERNERE_OIDC_CALLBACK_URL
+        || new URL('/auth/callback', frontendUrl).toString(),
+      scopes: ['openid', 'email', 'profile'],
+    },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',

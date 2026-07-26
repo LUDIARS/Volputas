@@ -2,7 +2,7 @@
   "name": "volputas",
   "productName": "Volputas",
   "version": "1.0.0",
-  "description": "Local-only survey desktop tool for Git-backed VolputasData",
+  "description": "Dual-mode player research tool backed by VolputasData or Cernere",
   "author": "LUDIARS",
   "repository": "https://github.com/LUDIARS/Voluptas",
   "main": "desktop/main.js",
@@ -10,6 +10,7 @@
     "setup:submodules": "node scripts/setup-submodules.js",
     "build:frontend": "npm --prefix frontend run build",
     "prestart:local": "npm run build:frontend",
+    "prestart": "npm run build:frontend",
     "start:local": "node src/localApp.js",
     "start": "node src/app.js",
     "dev": "node --watch src/app.js",
@@ -37,7 +38,8 @@
     "jwks-rsa": "^3.1.0",
     "pg": "^8.13.0",
     "update-electron-app": "^3.3.0",
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "ws": "^8.21.1"
   },
   "engines": {
     "node": ">=20.0.0"

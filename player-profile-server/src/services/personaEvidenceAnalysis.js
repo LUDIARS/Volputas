@@ -1,3 +1,4 @@
+// Deterministic analysis shared by Git-backed and database-backed modes.
 const AXES = [
   ['exploration', '探索志向'],
   ['mastery', '習熟志向'],
@@ -133,7 +134,7 @@ function analyzePersona(sources, analyzedAt) {
 
   return {
     schemaVersion: 1,
-    modelVersion: 'local-persona-v1',
+    modelVersion: 'evidence-persona-v1',
     analyzedAt,
     axes,
     leadingAxes,
@@ -143,7 +144,7 @@ function analyzePersona(sources, analyzedAt) {
       voices: sources.voices.length,
       emotionCurves: sources.emotionCurves.length,
     },
-    note: '入力済みデータから傾向を可視化するローカル推定です。診断や人物評価ではありません。',
+    note: '入力済みデータから傾向を可視化する推定です。診断や人物評価ではありません。',
   };
 }
 
