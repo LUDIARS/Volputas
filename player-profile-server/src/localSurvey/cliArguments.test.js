@@ -15,8 +15,9 @@ test('parseLocalSurveyArguments parses file and save-only options', () => {
   );
 });
 
-test('parseLocalSurveyArguments defaults to local-only storage', () => {
-  assert.equal(parseLocalSurveyArguments([]).saveOnly, true);
+test('parseLocalSurveyArguments publishes unless --save-only is given', () => {
+  assert.equal(parseLocalSurveyArguments([]).saveOnly, false);
+  assert.equal(parseLocalSurveyArguments(['--save-only']).saveOnly, true);
 });
 
 test('parseLocalSurveyArguments rejects a missing answers path', () => {

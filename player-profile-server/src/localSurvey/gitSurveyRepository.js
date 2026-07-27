@@ -70,8 +70,8 @@ function verifyRemoteUrl(runGit, configuration, { isPush }) {
     throw new GitSurveyPublisherError(
       isPush ? 'PUSH_REMOTE_URL_MISMATCH' : 'REMOTE_URL_MISMATCH',
       isPush
-        ? 'The survey data push URL does not match the configured repository.'
-        : 'The survey data remote does not match the configured repository.'
+        ? 'The survey data push URL does not match the configured private repository.'
+        : 'The survey data remote does not match the configured private repository.'
     );
   }
 }

@@ -36,7 +36,7 @@ test('CLI does not expose a rejected --answers path', async () => {
     }),
     createRunner: () => ({ run: () => ({ stdout: '' }) }),
     resolveIdentity: () => ({ id: '42', login: 'player' }),
-    assertPublicRepository: () => ({ visibility: 'public' }),
+    assertPrivateRepository: () => ({ isPrivate: true, visibility: 'private' }),
   });
 
   assert.equal(exitCode, 1);

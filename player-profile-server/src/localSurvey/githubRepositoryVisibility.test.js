@@ -4,12 +4,12 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const {
   GithubRepositoryVisibilityError,
-  assertPublicGithubRepository,
+  assertPrivateGithubRepository,
 } = require('./githubRepositoryVisibility');
 
-test('assertPublicGithubRepository accepts only the canonical public repository', () => {
+test('assertPrivateGithubRepository accepts only the canonical private repository', () => {
   const calls = [];
-  const metadata = assertPublicGithubRepository({
+  const metadata = assertPrivateGithubRepository({
     cwd: '/work',
     repository: 'LUDIARS/VolputasData',
     runner: {
@@ -18,7 +18,8 @@ test('assertPublicGithubRepository accepts only the canonical public repository'
         return {
           stdout: JSON.stringify({
             fullName: 'LUDIARS/VolputasData',
-            visibility: 'public',
+            private: true,
+            visibility: 'private',
           }),
         };
       },
@@ -27,7 +28,8 @@ test('assertPublicGithubRepository accepts only the canonical public repository'
 
   assert.deepEqual(metadata, {
     fullName: 'LUDIARS/VolputasData',
-    visibility: 'public',
+    isPrivate: true,
+    visibility: 'private',
   });
   assert.deepEqual(calls[0][1].slice(0, 2), [
     'api',
@@ -35,15 +37,56 @@ test('assertPublicGithubRepository accepts only the canonical public repository'
   ]);
 });
 
-test('assertPublicGithubRepository fails closed for a private repository', () => {
+test('assertPrivateGithubRepository fails closed for a public repository', () => {
   assert.throws(
-    () => assertPublicGithubRepository({
+    () => assertPrivateGithubRepository({
       cwd: '/work',
       repository: 'LUDIARS/VolputasData',
       runner: {
         run: () => ({
           stdout: JSON.stringify({
             fullName: 'LUDIARS/VolputasData',
+            private: false,
+            visibility: 'public',
+          }),
+        }),
+      },
+    }),
+    GithubRepositoryVisibilityError
+  );
+});
+
+test('assertPrivateGithubRepository rejects an internal repository', () => {
+  // `private: true` alone is not enough: an internal repository is visible to the whole
+  // enterprise, which is not the audience a respondent consented to.
+  assert.throws(
+    () => assertPrivateGithubRepository({
+      cwd: '/work',
+      repository: 'LUDIARS/VolputasData',
+      runner: {
+        run: () => ({
+          stdout: JSON.stringify({
+            fullName: 'LUDIARS/VolputasData',
+            private: true,
+            visibility: 'internal',
+          }),
+        }),
+      },
+    }),
+    GithubRepositoryVisibilityError
+  );
+});
+
+test('assertPrivateGithubRepository rejects a different repository', () => {
+  assert.throws(
+    () => assertPrivateGithubRepository({
+      cwd: '/work',
+      repository: 'LUDIARS/VolputasData',
+      runner: {
+        run: () => ({
+          stdout: JSON.stringify({
+            fullName: 'someone-else/VolputasData',
+            private: true,
             visibility: 'private',
           }),
         }),
@@ -53,9 +96,9 @@ test('assertPublicGithubRepository fails closed for a private repository', () =>
   );
 });
 
-test('assertPublicGithubRepository does not expose malformed API output', () => {
+test('assertPrivateGithubRepository does not expose malformed API output', () => {
   assert.throws(
-    () => assertPublicGithubRepository({
+    () => assertPrivateGithubRepository({
       cwd: '/work',
       repository: 'LUDIARS/VolputasData',
       runner: {

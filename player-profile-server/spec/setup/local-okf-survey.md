@@ -8,7 +8,7 @@ tags:
   - setup
   - github-cli
   - git-clone
-  - public-repository
+  - private-repository
 status: implemented
 related:
   - ../plan/local-okf-survey-data.md
@@ -25,6 +25,7 @@ updated: 2026-07-28
 - Node.js 20以上
 - Git
 - GitHub CLI (`gh`)
+- private repository `LUDIARS/VolputasData` へのread/write権限
 
 ## Setup
 
@@ -50,6 +51,13 @@ git -C player-profile-server/private/survey-data status --short --branch
 originは`https://github.com/LUDIARS/VolputasData.git`を指す必要がある。credentialを
 remote URLへ埋め込まない。
 
+visibilityがprivateであることも確認する。回答は本人branchへpushされるため、
+public/internalなrepositoryではCLIが設問を出す前に停止する。
+
+```bash
+gh repo view LUDIARS/VolputasData --json visibility --jq .visibility
+```
+
 ## Run
 
 ```bash
@@ -57,8 +65,12 @@ npm --prefix player-profile-server run survey:local
 npm --prefix player-profile-server run survey:local -- --answers ./answers.json
 ```
 
-回答はlocal-onlyである。`--save-only`は互換性のため受理されるが、指定しなくても
-commit/pushは実行されない。
+既定では回答を本人branch `responses/github-<numeric-id>` へpushする。
+`--save-only`を付けるとlocal本人branchへの保存で止め、commit/pushを行わない。
+
+pushには`config/local-survey.json`の`dataRepository.allowRemotePublish`が`true`である
+必要がある。この項目が無いconfigはpushせず`REMOTE_PUBLICATION_DISABLED`で失敗する
+(push可否を暗黙に獲得させない)。
 
 ## Troubleshooting
 

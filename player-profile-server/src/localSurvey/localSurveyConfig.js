@@ -14,6 +14,17 @@ function requireString(value, field) {
   return value.trim();
 }
 
+// Absent means "do not push". A hand-written config that never mentions remote publication must
+// not gain it silently; a config that mentions it with a non-boolean is a mistake, not a value
+// to coerce.
+function optionalBoolean(value, field) {
+  if (value === undefined) return false;
+  if (typeof value !== 'boolean') {
+    throw new Error(`Local survey config field "${field}" must be a boolean`);
+  }
+  return value;
+}
+
 function loadLocalSurveyConfig({
   configPath = DEFAULT_CONFIG_PATH,
   env = process.env,
@@ -54,6 +65,10 @@ function loadLocalSurveyConfig({
     remote: requireString(repository.remote, 'dataRepository.remote'),
     githubRepository,
     expectedRemoteUrl,
+    allowRemotePublish: optionalBoolean(
+      repository.allowRemotePublish,
+      'dataRepository.allowRemotePublish'
+    ),
     baseBranch: requireString(repository.baseBranch, 'dataRepository.baseBranch'),
     responseBranchPrefix: requireString(
       repository.responseBranchPrefix,

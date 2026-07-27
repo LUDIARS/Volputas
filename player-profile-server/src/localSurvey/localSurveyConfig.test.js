@@ -39,6 +39,41 @@ test('loadLocalSurveyConfig resolves the repository path from the server root', 
   assert.equal(config.githubCommand, 'gh');
 });
 
+test('loadLocalSurveyConfig does not enable remote publication implicitly', () => {
+  const config = loadLocalSurveyConfig({ env: {}, readFile: () => VALID_CONFIG });
+  assert.equal(config.allowRemotePublish, false);
+});
+
+test('loadLocalSurveyConfig reads an explicit remote publication opt-in', () => {
+  const config = loadLocalSurveyConfig({
+    env: {},
+    readFile: () => JSON.stringify({
+      ...JSON.parse(VALID_CONFIG),
+      dataRepository: {
+        ...JSON.parse(VALID_CONFIG).dataRepository,
+        allowRemotePublish: true,
+      },
+    }),
+  });
+  assert.equal(config.allowRemotePublish, true);
+});
+
+test('loadLocalSurveyConfig rejects a non-boolean remote publication flag', () => {
+  assert.throws(
+    () => loadLocalSurveyConfig({
+      env: {},
+      readFile: () => JSON.stringify({
+        ...JSON.parse(VALID_CONFIG),
+        dataRepository: {
+          ...JSON.parse(VALID_CONFIG).dataRepository,
+          allowRemotePublish: 'yes',
+        },
+      }),
+    }),
+    /allowRemotePublish" must be a boolean/
+  );
+});
+
 test('loadLocalSurveyConfig supports an explicit repository directory override', () => {
   const config = loadLocalSurveyConfig({
     env: { VOLUPTAS_SURVEY_DATA_DIR: 'private/alternate-survey-data' },

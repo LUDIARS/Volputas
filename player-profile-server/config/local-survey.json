@@ -6,7 +6,8 @@
     "githubRepository": "LUDIARS/VolputasData",
     "expectedRemoteUrl": "https://github.com/LUDIARS/VolputasData.git",
     "baseBranch": "main",
-    "responseBranchPrefix": "responses/github-"
+    "responseBranchPrefix": "responses/github-",
+    "allowRemotePublish": true
   },
   "commands": {
     "git": "git",

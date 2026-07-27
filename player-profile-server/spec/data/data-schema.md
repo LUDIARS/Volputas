@@ -66,7 +66,7 @@ GitHub identity は `github_user_id`（numeric ID）を安定キーとし、`git
 スナップショットとする。login変更で別人扱いしない。GitHub token、メール、OAuth payload、
 アクセストークン、回答値をログ・commit message・lock fileへ記録しない。
 
-`LUDIARS/VolputasData`はpublic repositoryであり、tracked contentは無制限公開可能でなければならない。
+`LUDIARS/VolputasData`は本人回答をbranchへ保持するためprivate repositoryでなければならない。
 個人回答の保持・削除はlocal operatorの責任とし、repository administratorsは未送信のlocal dataを
 保持しない。個人データが誤commitされた場合は参照削除だけで完了とみなさず、履歴書き換え、
 PR/fork/cache、clone・backupまで含めてincident手順へescalateする。
