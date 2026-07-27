@@ -1,6 +1,5 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { GAMER_SURVEY } = require('./surveyCatalog');
 
 const SURVEY_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CATEGORY_ID_PATTERN = SURVEY_ID_PATTERN;
@@ -93,24 +92,11 @@ function validateSurveyDefinition(value, source = 'survey definition') {
   return value;
 }
 
+// アンケート定義の正本はデータリポジトリの surveys/<survey-id>.json だけである。
+// bundle 内に既定定義を持たせて書き出す経路は持たない (正本が2箇所に分かれ、
+// リポジトリ側を更新しても書き出し済みの古い定義が残り続ける)。
+// 定義が無ければ SURVEY_DATA_MISSING で失敗する。
 class SurveyDefinitionStore {
-  async ensureDefault(repositoryRoot) {
-    const directory = path.join(path.resolve(repositoryRoot), 'surveys');
-    const filePath = path.join(directory, `${GAMER_SURVEY.id}.json`);
-    await fs.mkdir(directory, { recursive: true });
-
-    try {
-      await fs.writeFile(filePath, `${JSON.stringify(GAMER_SURVEY, null, 2)}\n`, {
-        encoding: 'utf8',
-        flag: 'wx',
-      });
-      return { action: 'created', filePath };
-    } catch (error) {
-      if (error.code === 'EEXIST') return { action: 'preserved', filePath };
-      throw error;
-    }
-  }
-
   async list(repositoryRoot) {
     const directory = path.join(path.resolve(repositoryRoot), 'surveys');
     let entries;

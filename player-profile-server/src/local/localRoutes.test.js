@@ -34,9 +34,9 @@ test('reports Git PATH status and derives the answer folder Name from Git Author
     },
     responseStore: {},
     surveyDefinitionStore: {
-      ensureDefault: async (requestedPath) => {
+      list: async (requestedPath) => {
         assert.equal(requestedPath, repositoryRoot);
-        return { action: 'preserved' };
+        return [{ id: 'gamer-preference' }, { id: 'gamer-subtypes' }];
       },
     },
   });
@@ -62,6 +62,10 @@ test('reports Git PATH status and derives the answer folder Name from Git Author
   assert.equal(configured.ok, true);
   assert.equal(savedConfig.name, gitAuthor.name);
   assert.equal(configured.data.config.name, gitAuthor.name);
+  assert.deepEqual(configured.data.surveys, {
+    count: 2,
+    ids: ['gamer-preference', 'gamer-subtypes'],
+  });
 });
 
 test('synchronizes an existing config Name when Git Author changes', async (t) => {

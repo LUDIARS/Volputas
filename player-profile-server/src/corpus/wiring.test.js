@@ -77,7 +77,8 @@ test('runs database migrations before managed backend startup', () => {
     'utf8',
   ));
   assert.equal(packageDocument.scripts.predev, 'npm run migrate');
-  assert.equal(packageDocument.scripts.prestart, 'npm run migrate');
+  // prestart may chain further steps (frontend build), but migrations run first.
+  assert.match(packageDocument.scripts.prestart, /^npm run migrate(?: && |$)/);
 });
 
 test('terminal signals finish owned shutdown before exiting the process', () => {
