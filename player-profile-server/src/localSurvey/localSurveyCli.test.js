@@ -32,11 +32,11 @@ test('CLI does not expose a rejected --answers path', async () => {
       serverRoot: path.resolve('.'),
       githubCommand: 'gh',
       gitCommand: 'git',
-      githubRepository: 'LUDIARS/Voluptas-Data',
+      githubRepository: 'LUDIARS/VolputasData',
     }),
     createRunner: () => ({ run: () => ({ stdout: '' }) }),
     resolveIdentity: () => ({ id: '42', login: 'player' }),
-    assertPrivateRepository: () => ({ isPrivate: true }),
+    assertPublicRepository: () => ({ visibility: 'public' }),
   });
 
   assert.equal(exitCode, 1);
@@ -58,7 +58,7 @@ test('CLI entrypoint accepts no runtime argument and renders help', async () => 
   try {
     const exitCode = await main();
     assert.equal(exitCode, 0);
-    assert.match(output, /Voluptas local OKF survey/);
+    assert.match(output, /Volputas local OKF survey/);
   } finally {
     process.argv = originalArgv;
     process.stdout.write = originalStdoutWrite;

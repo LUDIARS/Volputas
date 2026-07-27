@@ -3,7 +3,7 @@
 const path = require('node:path');
 const { normalizeGitHubHttpsRemoteUrl } = require('./gitSurveyRemote');
 
-const EXPECTED_REMOTE_URL = 'https://github.com/LUDIARS/Voluptas-Data.git';
+const EXPECTED_REMOTE_URL = 'https://github.com/LUDIARS/VolputasData.git';
 const DEFAULT_REMOTE_NAME = 'origin';
 const DEFAULT_BASE_BRANCH = 'main';
 const DEFAULT_BRANCH_PREFIX = 'responses/github-';
@@ -16,6 +16,7 @@ function normalizePublisherConfiguration({
   baseBranch = DEFAULT_BASE_BRANCH,
   branchPrefix = DEFAULT_BRANCH_PREFIX,
   gitCommand = 'git',
+  allowRemotePublish = false,
 } = {}) {
   if (
     typeof dataRepositoryRoot !== 'string'
@@ -44,6 +45,9 @@ function normalizePublisherConfiguration({
   ) {
     throw new TypeError('gitCommand must be a non-empty executable');
   }
+  if (typeof allowRemotePublish !== 'boolean') {
+    throw new TypeError('allowRemotePublish must be a boolean');
+  }
 
   return Object.freeze({
     dataRepositoryRoot: path.resolve(dataRepositoryRoot),
@@ -52,6 +56,7 @@ function normalizePublisherConfiguration({
     baseBranch,
     branchPrefix,
     gitCommand,
+    allowRemotePublish,
   });
 }
 

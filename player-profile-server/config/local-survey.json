@@ -3,8 +3,8 @@
   "dataRepository": {
     "path": "private/survey-data",
     "remote": "origin",
-    "githubRepository": "LUDIARS/Voluptas-Data",
-    "expectedRemoteUrl": "https://github.com/LUDIARS/Voluptas-Data.git",
+    "githubRepository": "LUDIARS/VolputasData",
+    "expectedRemoteUrl": "https://github.com/LUDIARS/VolputasData.git",
     "baseBranch": "main",
     "responseBranchPrefix": "responses/github-"
   },

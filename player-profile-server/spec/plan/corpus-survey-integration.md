@@ -74,7 +74,7 @@ Voluptasは`/.well-known/corpus-service.json`も公開する。これはCorpus�
 |---|---|---|
 | Corpus公開アンケート設問 | Voluptas PostgreSQL | アンケートdomainをVoluptasへ集約するため |
 | Corpus回答・回答済み状態 | Cernere | 本人データとopt-outをCernereへ集約するため |
-| local OKF回答 | private `Voluptas-Data` branch | local-only/GitHub本人性の既存契約を維持するため |
+| local OKF回答 | private `VolputasData` branch | local-only/GitHub本人性の既存契約を維持するため |
 
 Cernere `sub`とGitHub numeric IDは異なるidentity domainである。自動照合や自動移送は行わない。
 

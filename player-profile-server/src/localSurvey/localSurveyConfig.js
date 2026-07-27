@@ -85,7 +85,7 @@ function assertMatchingGithubRepository(githubRepository, expectedRemoteUrl) {
   }
   if (configuredRemote !== repositoryRemote) {
     throw new Error(
-      'Local survey GitHub privacy target and Git remote must identify the same repository'
+      'Local survey GitHub repository and Git remote must identify the same repository'
     );
   }
 }

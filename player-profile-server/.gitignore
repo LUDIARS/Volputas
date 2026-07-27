@@ -4,3 +4,6 @@ node_modules/
 dist/
 coverage/
 out/
+
+# Independent VolputasData clone; never stage local survey or persona data here.
+/private/survey-data/

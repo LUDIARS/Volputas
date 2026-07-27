@@ -3,17 +3,19 @@
 const { createProcessRunner } = require('./processRunner');
 
 const GITHUB_REPOSITORY_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
-const PRIVATE_REPOSITORY_QUERY = '{fullName: .full_name, isPrivate: .private}';
+const PUBLIC_REPOSITORY_QUERY = (
+  '{fullName: .full_name, visibility: .visibility}'
+);
 
-class GithubRepositoryPrivacyError extends Error {
+class GithubRepositoryVisibilityError extends Error {
   constructor(message) {
     super(message);
-    this.name = 'GithubRepositoryPrivacyError';
-    this.code = 'PRIVATE_DATA_REPOSITORY_UNAVAILABLE';
+    this.name = 'GithubRepositoryVisibilityError';
+    this.code = 'DATA_REPOSITORY_UNAVAILABLE';
   }
 }
 
-function assertPrivateGithubRepository({
+function assertPublicGithubRepository({
   cwd,
   repository,
   githubCommand = 'gh',
@@ -30,12 +32,12 @@ function assertPrivateGithubRepository({
   try {
     output = runner.run(
       githubCommand,
-      ['api', `repos/${repository}`, '--jq', PRIVATE_REPOSITORY_QUERY],
+      ['api', `repos/${repository}`, '--jq', PUBLIC_REPOSITORY_QUERY],
       { cwd }
     ).stdout;
   } catch {
-    throw new GithubRepositoryPrivacyError(
-      'Unable to verify the private Voluptas data repository.'
+    throw new GithubRepositoryVisibilityError(
+      'Unable to verify the public Volputas data repository.'
     );
   }
 
@@ -43,26 +45,26 @@ function assertPrivateGithubRepository({
   try {
     metadata = JSON.parse(output);
   } catch {
-    throw new GithubRepositoryPrivacyError(
-      'GitHub CLI returned invalid repository privacy metadata.'
+    throw new GithubRepositoryVisibilityError(
+      'GitHub CLI returned invalid repository visibility metadata.'
     );
   }
   if (
     metadata?.fullName !== repository
-    || metadata?.isPrivate !== true
+    || metadata?.visibility !== 'public'
   ) {
-    throw new GithubRepositoryPrivacyError(
-      'The configured Voluptas data repository is not the expected private repository.'
+    throw new GithubRepositoryVisibilityError(
+      'The configured Volputas data repository is not the expected public repository.'
     );
   }
 
   return Object.freeze({
     fullName: metadata.fullName,
-    isPrivate: true,
+    visibility: 'public',
   });
 }
 
 module.exports = {
-  GithubRepositoryPrivacyError,
-  assertPrivateGithubRepository,
+  GithubRepositoryVisibilityError,
+  assertPublicGithubRepository,
 };
