@@ -11,7 +11,7 @@
 | R1 | 4 つの分析系 (8軸 evidence / 12分類 analysisEngine / 15軸 preferenceAxes / 20次元 affect) が併存し、UI には 8軸しか届かない | §2 |
 | R2 | gamer-preference アンケートの設問メタデータ (`axis`/`dimension`/`scoring`) がペルソナ分析で無視される | §3.1 |
 | R3 | Steam 連携 (所有ゲーム・プレイ時間) がペルソナ evidence に流れていない | §3.2 |
-| R4 | Vo→Di ペルソナエクスポートが手動 CLI 止まりで Di 側に取込先が無い | §6 |
+| R4 | Vo→Di ブリッジが v1 止まり (affect+traits のみ・手動ファイル渡し・同意ゲート無し。Di 側取込先は /admin/personas に既存 — 初版の「取込先が無い」は誤記) | §6 |
 | R5 | キーワード一致の否定文非対応・文字数=内省などヒューリスティックの脆さ、スコア 0 と「データ不足」の非区別、根拠のトレース不能 | §3.3, §5 |
 | P1 | プレイヤー視点の不足: ネガティブ証拠 / 相対選好 / プレイ文脈 / 課金行動 / 時系列変化 / 動画なし感情記録 | §3.4, §4 |
 | P2 | 開発者視点の不足: メカニクス対応付け / 母集団内での位置 / 進行アンカー / 根拠トレーサビリティ | §3.5, §5, §6 |
@@ -281,7 +281,12 @@ engagement.reflection が低い人は自由記述系の weight が構造的に�
 - 再分析は従来通り手動トリガ + stale 表示。履歴は上限 100 件で古いものから間引き
   (最古と直近 20 件は常に保持)。
 
-## 6. Vo→Di ブリッジ自動化 (R4/P2)。詳細プロトコルは Di 側 `persona-bridge.md`
+## 6. Vo→Di ブリッジ v2 (R4/P2)。詳細プロトコルは Di 側 `persona-bridge.md`
+
+> 2026-07-27 訂正: v1 ブリッジ (Vo `scripts/export-personas.js` → Di `/admin/personas` 手動
+> upload、user_id=`ext:voluptas:<hmac16>`) は両 main に既存。本節はその v2 拡張であり、
+> エクスポート形式は既存の snake_case `user_id`/`affect_vector` 規約に合わせて拡張する
+> (§6.1 の camelCase 表記は実装時に v1 互換の形へ寄せる)。
 
 ### 6.1 同意とエクスポート形式 v2
 
