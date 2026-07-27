@@ -97,6 +97,8 @@ VolputasDataのcloneと設定JSON作成をまとめたサンプルは次に置�
 - **プレイヤープロフィール** — プレイスタイルタグ、性格診断データ、嗜好ベクトルの管理
 - **ゲームプレイロギング** — イベント収集API、セッション管理、バッチ取り込み
 - **アンケート基盤** — 設問定義・回答収集、リッカート尺度・選択式・自由記述に対応
+- **ローカルアンケート** — PostgreSQL/JWT不要。OKF回答をprivate data submoduleの回答者別branchへ保存
+- **Corpus連携** — GLABのCorpus frontend panelへCernere project-token保護APIを提供
 - **嗜好・感情分析** — 既存12次元嗜好、独立15軸質問票、Discutere互換20次元affectを併記
 - **viewer reaction timeline** — 動画内時刻付きコメントを30秒ビンへ集約し、ビートごとの意図一致度とDesignGapを算出
 
@@ -128,9 +130,38 @@ VolputasDataのcloneと設定JSON作成をまとめたサンプルは次に置�
 cd player-profile-server
 npm run setup:submodules  # checkoutがsubmodule取得済みなら末尾に -- --skip-git-update
 npm install
-npm run migrate   # DBマイグレーション実行
-npm run dev       # 開発サーバー起動
 ```
+
+backendの起動・再起動はプロジェクト本体folderからExcubitor経由で行う。
+Excubitorの`npm run dev`実行前に`predev`がDB migrationを適用し、失敗時はlistenしない。
+worktree、複製folder、直接の`npm run dev`からサービスを起動しない。
+
+### DBなしでアンケートに回答する
+
+ローカル経路はVoluptas serverを起動しない。Node.js 20、Git、GitHub CLIが必要で、
+GitHub CLIの現在の認証ユーザーを本人として扱う。機微な回答の保存先
+`LUDIARS/Voluptas-Data` はprivate repositoryのため、事前にアクセス権が必要。
+
+```bash
+cd player-profile-server
+gh auth login
+npm run setup:survey-data
+npm run survey:local
+```
+
+既定動作は、設問定義と回答をOKF v0.1 Markdownとして
+`private/survey-data` submoduleへ生成し、GitHub numeric user IDをキーにした
+`responses/github-<id>` branchへexact-path commit + pushする。token、email、raw profileは
+保存しない。JSONファイルから回答する場合と、commit/pushせずローカル保存だけ行う場合:
+
+```bash
+npm run survey:local -- --answers ./answers.json
+npm run survey:local -- --answers ./answers.json --save-only
+```
+
+詳細は
+[local-only OKF survey](./player-profile-server/spec/feature/local-okf-survey.md)と
+[setup guide](./player-profile-server/spec/setup/local-okf-survey.md)を参照。
 
 ### フロントエンド
 
@@ -139,6 +170,23 @@ cd player-profile-server/frontend
 npm install
 npm run dev       # Vite開発サーバー起動
 ```
+
+Voluptas backendとfrontendは別package・別buildである。ExcubitorのVoluptas backend componentは
+frontendをbuild/serveしない。Corpus上のレビューUIはGLAB plugin pack
+`plugins/volputas/`が所有し、Voluptasには
+`/api/v1/integrations/glab/surveys`だけで接続する。standalone React frontendは
+Voluptas単体利用向けに独立して残す。
+
+### Corpus / GLAB
+
+Voluptasは認証不要の`/.well-known/corpus-service.json`を公開する。GLAB connectorは
+Excubitor topologyの`VOLPUTAS_URL`からbackendへ接続し、Cernere user access tokenを
+`projectKey=volputas`の短命PASETOへ交換して転送する。
+
+Voluptas側では`CERNERE_BASE_URL`と`VOLPUTAS_AUDIENCE`を公開設定として使い、
+`CERNERE_PROJECT_CLIENT_ID` / `CERNERE_PROJECT_CLIENT_SECRET`はExcubitorが起動ごとに
+注入する。実credentialを`.env`やrepositoryへ保存しない。詳細は
+[Corpus survey integration](./player-profile-server/spec/feature/corpus-survey-integration.md)を参照。
 
 ## API概要
 
@@ -151,6 +199,7 @@ npm run dev       # Vite開発サーバー起動
 | プロフィール | `GET /api/v1/users/me/profile` | プレイスタイル・嗜好情報 |
 | ロギング | `POST /api/v1/sessions/:id/events` | ゲームイベント送信 |
 | アンケート | `POST /api/v1/surveys/:id/responses` | アンケート回答提出 |
+| Corpusレビュー | `GET /api/v1/integrations/glab/surveys` | Cernere本人認証済みの設問一覧・回答 |
 | 代理入力 | `POST /api/v1/delegations`, `POST /api/v1/delegations/:id/claims` | 本人招待・構造化claim・個別承認 |
 | 分析 | `GET /api/v1/analysis/me` | 12次元 + 15軸 + 20次元の統合プロファイル |
 | 感情曲線 | `GET /api/v1/games/:gameId/timelines` | viewer reaction timeline一覧 |

@@ -1,4 +1,6 @@
 const path = require('node:path');
+const { normalizeOptionalBaseUrl } = require('./baseUrl');
+
 const port = process.env.PORT || 3000;
 const frontendUrl = process.env.FRONTEND_URL || `http://localhost:${port}`;
 
@@ -9,15 +11,35 @@ function commaSeparated(value, fallback) {
     .filter(Boolean);
 }
 
+function databaseConfig(env) {
+  if (env.VOLPUTAS_DATABASE_URL?.trim()) {
+    return {
+      connectionString: env.VOLPUTAS_DATABASE_URL.trim(),
+      max: parseInt(env.DB_POOL_MAX || '20', 10),
+      connectionTimeoutMillis: 5_000,
+    };
+  }
+  return {
+    host: env.DB_HOST || 'localhost',
+    port: parseInt(env.DB_PORT || '5432', 10),
+    database: env.DB_NAME || 'player_profile',
+    user: env.DB_USER || 'postgres',
+    password: env.DB_PASSWORD || '',
+    max: parseInt(env.DB_POOL_MAX || '20', 10),
+    connectionTimeoutMillis: 5_000,
+  };
+}
+
 const config = {
   port,
   nodeEnv: process.env.NODE_ENV || 'development',
   frontendUrl,
 
   cernere: {
-    baseUrl: (process.env.CERNERE_BASE_URL || '').replace(/\/+$/, ''),
+    baseUrl: normalizeOptionalBaseUrl(process.env.CERNERE_BASE_URL, 'CERNERE_BASE_URL'),
     projectClientId: process.env.CERNERE_PROJECT_CLIENT_ID?.trim() || '',
     projectClientSecret: process.env.CERNERE_PROJECT_CLIENT_SECRET || '',
+    audience: normalizeOptionalBaseUrl(process.env.VOLPUTAS_AUDIENCE, 'VOLPUTAS_AUDIENCE'),
   },
 
   auth: {
@@ -39,14 +61,12 @@ const config = {
       || path.resolve(__dirname, '../../data/profile-media'),
   },
 
-  db: {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    database: process.env.DB_NAME || 'player_profile',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '',
-    max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+  memoriaLink: {
+    // memoria_links.token_ciphertext を AES-256-GCM で暗号化する鍵の元。 SHA-256 で32byteに正規化する。
+    encryptionKey: process.env.MEMORIA_LINK_ENCRYPTION_KEY || '',
   },
+
+  db: databaseConfig(process.env),
 
   jwt: {
     issuer: process.env.JWT_ISSUER || 'http://localhost:3000',

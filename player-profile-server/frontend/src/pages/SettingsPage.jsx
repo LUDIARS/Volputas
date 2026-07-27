@@ -18,6 +18,11 @@ export default function SettingsPage() {
   const [steamInput, setSteamInput] = useState('');
   const [steamBusy, setSteamBusy] = useState(false);
   const [steamError, setSteamError] = useState('');
+  const [memoriaStatus, setMemoriaStatus] = useState(null);
+  const [memoriaBaseUrl, setMemoriaBaseUrl] = useState('');
+  const [memoriaToken, setMemoriaToken] = useState('');
+  const [memoriaBusy, setMemoriaBusy] = useState(false);
+  const [memoriaError, setMemoriaError] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -27,6 +32,7 @@ export default function SettingsPage() {
     }
     loadIdentities();
     loadSteamStatus();
+    loadMemoriaStatus();
   }, [user]);
 
   async function loadIdentities() {
@@ -51,6 +57,7 @@ export default function SettingsPage() {
       await api('/api/v1/users/me/steam/link', { method: 'POST', body: { steamId: steamInput } });
       setSteamInput('');
       await loadSteamStatus();
+    loadMemoriaStatus();
     } catch (err) {
       setSteamError(err.message || 'Failed to link Steam account');
     } finally {
@@ -64,6 +71,7 @@ export default function SettingsPage() {
     try {
       await api('/api/v1/users/me/steam/sync', { method: 'POST' });
       await loadSteamStatus();
+    loadMemoriaStatus();
     } catch (err) {
       setSteamError(err.message || 'Failed to sync Steam library');
     } finally {
@@ -78,10 +86,64 @@ export default function SettingsPage() {
     try {
       await api('/api/v1/users/me/steam', { method: 'DELETE' });
       await loadSteamStatus();
+    loadMemoriaStatus();
     } catch (err) {
       setSteamError(err.message || 'Failed to unlink Steam account');
     } finally {
       setSteamBusy(false);
+    }
+  }
+
+  async function loadMemoriaStatus() {
+    try {
+      const res = await api('/api/v1/users/me/memoria');
+      setMemoriaStatus(res.data);
+    } catch { /* ignore */ }
+  }
+
+  async function handleLinkMemoria(e) {
+    e.preventDefault();
+    setMemoriaBusy(true);
+    setMemoriaError('');
+    try {
+      await api('/api/v1/users/me/memoria/link', {
+        method: 'POST',
+        body: { baseUrl: memoriaBaseUrl, token: memoriaToken },
+      });
+      setMemoriaBaseUrl('');
+      setMemoriaToken('');
+      await loadMemoriaStatus();
+    } catch (err) {
+      setMemoriaError(err.message || 'Failed to link Memoria');
+    } finally {
+      setMemoriaBusy(false);
+    }
+  }
+
+  async function handleSyncMemoria() {
+    setMemoriaBusy(true);
+    setMemoriaError('');
+    try {
+      await api('/api/v1/users/me/memoria/sync', { method: 'POST' });
+      await loadMemoriaStatus();
+    } catch (err) {
+      setMemoriaError(err.message || 'Failed to sync Memoria');
+    } finally {
+      setMemoriaBusy(false);
+    }
+  }
+
+  async function handleUnlinkMemoria() {
+    if (!confirm('Unlink your Memoria account?')) return;
+    setMemoriaBusy(true);
+    setMemoriaError('');
+    try {
+      await api('/api/v1/users/me/memoria', { method: 'DELETE' });
+      await loadMemoriaStatus();
+    } catch (err) {
+      setMemoriaError(err.message || 'Failed to unlink Memoria');
+    } finally {
+      setMemoriaBusy(false);
     }
   }
 
@@ -279,6 +341,72 @@ export default function SettingsPage() {
               </div>
               <button type="submit" className="btn-primary" disabled={steamBusy}>
                 {steamBusy ? 'Linking...' : 'Steamと連携'}
+              </button>
+            </form>
+          )}
+        </div>
+
+        {/* Memoria Integration */}
+        <div className="card">
+          <h3>Memoria連携 (性格傾向)</h3>
+          <p className="muted" style={{ marginBottom: '1rem' }}>
+            Memoriaの設定画面 (🔌連携 → Voluptas連携) でトークンを発行し、Memoriaのサーバー URL と
+            あわせてここに入力してください。取り込んだ性格傾向は自動反映されず、Analysisページで
+            内容を確認してから承認/却下できます。
+          </p>
+
+          {memoriaError && <div className="error-message">{memoriaError}</div>}
+
+          {memoriaStatus?.linked ? (
+            <div>
+              <div className="identity-item">
+                <div className="identity-info">
+                  <span className="identity-provider">{memoriaStatus.link.memoriaBaseUrl}</span>
+                  <span className="identity-date">
+                    連携日 {new Date(memoriaStatus.link.linkedAt).toLocaleDateString('ja-JP')}
+                    {memoriaStatus.link.lastSyncedAt && (
+                      <> / 最終同期 {new Date(memoriaStatus.link.lastSyncedAt).toLocaleDateString('ja-JP')}</>
+                    )}
+                  </span>
+                </div>
+              </div>
+              {memoriaStatus.latestDraft?.status === 'pending' && (
+                <div className="info-banner" style={{ marginTop: '0.75rem' }}>
+                  未承認の性格傾向ドラフトがあります。Analysisページで確認してください。
+                </div>
+              )}
+              <div className="edit-actions" style={{ marginTop: '1rem' }}>
+                <button className="btn-outline" onClick={handleSyncMemoria} disabled={memoriaBusy}>
+                  {memoriaBusy ? '同期中...' : '今すぐ同期'}
+                </button>
+                <button className="btn-outline" onClick={handleUnlinkMemoria} disabled={memoriaBusy}>
+                  連携解除
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleLinkMemoria}>
+              <div className="form-group">
+                <label className="field-label">Memoria サーバー URL</label>
+                <input
+                  value={memoriaBaseUrl}
+                  onChange={(e) => setMemoriaBaseUrl(e.target.value)}
+                  placeholder="http://localhost:5180"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="field-label">連携トークン</label>
+                <input
+                  type="password"
+                  value={memoriaToken}
+                  onChange={(e) => setMemoriaToken(e.target.value)}
+                  placeholder="Memoriaで発行したトークン"
+                  required
+                />
+              </div>
+              <button type="submit" className="btn-primary" disabled={memoriaBusy}>
+                {memoriaBusy ? 'Linking...' : 'Memoriaと連携'}
               </button>
             </form>
           )}

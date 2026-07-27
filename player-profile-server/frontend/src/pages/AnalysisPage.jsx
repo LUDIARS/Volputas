@@ -64,9 +64,12 @@ export default function AnalysisPage() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [memoriaStatus, setMemoriaStatus] = useState(null);
+  const [reviewingDraft, setReviewingDraft] = useState(false);
 
   useEffect(() => {
     loadData();
+    loadMemoriaStatus();
   }, []);
 
   async function loadData() {
@@ -82,6 +85,30 @@ export default function AnalysisPage() {
     } catch { /* ignore */ }
     setLoading(false);
   }
+
+  async function loadMemoriaStatus() {
+    try {
+      const res = await api('/api/v1/users/me/memoria');
+      setMemoriaStatus(res.data);
+    } catch { /* ignore */ }
+  }
+
+  async function reviewDraft(id, decision) {
+    setReviewingDraft(true);
+    try {
+      await api(`/api/v1/users/me/memoria/drafts/${id}/${decision}`, { method: 'POST' });
+      await Promise.all([loadMemoriaStatus(), loadData()]);
+    } catch (err) {
+      setError(err.message || 'Failed to review draft');
+    } finally {
+      setReviewingDraft(false);
+    }
+  }
+
+  const pendingDraft = memoriaStatus?.linked && memoriaStatus.latestDraft?.status === 'pending'
+    ? memoriaStatus.latestDraft
+    : null;
+  const approvedMemoriaAxes = profile?.personality_data?.memoria_axes || null;
 
   async function runAnalysis() {
     setRunning(true);
@@ -159,6 +186,63 @@ export default function AnalysisPage() {
             </div>
           )}
         </div>
+
+        {/* Memoria-derived personality draft review */}
+        {pendingDraft && (
+          <div className="card analysis-details">
+            <h3>性格傾向ドラフト (Memoria由来・未承認)</h3>
+            <p className="muted">
+              {new Date(pendingDraft.computed_at).toLocaleString('ja-JP')} 時点の作業データから計算されました。
+              承認するとプロフィールに反映されます。
+            </p>
+            <div className="dimension-bars">
+              {(pendingDraft.axes || []).map((axis) => {
+                const pct = Math.max(0, Math.min(1, (axis.score + 1) / 2));
+                return (
+                  <div key={axis.id} className="dimension-row">
+                    <div className="dim-header">
+                      <span className="dim-name">{axis.poles[0]} ← {axis.label} → {axis.poles[1]}</span>
+                      <span className="dim-value">{axis.score.toFixed(2)}</span>
+                    </div>
+                    <div className="dim-bar-bg">
+                      <div className="dim-bar-fill" style={{ width: `${pct * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="edit-actions" style={{ marginTop: '1rem' }}>
+              <button className="btn-primary" onClick={() => reviewDraft(pendingDraft.id, 'approve')} disabled={reviewingDraft}>
+                承認してプロフィールに反映
+              </button>
+              <button className="btn-outline" onClick={() => reviewDraft(pendingDraft.id, 'reject')} disabled={reviewingDraft}>
+                却下
+              </button>
+            </div>
+          </div>
+        )}
+
+        {approvedMemoriaAxes && (
+          <div className="card analysis-details">
+            <h3>性格傾向 (Memoria由来・承認済み)</h3>
+            <div className="dimension-bars">
+              {(approvedMemoriaAxes || []).map((axis) => {
+                const pct = Math.max(0, Math.min(1, (axis.score + 1) / 2));
+                return (
+                  <div key={axis.id} className="dimension-row">
+                    <div className="dim-header">
+                      <span className="dim-name">{axis.poles[0]} ← {axis.label} → {axis.poles[1]}</span>
+                      <span className="dim-value">{axis.score.toFixed(2)}</span>
+                    </div>
+                    <div className="dim-bar-bg">
+                      <div className="dim-bar-fill primary" style={{ width: `${pct * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Pattern Radar Charts */}
         {Object.entries(patternGroups).map(([patternKey, group]) => (
