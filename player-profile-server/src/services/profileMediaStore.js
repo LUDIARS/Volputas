@@ -28,6 +28,14 @@ const MEDIA_RULES = {
     },
     maximumBytes: 2 * 1024 * 1024 * 1024,
   },
+  gamelogs: {
+    contentTypes: {
+      'text/plain': '.log',
+      'application/json': '.json',
+      'text/csv': '.csv',
+    },
+    maximumBytes: 100 * 1024 * 1024,
+  },
 };
 
 class ProfileMediaStore {

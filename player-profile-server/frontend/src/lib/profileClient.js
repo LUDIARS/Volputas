@@ -28,6 +28,9 @@ function createProfileClient(mode) {
     analyzePersona() {
       return request(`${base}/persona/analyze`, { method: 'POST' });
     },
+    evaluateEmotionCurve(recordId) {
+      return request(`${base}/emotion-curves/${recordId}/evaluate`, { method: 'POST' });
+    },
     async mediaUrl(kind, recordId) {
       if (isLocal) return `${base}/media/${kind}/${recordId}`;
       const result = await request(`${base}/media/${kind}/${recordId}/ticket`);

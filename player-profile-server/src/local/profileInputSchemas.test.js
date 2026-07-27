@@ -58,3 +58,37 @@ test('voice and emotion curve inputs preserve their analysis metadata', () => {
   assert.equal(curve.daysAfterPlay, 3);
   assert.deepEqual(curve.entries.map((entry) => entry.timeSeconds), [10, 20]);
 });
+
+test('emotion stamps default valence and arousal and allow comment-free entries', () => {
+  const curve = validateEmotionCurveInput({
+    gameTitle: 'Example',
+    videoFileName: 'play.mp4',
+    gameLogFileName: 'session.log',
+    totalPlaytimeHours: 12.5,
+    sessionPlaytimeMinutes: 45,
+    entries: [
+      { timeSeconds: 30, stamp: 'hype' },
+      { timeSeconds: 60, stamp: 'dislike', valence: -1 },
+      { timeSeconds: 90, comment: 'Free note without stamp' },
+    ],
+  });
+  assert.equal(curve.gameLogFileName, 'session.log');
+  assert.equal(curve.totalPlaytimeHours, 12.5);
+  assert.equal(curve.sessionPlaytimeMinutes, 45);
+  assert.deepEqual(
+    curve.entries.map((entry) => [entry.stamp, entry.valence, entry.arousal]),
+    [['hype', 2, 5], ['dislike', -1, 2], [null, 0, 3]]
+  );
+
+  assert.throws(() => validateEmotionCurveInput({
+    gameTitle: 'Example',
+    videoFileName: 'play.mp4',
+    entries: [{ timeSeconds: 5 }],
+  }), (error) => error.code === 'INVALID_PROFILE_INPUT');
+
+  assert.throws(() => validateEmotionCurveInput({
+    gameTitle: 'Example',
+    videoFileName: 'play.mp4',
+    entries: [{ timeSeconds: 5, stamp: 'unknown' }],
+  }), (error) => error.code === 'INVALID_PROFILE_INPUT');
+});

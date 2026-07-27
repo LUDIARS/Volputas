@@ -1,3 +1,4 @@
+const fs = require('node:fs/promises');
 const { Router } = require('express');
 const config = require('../config');
 const { authenticate } = require('../middleware/auth');
@@ -11,10 +12,13 @@ const {
 const { ProfileMediaStore } = require('../services/profileMediaStore');
 const { OnlinePersonaService } = require('../services/onlinePersonaService');
 const { issueMediaTicket, verifyMediaTicket } = require('../services/mediaTicketService');
+const { AnthropicTextClient } = require('../services/llm/anthropicTextClient');
+const { EmotionCurveEvaluationService } = require('../services/emotionCurveEvaluationService');
 
 const MEDIA_RECORD_KIND = {
   screenshots: 'gameplay',
   videos: 'emotion-curves',
+  gamelogs: 'emotion-curves',
 };
 
 function asInputError(error) {
@@ -26,12 +30,15 @@ function createProfileEvidenceRouter({
   model = getProfileEvidenceStore(),
   mediaStore = new ProfileMediaStore(),
   personaService,
+  emotionCurveEvaluator,
   mediaRoot = config.profileMedia.root,
   issueTicket = issueMediaTicket,
   verifyTicket = verifyMediaTicket,
 } = {}) {
   const router = Router();
   const resolvedPersonaService = personaService || new OnlinePersonaService(model);
+  const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
+    || new EmotionCurveEvaluationService({ llmClient: new AnthropicTextClient() });
 
   router.get('/media/:kind/:recordId', async (req, res, next) => {
     try {
@@ -93,6 +100,45 @@ function createProfileEvidenceRouter({
   collectionRoutes('/gameplay', 'gameplay', validateGameplayInput);
   collectionRoutes('/voices', 'voices', validateVoiceInput);
   collectionRoutes('/emotion-curves', 'emotion-curves', validateEmotionCurveInput);
+
+  router.post('/emotion-curves/:recordId/evaluate', async (req, res, next) => {
+    try {
+      const owned = await model.findOwned(req.user.id, req.params.recordId);
+      if (!owned || owned.kind !== 'emotion-curves') {
+        throw new AppError(404, 'PROFILE_RECORD_NOT_FOUND', 'Emotion curve not found');
+      }
+      const persona = await model.readAnalysis(req.user.id);
+      const media = await mediaStore.resolve({
+        repositoryRoot: mediaRoot,
+        name: owned.ownerId,
+        kind: 'gamelogs',
+        recordId: req.params.recordId,
+      });
+      const gameLogText = media ? await fs.readFile(media.filePath, 'utf8') : null;
+      const evaluation = await resolvedEmotionCurveEvaluator.evaluate({
+        record: owned.record,
+        persona,
+        gameLogText,
+      });
+      const record = await model.updateOwned(
+        req.user.id,
+        'emotion-curves',
+        req.params.recordId,
+        { evaluation }
+      );
+      if (!record) {
+        throw new AppError(404, 'PROFILE_RECORD_NOT_FOUND', 'Emotion curve not found');
+      }
+      return res.json({ ok: true, data: { record } });
+    } catch (error) {
+      if (error instanceof AppError) return next(error);
+      return next(new AppError(
+        error.statusCode || 502,
+        error.code || 'EVALUATION_FAILED',
+        error.message
+      ));
+    }
+  });
 
   router.put('/media/:kind/:recordId', async (req, res, next) => {
     try {

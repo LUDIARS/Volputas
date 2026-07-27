@@ -74,6 +74,27 @@ class CernereProfileEvidenceStore {
     });
   }
 
+  async updateOwned(localUserId, kind, recordId, patch) {
+    const column = COLUMN_BY_KIND[kind];
+    if (!column) throw new Error(`Unsupported profile evidence kind: ${kind}`);
+    return this.withWriteLock(localUserId, async () => {
+      const ownerId = await this.resolveOwnerId(localUserId);
+      const data = await this.readColumns(ownerId, [column]);
+      const records = requireArray(data[column], column);
+      const index = records.findIndex((item) => item?.id === recordId);
+      if (index === -1) return null;
+      const record = {
+        ...records[index],
+        ...patch,
+        updatedAt: this.now().toISOString(),
+      };
+      const next = [...records];
+      next[index] = record;
+      await this.writeColumns(ownerId, { [column]: next });
+      return record;
+    });
+  }
+
   async findOwned(localUserId, recordId) {
     const ownerId = await this.resolveOwnerId(localUserId);
     const columns = Object.values(COLUMN_BY_KIND);

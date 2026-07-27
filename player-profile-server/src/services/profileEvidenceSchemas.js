@@ -98,6 +98,40 @@ function validateVoiceInput(body = {}) {
   };
 }
 
+// One-tap stamps map onto the valence/arousal circumplex so persona analysis
+// keeps working on stamp-only entries without new axes.
+const EMOTION_STAMPS = {
+  hype: { label: '盛り上がり', valence: 2, arousal: 5 },
+  like: { label: 'スキ', valence: 2, arousal: 2 },
+  dislike: { label: '嫌い', valence: -2, arousal: 2 },
+  stress: { label: 'ストレス', valence: -2, arousal: 5 },
+};
+
+function validateEmotionEntry(entry = {}) {
+  const stamp = entry.stamp === undefined || entry.stamp === null || entry.stamp === ''
+    ? null
+    : String(entry.stamp);
+  if (stamp !== null && !EMOTION_STAMPS[stamp]) {
+    throw Object.assign(new Error(`Unknown emotion stamp: ${stamp}`), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  const comment = optionalText(entry.comment, 2000);
+  if (!stamp && !comment) {
+    throw Object.assign(new Error('Each timed reaction needs a stamp or a comment'), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  const defaults = stamp ? EMOTION_STAMPS[stamp] : null;
+  return {
+    timeSeconds: optionalNumber(entry.timeSeconds, 0, 864000) ?? 0,
+    stamp,
+    valence: optionalNumber(entry.valence, -2, 2) ?? (defaults ? defaults.valence : 0),
+    arousal: optionalNumber(entry.arousal, 1, 5) ?? (defaults ? defaults.arousal : 3),
+    comment,
+  };
+}
+
 function validateEmotionCurveInput(body = {}) {
   const entries = Array.isArray(body.entries) ? body.entries : [];
   if (entries.length === 0) {
@@ -108,21 +142,22 @@ function validateEmotionCurveInput(body = {}) {
   return {
     gameTitle: requiredText(body.gameTitle, 'Game title'),
     videoFileName: requiredText(body.videoFileName, 'Video file name', 255),
+    gameLogFileName: optionalText(body.gameLogFileName, 255),
     daysAfterPlay: optionalNumber(body.daysAfterPlay, 0, 36500),
+    totalPlaytimeHours: optionalNumber(body.totalPlaytimeHours, 0, 100000),
+    sessionPlaytimeMinutes: optionalNumber(body.sessionPlaytimeMinutes, 0, 100000),
     sessionLabel: optionalText(body.sessionLabel, 120),
     playContext: optionalText(body.playContext, 1000),
     narrativeArc: optionalText(body.narrativeArc, 120),
     journeyStage: optionalText(body.journeyStage, 120),
-    entries: entries.slice(0, 500).map((entry) => ({
-      timeSeconds: optionalNumber(entry.timeSeconds, 0, 864000) ?? 0,
-      valence: optionalNumber(entry.valence, -2, 2) ?? 0,
-      arousal: optionalNumber(entry.arousal, 1, 5) ?? 3,
-      comment: requiredText(entry.comment, 'Timed comment', 2000),
-    })).sort((left, right) => left.timeSeconds - right.timeSeconds),
+    entries: entries.slice(0, 500)
+      .map(validateEmotionEntry)
+      .sort((left, right) => left.timeSeconds - right.timeSeconds),
   };
 }
 
 module.exports = {
+  EMOTION_STAMPS,
   calculateDedication,
   validateEmotionCurveInput,
   validateGameplayInput,

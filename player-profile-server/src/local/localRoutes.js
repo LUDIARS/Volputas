@@ -1,3 +1,4 @@
+const fs = require('node:fs/promises');
 const { Router } = require('express');
 const { AppError } = require('../middleware/errorHandler');
 const {
@@ -20,6 +21,7 @@ function createLocalRoutes({
   configStore,
   gitCli,
   gitAuthorReader,
+  emotionCurveEvaluator,
   emotionCurveStore,
   gameplayStore,
   mediaStore,
@@ -212,6 +214,35 @@ function createLocalRoutes({
   collectionRoutes('/gameplay', gameplayStore, validateGameplayInput);
   collectionRoutes('/voices', voiceStore, validateVoiceInput);
   collectionRoutes('/emotion-curves', emotionCurveStore, validateEmotionCurveInput);
+
+  async function readGameLogText(context, recordId) {
+    const media = await mediaStore.resolve({ ...context, kind: 'gamelogs', recordId });
+    if (!media) return null;
+    return fs.readFile(media.filePath, 'utf8');
+  }
+
+  router.post('/emotion-curves/:recordId/evaluate', async (req, res, next) => {
+    try {
+      const { config, gitAuthor } = await configuredContext();
+      const context = { repositoryRoot: gitAuthor.repositoryRoot, name: config.name };
+      const records = await emotionCurveStore.list(context);
+      const record = records.find((item) => item.id === req.params.recordId);
+      if (!record) throw new AppError(404, 'PROFILE_RECORD_NOT_FOUND', 'Emotion curve not found');
+      const { analysis } = await personaService.status(context);
+      const evaluation = await emotionCurveEvaluator.evaluate({
+        record,
+        persona: analysis,
+        gameLogText: await readGameLogText(context, record.id),
+      });
+      const result = await emotionCurveStore.write({
+        ...context,
+        data: { ...record, evaluation },
+      });
+      return res.json({ ok: true, data: result.record });
+    } catch (error) {
+      return next(asAppError(error, error.statusCode || 502));
+    }
+  });
 
   router.put('/media/:kind/:recordId', async (req, res, next) => {
     try {

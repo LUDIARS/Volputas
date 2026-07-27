@@ -328,3 +328,84 @@
     flex-direction: column;
   }
 }
+
+.stamp-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.stamp-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.55rem 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: none;
+  font-size: 0.8rem;
+}
+
+.stamp-button:hover {
+  background: var(--color-surface-hover);
+}
+
+.stamp-emoji {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.stamp-hype:hover { border-color: var(--color-accent); }
+.stamp-like:hover { border-color: var(--color-accent); }
+.stamp-dislike:hover { border-color: var(--color-danger); }
+.stamp-stress:hover { border-color: var(--color-danger); }
+
+.stamp-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.stamp-chip {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: none;
+  font-size: 1rem;
+  opacity: 0.5;
+}
+
+.stamp-chip-active {
+  border-color: var(--color-primary);
+  opacity: 1;
+}
+
+.evaluation-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.evaluation-box {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.evaluation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.evaluation-text {
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
