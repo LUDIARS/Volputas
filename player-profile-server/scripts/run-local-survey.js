@@ -3,8 +3,8 @@
 const path = require('node:path');
 const { readAnswersFile } = require('../src/localSurvey/answerFile');
 const { parseLocalSurveyArguments } = require('../src/localSurvey/cliArguments');
-const { assertPrivateGithubRepository } = require(
-  '../src/localSurvey/githubRepositoryPrivacy'
+const { assertPublicGithubRepository } = require(
+  '../src/localSurvey/githubRepositoryVisibility'
 );
 const { resolveGithubIdentity } = require('../src/localSurvey/githubIdentity');
 const { collectInteractiveAnswers } = require('../src/localSurvey/interactiveSurvey');
@@ -19,7 +19,7 @@ const {
   QUESTIONS,
 } = require('./data/gamer-survey-questions');
 
-const USAGE = `Voluptas local OKF survey
+const USAGE = `Volputas local OKF survey
 
 Usage:
   npm run survey:local
@@ -28,7 +28,7 @@ Usage:
 
 Options:
   --answers <path>  Read a UTF-8 JSON object keyed by question ID.
-  --save-only       Write files on the local identity branch without commit/push.
+  --save-only       Compatibility flag; local-only storage is always enforced.
   --help, -h        Show this help.
 `;
 
@@ -41,7 +41,7 @@ async function main({
   errorOutput = process.stderr,
   now = () => new Date(),
 } = {}, {
-  assertPrivateRepository = assertPrivateGithubRepository,
+  assertPublicRepository = assertPublicGithubRepository,
   collectAnswers = collectInteractiveAnswers,
   createRunner = createProcessRunner,
   loadConfig = loadLocalSurveyConfig,
@@ -63,7 +63,7 @@ async function main({
       runner,
       githubCommand: config.githubCommand,
     });
-    assertPrivateRepository({
+    assertPublicRepository({
       cwd: config.serverRoot,
       repository: config.githubRepository,
       githubCommand: config.githubCommand,

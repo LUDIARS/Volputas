@@ -3,7 +3,7 @@
 function parseLocalSurveyArguments(argv) {
   const options = {
     answersPath: null,
-    saveOnly: false,
+    saveOnly: true,
     help: false,
   };
 

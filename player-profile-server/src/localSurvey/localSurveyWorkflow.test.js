@@ -21,7 +21,7 @@ const DEFINITION = {
 
 const CONFIG = {
   dataRepositoryRoot: '/private/data',
-  expectedRemoteUrl: 'https://github.com/LUDIARS/Voluptas-Data.git',
+  expectedRemoteUrl: 'https://github.com/LUDIARS/VolputasData.git',
   remote: 'origin',
   baseBranch: 'main',
   responseBranchPrefix: 'responses/github-',
@@ -79,30 +79,19 @@ function testDependencies(events) {
   };
 }
 
-test('runLocalSurveyWorkflow prepares, writes, commits, and pushes under one lock', async () => {
-  const events = [];
-  const result = await runLocalSurveyWorkflow({
-    answers: { choice: 'yes' },
-    config: CONFIG,
-    definition: DEFINITION,
-    identity: { id: '42', login: 'player' },
-    producerRevision: 'abcdef1',
-    saveOnly: false,
-    timestamp: '2026-07-23T00:00:00.000Z',
-  }, testDependencies(events));
-
-  assert.deepEqual(events, [
-    'validate',
-    'render-definition',
-    'render-response',
-    'lock',
-    'prepare:false',
-    'write:definition:response',
-    'publish',
-    'unlock',
-  ]);
-  assert.equal(result.status, 'published');
-  assert.equal(result.commitSha, 'abcdef1');
+test('runLocalSurveyWorkflow rejects remote publication', async () => {
+  await assert.rejects(
+    runLocalSurveyWorkflow({
+      answers: { choice: 'yes' },
+      config: CONFIG,
+      definition: DEFINITION,
+      identity: { id: '42', login: 'player' },
+      producerRevision: 'abcdef1',
+      saveOnly: false,
+      timestamp: '2026-07-23T00:00:00.000Z',
+    }, testDependencies([])),
+    /Remote publication is disabled/
+  );
 });
 
 test('runLocalSurveyWorkflow leaves generated files unstaged in save-only mode', async () => {
