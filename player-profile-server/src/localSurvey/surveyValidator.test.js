@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { QUESTIONS } = require('../../scripts/data/gamer-survey-questions');
+const { QUESTIONS } = require('../surveys/gamerPreferencesSurvey');
 const {
   MAX_FREETEXT_LENGTH,
   SurveyAnswerValidationError,

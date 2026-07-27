@@ -21,7 +21,9 @@ function renderSurveyDefinitionOkf(definition) {
     ['title', survey.title],
     ['description', survey.description],
     ['resource', `urn:voluptas:survey:${encodeURIComponent(survey.id)}:${encodeURIComponent(survey.version)}`],
-    ['tags', ['voluptas', 'survey', 'gamer-preferences']],
+    // The survey id, not a literal — a fixed 'gamer-preferences' tag mislabels every other
+    // survey in the suite and makes the documents unsearchable by what they actually are.
+    ['tags', ['voluptas', 'survey', survey.id]],
     ['okf_version', OKF_VERSION],
     ['survey_id', survey.id],
     ['survey_version', survey.version],

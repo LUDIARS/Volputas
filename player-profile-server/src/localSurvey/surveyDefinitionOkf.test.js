@@ -8,7 +8,7 @@ const {
   SURVEY_TITLE,
   SURVEY_DESCRIPTION,
   QUESTIONS,
-} = require('../../scripts/data/gamer-survey-questions');
+} = require('../surveys/gamerPreferencesSurvey');
 const { renderSurveyDefinitionOkf } = require('./surveyDefinitionOkf');
 
 function makeDefinition(overrides = {}) {
