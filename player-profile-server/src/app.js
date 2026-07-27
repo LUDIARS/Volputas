@@ -2,12 +2,17 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const fs = require('node:fs');
+const path = require('node:path');
 const config = require('./config');
 const {
   errorHandler,
   normalizeJsonBodyError,
 } = require('./middleware/errorHandler');
 const { initKeyStore } = require('./services/jwks');
+const { closeProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
+const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
+const { assertOnlineConfiguration } = require('./services/onlineConfiguration');
 const {
   createCorpusTransportRateLimiter,
   createGlabSurveyRouter,
@@ -29,8 +34,10 @@ const timelineRoutes = require('./routes/timelines');
 const delegationRoutes = require('./routes/delegations');
 const memoriaRoutes = require('./routes/memoria');
 const corpusManifestRoutes = require('./routes/corpusManifest');
+const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
 
 const app = express();
+const frontendDirectory = path.resolve(__dirname, '../frontend/dist');
 const glabSurveyPath = '/api/v1/integrations/glab/surveys';
 let server = null;
 let stopPromise = null;
@@ -89,6 +96,9 @@ app.use('/auth', rateLimit({
 
 // Health routes (no auth)
 app.use('/health', healthRoutes);
+app.get('/api/runtime', (_req, res) => {
+  res.json({ ok: true, data: { mode: 'online', authentication: 'cernere' } });
+});
 
 // API v1 routes
 app.use('/api/v1/users', userRoutes);
@@ -106,6 +116,11 @@ app.use('/api/v1/users/me/memoria', memoriaRoutes);
 app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/v1', timelineRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
+app.use('/api/v1/profile-data', profileEvidenceRoutes);
+
+if (fs.existsSync(path.join(frontendDirectory, 'index.html'))) {
+  mountFrontend(app, frontendDirectory);
+}
 
 // 404 handler
 app.use((_req, res) => {
@@ -121,6 +136,8 @@ app.use(errorHandler);
 // Start server
 async function start() {
   if (server) return server;
+  assertOnlineConfiguration(config);
+  assertFrontendBuild(frontendDirectory);
   getGlabSurveyService();
   await initKeyStore();
   console.log('JWKS key store initialized');
@@ -149,6 +166,7 @@ function stop() {
     } catch (error) {
       serverCloseError = error;
     }
+    closeProfileEvidenceStore();
     const activeIntegration = glabSurveyService;
     glabSurveyService = null;
     await activeIntegration?.close();

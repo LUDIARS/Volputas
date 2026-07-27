@@ -1,0 +1,99 @@
+import { useState } from 'react';
+import ProfileMedia from './ProfileMedia';
+import { STAMP_BY_ID } from '../lib/emotionStamps';
+import { useProfileClient } from '../lib/profileClient';
+
+function formatTime(seconds) {
+  const value = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(value / 60);
+  return `${minutes}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
+}
+
+export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
+  const client = useProfileClient();
+  const [evaluating, setEvaluating] = useState(false);
+  const [error, setError] = useState('');
+  const [showEvaluation, setShowEvaluation] = useState(false);
+
+  async function evaluate() {
+    setEvaluating(true);
+    setError('');
+    try {
+      const data = await client.evaluateEmotionCurve(record.id);
+      onRecordUpdated(data.record || data);
+      setShowEvaluation(true);
+    } catch (reason) {
+      setError(reason.code === 'LLM_NOT_CONFIGURED'
+        ? 'AI 評価は未設定です。サーバに ANTHROPIC_API_KEY を設定してください。'
+        : reason.message);
+    } finally {
+      setEvaluating(false);
+    }
+  }
+
+  return (
+    <article className="card profile-record">
+      <div className="record-heading">
+        <div><h4>{record.gameTitle}</h4><span>{record.sessionLabel || 'セッション名なし'}</span></div>
+        {record.daysAfterPlay !== null && record.daysAfterPlay !== undefined && (
+          <span className="tag">プレイ後 {record.daysAfterPlay} 日</span>
+        )}
+      </div>
+      <ProfileMedia
+        as="video"
+        className="emotion-video"
+        kind="videos"
+        recordId={record.id}
+        controls
+        preload="metadata"
+      />
+      <div className="emotion-timeline">
+        {record.entries.map((entry, index) => {
+          const stamp = entry.stamp ? STAMP_BY_ID[entry.stamp] : null;
+          return (
+            <div className="emotion-point" key={`${entry.timeSeconds}-${index}`}>
+              <strong>{formatTime(entry.timeSeconds)}</strong>
+              <span className={`valence valence-${entry.valence}`} title={stamp ? stamp.label : undefined}>
+                {stamp ? stamp.emoji : `${entry.valence > 0 ? '+' : ''}${entry.valence}`}
+              </span>
+              <p>{entry.comment || (stamp ? stamp.label : '')}</p>
+            </div>
+          );
+        })}
+      </div>
+      <div className="tags-row">
+        {record.narrativeArc && <span className="tag">Arc: {record.narrativeArc}</span>}
+        {record.journeyStage && <span className="tag">Journey: {record.journeyStage}</span>}
+        {record.totalPlaytimeHours !== null && record.totalPlaytimeHours !== undefined && (
+          <span className="tag">通算 {record.totalPlaytimeHours} 時間</span>
+        )}
+        {record.sessionPlaytimeMinutes !== null && record.sessionPlaytimeMinutes !== undefined && (
+          <span className="tag">セッション {record.sessionPlaytimeMinutes} 分</span>
+        )}
+        {record.gameLogFileName && <span className="tag">ログ: {record.gameLogFileName}</span>}
+      </div>
+      <div className="evaluation-actions">
+        <button type="button" className="btn-outline" disabled={evaluating} onClick={evaluate}>
+          {evaluating ? 'AI 評価中…' : record.evaluation ? 'AI 評価を更新' : 'AI でこの感情曲線を評価'}
+        </button>
+        {record.evaluation && (
+          <button type="button" className="btn-outline" onClick={() => setShowEvaluation((value) => !value)}>
+            {showEvaluation ? '評価を隠す' : '評価を表示'}
+          </button>
+        )}
+      </div>
+      {error && <div className="error-message">{error}</div>}
+      {record.evaluation && showEvaluation && (
+        <div className="evaluation-box">
+          <div className="evaluation-meta">
+            <span className="tag">{record.evaluation.model}</span>
+            <span className="tag">{new Date(record.evaluation.evaluatedAt).toLocaleString()}</span>
+            {record.evaluation.usedGameLog && <span className="tag">ゲームログ参照</span>}
+            {!record.evaluation.personaAnalyzedAt && <span className="tag">ペルソナ未反映</span>}
+          </div>
+          <pre className="evaluation-text">{record.evaluation.text}</pre>
+        </div>
+      )}
+    </article>
+  );
+}

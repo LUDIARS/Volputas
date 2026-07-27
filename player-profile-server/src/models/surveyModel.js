@@ -1,11 +1,41 @@
 const db = require('../config/database');
 
+const GENERAL_CATEGORY = Object.freeze({
+  id: 'general',
+  label: 'General',
+  order: 100,
+});
+
 const surveyModel = {
   async findActive() {
     const { rows } = await db.query(
       'SELECT id, title, description, questions, created_at FROM surveys WHERE is_active = true ORDER BY created_at DESC'
     );
     return rows;
+  },
+
+  async findActiveForUser(userId) {
+    const { rows } = await db.query(
+      `SELECT s.id, s.title, s.description, s.questions, s.created_at,
+              CASE WHEN sr.id IS NULL THEN 'unanswered' ELSE 'answered' END AS response_status,
+              sr.submitted_at AS response_updated_at
+       FROM surveys s
+       LEFT JOIN survey_responses sr
+         ON sr.survey_id = s.id AND sr.user_id = $1
+       WHERE s.is_active = true
+       ORDER BY s.created_at DESC`,
+      [userId]
+    );
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      questions: row.questions,
+      created_at: row.created_at,
+      category: GENERAL_CATEGORY,
+      responseStatus: row.response_status,
+      responseUpdatedAt: row.response_updated_at,
+    }));
   },
 
   async findById(id) {
