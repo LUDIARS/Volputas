@@ -17,7 +17,7 @@ const {
   SURVEY_TITLE,
   SURVEY_DESCRIPTION,
   QUESTIONS,
-} = require('./data/gamer-survey-questions');
+} = require('../src/surveys/gamerPreferencesSurvey');
 
 const USAGE = `Volputas local OKF survey
 
