@@ -2,7 +2,7 @@ const {
   SURVEY_TITLE,
   SURVEY_DESCRIPTION,
   QUESTIONS,
-} = require('../../scripts/data/gamer-survey-questions');
+} = require('../surveys/gamerPreferencesSurvey');
 
 const GAMER_SURVEY_ID = 'gamer-preference';
 const GAMER_SURVEY = Object.freeze({

@@ -96,11 +96,11 @@ test('CLI answers the selected survey rather than the default one', async () => 
       serverRoot: path.resolve('.'),
       githubCommand: 'gh',
       gitCommand: 'git',
-      githubRepository: 'LUDIARS/Voluptas-Data',
+      githubRepository: 'LUDIARS/VolputasData',
     }),
     createRunner: () => ({ run: () => ({ stdout: 'revision\n' }) }),
     resolveIdentity: () => ({ id: '42', login: 'player' }),
-    assertPrivateRepository: () => ({ isPrivate: true }),
+    assertPublicRepository: () => ({ visibility: 'public' }),
     collectAnswers: () => ({}),
     runWorkflow: ({ definition }) => {
       answeredDefinition = definition;
