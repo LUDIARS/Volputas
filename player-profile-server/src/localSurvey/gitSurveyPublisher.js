@@ -86,6 +86,12 @@ function createGitSurveyPublisher(configurationInput = {}, {
   }
 
   function publish(identity, { allowedPaths } = {}) {
+    if (!configuration.allowRemotePublish) {
+      throw new GitSurveyPublisherError(
+        'REMOTE_PUBLICATION_DISABLED',
+        'Remote survey publication requires explicit configuration.'
+      );
+    }
     const githubIdentity = normalizeGithubIdentity(identity);
     const generatedPaths = normalizeAllowedPaths(allowedPaths, githubIdentity.id);
     const targetBranch = `${configuration.branchPrefix}${githubIdentity.id}`;

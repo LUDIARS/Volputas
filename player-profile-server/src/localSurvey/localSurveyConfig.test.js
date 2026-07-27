@@ -13,8 +13,8 @@ const VALID_CONFIG = JSON.stringify({
   dataRepository: {
     path: 'private/survey-data',
     remote: 'origin',
-    githubRepository: 'LUDIARS/Voluptas-Data',
-    expectedRemoteUrl: 'https://github.com/LUDIARS/Voluptas-Data.git',
+    githubRepository: 'LUDIARS/VolputasData',
+    expectedRemoteUrl: 'https://github.com/LUDIARS/VolputasData.git',
     baseBranch: 'main',
     responseBranchPrefix: 'responses/github-',
   },
@@ -35,7 +35,7 @@ test('loadLocalSurveyConfig resolves the repository path from the server root', 
     path.resolve(SERVER_ROOT, 'private/survey-data')
   );
   assert.equal(config.responseBranchPrefix, 'responses/github-');
-  assert.equal(config.githubRepository, 'LUDIARS/Voluptas-Data');
+  assert.equal(config.githubRepository, 'LUDIARS/VolputasData');
   assert.equal(config.githubCommand, 'gh');
 });
 
@@ -84,7 +84,7 @@ test('loadLocalSurveyConfig rejects unsupported schema versions', () => {
   }
 });
 
-test('loadLocalSurveyConfig binds the privacy check to the Git remote repository', () => {
+test('loadLocalSurveyConfig binds the repository identity to the Git remote', () => {
   const mismatched = JSON.parse(VALID_CONFIG);
   mismatched.dataRepository.expectedRemoteUrl = (
     'https://github.com/LUDIARS/Public-Survey-Data.git'

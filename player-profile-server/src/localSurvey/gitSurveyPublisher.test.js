@@ -40,6 +40,7 @@ function createPublisherFixture({
   commitPaths = SORTED_PATHS,
   commitHook = null,
   remoteVerificationSha = null,
+  allowRemotePublish = true,
 } = {}) {
   const state = {
     root,
@@ -89,6 +90,7 @@ function createPublisherFixture({
     {
       dataRepositoryRoot: root,
       gitCommand,
+      allowRemotePublish,
     },
     { runner }
   );
@@ -101,6 +103,19 @@ function createPublisherFixture({
     },
   };
 }
+
+test('publisher rejects remote publication unless explicitly enabled', () => {
+  const fixture = createPublisherFixture({ allowRemotePublish: false });
+
+  assert.throws(
+    () => fixture.publisher.publish(IDENTITY, { allowedPaths: ALLOWED_PATHS }),
+    (error) => (
+      error instanceof GitSurveyPublisherError
+      && error.code === 'REMOTE_PUBLICATION_DISABLED'
+    )
+  );
+  assert.equal(fixture.state.pushCount, 0);
+});
 
 function runScriptedGit(state, args) {
   if (args.includes('commit')) {
@@ -435,18 +450,18 @@ test('online prepare fetches only base and the current identity branch', () => {
 test('remote normalization is strict and rejected URLs stay out of errors', () => {
   assert.equal(
     normalizeGitHubHttpsRemoteUrl(
-      'https://github.com/LUDIARS/Voluptas-Data/'
+      'https://github.com/LUDIARS/VolputasData/'
     ),
-    'https://github.com/ludiars/voluptas-data.git'
+    'https://github.com/ludiars/volputasdata.git'
   );
   assert.throws(
     () => normalizeGitHubHttpsRemoteUrl(
-      'git@github.com:LUDIARS/Voluptas-Data.git'
+      'git@github.com:LUDIARS/VolputasData.git'
     ),
     /remote URL/
   );
   const fixture = createPublisherFixture({
-    fetchUrl: 'https://top-secret@github.com/LUDIARS/Voluptas-Data.git',
+    fetchUrl: 'https://top-secret@github.com/LUDIARS/VolputasData.git',
   });
 
   const error = captureError(

@@ -24,6 +24,11 @@ async function runLocalSurveyWorkflow({
   validateAnswers = validateSurveyAnswers,
   runner,
 } = {}) {
+  if (saveOnly !== true) {
+    throw new Error(
+      'Remote publication is disabled for the public VolputasData repository'
+    );
+  }
   const validatedAnswers = validateAnswers(answers, definition.questions);
   const paths = surveyArtifactPaths({
     surveyId: definition.id,
@@ -55,7 +60,7 @@ async function runLocalSurveyWorkflow({
 
   return lock.runExclusive(async () => {
     const preparation = await publisher.prepare(identity, {
-      offline: saveOnly,
+      offline: true,
       allowedPaths,
     });
     const artifacts = writeArtifacts({
@@ -66,19 +71,9 @@ async function runLocalSurveyWorkflow({
       responseDocument,
     });
 
-    if (saveOnly) {
-      return Object.freeze({
-        status: 'saved',
-        branch: preparation.branch,
-        relativePaths: artifacts.relativePaths,
-      });
-    }
-
-    const publication = await publisher.publish(identity, {
-      allowedPaths: artifacts.relativePaths,
-    });
     return Object.freeze({
-      ...publication,
+      status: 'saved',
+      branch: preparation.branch,
       relativePaths: artifacts.relativePaths,
     });
   });
