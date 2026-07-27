@@ -1,6 +1,6 @@
 'use strict';
 
-const { QUESTIONS } = require('../../scripts/data/gamer-survey-questions');
+const { QUESTIONS } = require('../surveys/gamerPreferencesSurvey');
 const {
   hasUnsafeUnicode,
   isPlainObject,

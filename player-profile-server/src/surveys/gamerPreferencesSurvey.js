@@ -1,37 +1,13 @@
 'use strict';
 
+const { agreeQuestion } = require('./agreementScale');
+
+// Core survey of the suite: one item per 12-dimension trait and per 15-axis style trait.
+// Deliberately kept at its original 28 questions so already-collected `gamer-preferences`
+// responses stay comparable; the subtype and emotion coverage that used to be missing lives
+// in sibling surveys (see surveyCatalog.js) instead of inflating this one past completion rate.
 const SURVEY_ID = 'gamer-preferences';
 const SURVEY_VERSION = '1.0.0';
-
-// Shared 4-point agreement scale. Reused across every scored question so the content stays
-// compact — each question only needs to define *what* trait it measures via `dimension`
-// (12-dim Gamer/Mechanics/Story pattern, see src/services/analysisEngine.js) and/or `axis`
-// (15-axis style preferences shared with Discutere, see src/services/preferenceAxes.js).
-const AGREE_OPTIONS = [
-  { value: 'strongly_agree', label: 'とてもそう思う' },
-  { value: 'agree', label: 'ややそう思う' },
-  { value: 'disagree', label: 'あまりそう思わない' },
-  { value: 'strongly_disagree', label: '全くそう思わない' },
-];
-
-const AGREE_SCORING = {
-  strongly_agree: 0.9,
-  agree: 0.3,
-  disagree: -0.3,
-  strongly_disagree: -0.9,
-};
-
-function agreeQuestion({ id, text, dimension, axis }) {
-  return {
-    id,
-    type: 'choice',
-    text,
-    ...(dimension ? { dimension } : {}),
-    ...(axis ? { axis } : {}),
-    options: AGREE_OPTIONS,
-    scoring: AGREE_SCORING,
-  };
-}
 
 // One question per unique dimension/axis target — no redundant coverage. The 3 MTG core
 // questions carry both `dimension` and `axis` because those concepts overlap 1:1
@@ -172,8 +148,7 @@ const SCORED_QUESTIONS = [
   }),
 ];
 
-// 好きなゲームの傾向 — スコアリングせず回答をそのまま残す (favorite-titles は freetext なので
-// affectProfile.js が既存の仕組みでそのまま20次元affectベクトルにも取り込む)。
+// 好きなゲームの傾向 — スコアリングせず回答をそのまま残す。
 // genre/experience の選択肢は Discutere の合成ペルソナ生成 (src/flow/survey.ts の GENRES /
 // EMOTION_SEEKS) と同じ語彙に揃え、サービス間で集計・比較しやすくしている。
 const DESCRIPTIVE_QUESTIONS = [
@@ -211,9 +186,14 @@ const DESCRIPTIVE_QUESTIONS = [
     ],
   },
   {
+    // affectProfile.js averages every freetext answer into the 20-dimension affect vector.
+    // Title lists are mostly proper nouns and carry almost no affect signal, so they are
+    // down-weighted against the emotion survey's narrative answers (weight 2-3) rather than
+    // dominating the vector just by being the oldest freetext question.
     id: 'favorite-titles',
     type: 'freetext',
     text: '好きなゲームタイトルを教えてください(複数可)',
+    weight: 0.5,
   },
   {
     id: 'play-platform',
