@@ -11,26 +11,38 @@ const { collectInteractiveAnswers } = require('../src/localSurvey/interactiveSur
 const { loadLocalSurveyConfig } = require('../src/localSurvey/localSurveyConfig');
 const { runLocalSurveyWorkflow } = require('../src/localSurvey/localSurveyWorkflow');
 const { createProcessRunner } = require('../src/localSurvey/processRunner');
-const {
-  SURVEY_ID,
-  SURVEY_VERSION,
-  SURVEY_TITLE,
-  SURVEY_DESCRIPTION,
-  QUESTIONS,
-} = require('../src/surveys/gamerPreferencesSurvey');
+const { SURVEY_DEFINITIONS, findSurveyDefinition } = require('../src/surveys/surveyCatalog');
+
+const SURVEY_ID_LIST = SURVEY_DEFINITIONS
+  .map((entry) => entry.definition.SURVEY_ID)
+  .join(', ');
 
 const USAGE = `Volputas local OKF survey
 
 Usage:
   npm run survey:local
+  npm run survey:local -- --survey <survey-id>
   npm run survey:local -- --answers <answers.json>
   npm run survey:local -- --save-only
 
 Options:
+  --survey <id>     Survey to answer (default: gamer-preferences).
+                    Available: ${SURVEY_ID_LIST}
   --answers <path>  Read a UTF-8 JSON object keyed by question ID.
   --save-only       Compatibility flag; local-only storage is always enforced.
   --help, -h        Show this help.
 `;
+
+// An unknown --survey must fail here rather than fall back to the default questionnaire:
+// silently answering a different survey than the one asked for would store answers under a
+// questionnaire the respondent never saw.
+function resolveSurveyDefinition(surveyId) {
+  const entry = findSurveyDefinition(surveyId);
+  if (!entry) {
+    throw new Error(`Unknown survey ID: ${surveyId}. Available: ${SURVEY_ID_LIST}`);
+  }
+  return entry.definition;
+}
 
 async function main({
   argv = process.argv.slice(2),
@@ -47,6 +59,7 @@ async function main({
   loadConfig = loadLocalSurveyConfig,
   readAnswers = readAnswersFile,
   resolveIdentity = resolveGithubIdentity,
+  resolveSurvey = resolveSurveyDefinition,
   runWorkflow = runLocalSurveyWorkflow,
 } = {}) {
   try {
@@ -56,6 +69,7 @@ async function main({
       return 0;
     }
 
+    const survey = resolveSurvey(options.surveyId);
     const config = loadConfig({ env });
     const runner = createRunner();
     const identity = resolveIdentity({
@@ -71,9 +85,10 @@ async function main({
     });
 
     output.write(`GitHub identity: @${identity.login} (${identity.id})\n`);
+    output.write(`Survey: ${survey.SURVEY_ID} v${survey.SURVEY_VERSION} (${survey.QUESTIONS.length} questions)\n`);
     const answers = options.answersPath
       ? readAnswers(options.answersPath, { cwd })
-      : await collectAnswers(QUESTIONS, { input, output });
+      : await collectAnswers(survey.QUESTIONS, { input, output });
 
     const repositoryRoot = path.resolve(config.serverRoot, '..');
     const producerRevision = runner.run(
@@ -82,11 +97,11 @@ async function main({
       { cwd: repositoryRoot }
     ).stdout.trim();
     const definition = {
-      id: SURVEY_ID,
-      version: SURVEY_VERSION,
-      title: SURVEY_TITLE,
-      description: SURVEY_DESCRIPTION,
-      questions: QUESTIONS,
+      id: survey.SURVEY_ID,
+      version: survey.SURVEY_VERSION,
+      title: survey.SURVEY_TITLE,
+      description: survey.SURVEY_DESCRIPTION,
+      questions: survey.QUESTIONS,
     };
     const result = await runWorkflow({
       answers,
@@ -128,4 +143,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { USAGE, main };
+module.exports = { resolveSurveyDefinition, USAGE, main };
