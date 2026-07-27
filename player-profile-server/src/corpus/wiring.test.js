@@ -60,7 +60,9 @@ test('adds an allowlisted, opt-in survey catalog without moving response ownersh
   );
   assert.match(migration, /ADD COLUMN IF NOT EXISTS visible_to_glab BOOLEAN NOT NULL DEFAULT false/);
   assert.match(migration, /ALTER COLUMN visible_to_glab SET DEFAULT false/);
-  assert.match(migration, /UPDATE surveys\s+SET visible_to_glab = false/);
+  // The one-time opt-out converge is guarded; re-run safety is covered in
+  // surveyCatalogMigration.test.js.
+  assert.match(migration, /UPDATE surveys SET visible_to_glab = false;/);
   assert.match(
     migration,
     /CHECK \(category IN \('game_review', 'game_survey', 'peer_question'\)\)/,
