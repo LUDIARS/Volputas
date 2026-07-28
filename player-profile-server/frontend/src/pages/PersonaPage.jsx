@@ -1,16 +1,46 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import RadarChart from '../components/RadarChart';
+import TrendChart from '../components/TrendChart';
 import { useProfileClient } from '../lib/profileClient';
+import {
+  CONFIDENCE_META,
+  PREFERENCE_AXIS_META,
+  aversionLabel,
+} from '../lib/personaAxes';
+
+const ENGAGEMENT_LABELS = {
+  emotionalEngagement: '感情表出',
+  reflection: '内省・言語化',
+};
+
+function confidenceBadge(confidence) {
+  const meta = CONFIDENCE_META[confidence] || CONFIDENCE_META.low;
+  return <span className={`confidence-badge ${meta.className}`}>{meta.label}</span>;
+}
+
+function contributionLabel(item) {
+  const kinds = {
+    survey: 'アンケート',
+    gameplay: 'ゲームプレイ',
+    voice: 'ユーザの声',
+    emotionCurve: '感情曲線',
+    steam: 'Steam',
+  };
+  return `${kinds[item.source?.kind] || item.source?.kind || '?'}${item.source?.field ? ` / ${item.source.field}` : ''}`;
+}
 
 export default function PersonaPage() {
   const client = useProfileClient();
   const [status, setStatus] = useState(null);
+  const [history, setHistory] = useState([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     client.personaStatus().then(setStatus).catch((reason) => setError(reason.message));
+    client.personaHistory().then(setHistory).catch(() => setHistory([]));
   }, [client]);
 
   async function analyze() {
@@ -23,6 +53,7 @@ export default function PersonaPage() {
       setMessage(result.recomputed
         ? '更新された入力を使ってペルソナを再分析しました。'
         : '入力に変更がないため、前回の分析をそのまま使用します。');
+      client.personaHistory().then(setHistory).catch(() => {});
     } catch (reason) {
       setError(reason.message);
     } finally {
@@ -32,13 +63,29 @@ export default function PersonaPage() {
 
   if (!status && !error) return <div className="loading-spinner">読み込み中…</div>;
   const analysis = status?.analysis;
-  const axes = analysis ? Object.entries(analysis.axes) : [];
+  const isV2 = analysis?.schemaVersion === 2 && analysis.preferenceAxes;
+
+  const axisRows = isV2
+    ? PREFERENCE_AXIS_META.map((meta) => ({ meta, axis: analysis.preferenceAxes[meta.id] }))
+    : [];
+  const scored = axisRows.filter(({ axis }) => axis && axis.score !== null);
+  const topAxes = [...scored]
+    .sort((left, right) => right.axis.score - left.axis.score)
+    .slice(0, 3);
+  const trendSeries = topAxes.map(({ meta }) => ({
+    id: meta.id,
+    label: meta.label,
+    points: history.map((entry) => ({
+      t: entry.analyzedAt,
+      score: entry.scores?.[meta.id] ?? null,
+    })),
+  }));
 
   return (
     <div>
       <div className="page-header">
         <h2>ペルソナ分析</h2>
-        <p>アンケート・ゲームプレイ情報・ユーザの声・感情曲線から、自分の傾向を可視化します。</p>
+        <p>アンケート・ゲームプレイ情報・ユーザの声・感情曲線・Steam ライブラリから、15 軸の嗜好を可視化します。</p>
       </div>
       {error && <div className="error-message">{error}</div>}
       {message && <div className="success-message">{message}</div>}
@@ -68,28 +115,101 @@ export default function PersonaPage() {
         <div className="card empty-state">
           入力データを登録すると、ここから自分のパラメータを分析できます。
         </div>
+      ) : !isV2 ? (
+        <div className="card empty-state">
+          旧形式の分析結果です。「更新データで再分析」を実行すると 15 軸表示に切り替わります。
+        </div>
       ) : (
         <div className="persona-grid">
           <section className="card persona-radar">
-            <h3>プレイ・体験パラメータ</h3>
+            <h3>嗜好 15 軸</h3>
             <RadarChart
-              dimensions={axes.map(([, axis]) => axis.label)}
-              vector={axes.map(([, axis]) => axis.score / 100)}
+              points={axisRows.map(({ meta, axis }) => ({
+                label: meta.label,
+                value: axis?.score ?? null,
+                confidence: axis?.confidence || 'insufficient',
+              }))}
             />
+            <div className="confidence-legend">
+              {Object.entries(CONFIDENCE_META).map(([key, meta]) => (
+                <span key={key} className={meta.className}>{meta.label}</span>
+              ))}
+            </div>
             <p className="persona-note">{analysis.note}</p>
           </section>
+
           <section className="card">
-            <h3>パラメータ詳細</h3>
+            <h3>軸の詳細と根拠</h3>
             <div className="persona-bars">
-              {axes.map(([id, axis]) => (
-                <div className="persona-axis" key={id}>
-                  <div><span>{axis.label}</span><strong>{axis.score}</strong></div>
-                  <div className="persona-bar"><span style={{ width: `${axis.score}%` }} /></div>
-                  <small>根拠ウェイト {axis.evidenceWeight}</small>
+              {axisRows.map(({ meta, axis }) => (
+                <div className="persona-axis" key={meta.id}>
+                  <div>
+                    <span>{meta.label} {confidenceBadge(axis?.confidence || 'insufficient')}</span>
+                    <strong>{axis?.score === null || !axis ? '—' : Math.round(axis.score * 100)}</strong>
+                  </div>
+                  {axis?.score !== null && axis ? (
+                    <>
+                      <div className="persona-bar"><span style={{ width: `${Math.round(axis.score * 100)}%` }} /></div>
+                      <details className="provenance-drawer">
+                        <summary>根拠 {axis.contributions.length} 件 (重み {axis.evidenceWeight})</summary>
+                        <ul>
+                          {axis.contributions.map((item, index) => (
+                            <li key={index}>
+                              <span>{contributionLabel(item)}</span>
+                              <span>値 {Math.round(item.value * 100)} / 重み {item.weight}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                      {axis.confidenceNote === 'steam-backlog-demotion' && (
+                        <small>Steam の積みゲー率が高いため確度を1段下げています。</small>
+                      )}
+                    </>
+                  ) : (
+                    <small className="axis-input-hint">
+                      データ不足 — <Link to={meta.inputHint.to}>{meta.inputHint.label}</Link> の入力がこの軸に効きます。
+                    </small>
+                  )}
                 </div>
               ))}
             </div>
           </section>
+
+          <section className="card">
+            <h3>表現特性</h3>
+            <div className="persona-bars">
+              {Object.entries(analysis.engagement || {}).map(([id, trait]) => (
+                <div className="persona-axis" key={id}>
+                  <div>
+                    <span>{ENGAGEMENT_LABELS[id] || id}</span>
+                    <strong>{trait.score === null ? '—' : Math.round(trait.score * 100)}</strong>
+                  </div>
+                  {trait.score !== null && (
+                    <div className="persona-bar"><span style={{ width: `${Math.round(trait.score * 100)}%` }} /></div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {(analysis.aversions || []).length > 0 && (
+              <>
+                <h3 className="aversion-heading">忌避シグナル</h3>
+                <ul className="aversion-list">
+                  {analysis.aversions.map((item) => (
+                    <li key={item.target}>
+                      <span>{aversionLabel(item.target)}</span>
+                      <strong>{Math.round(item.strength * 100)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+
+          <section className="card">
+            <h3>スコア推移</h3>
+            <TrendChart series={trendSeries} />
+          </section>
+
           <section className="card persona-evidence">
             <h3>分析に使ったデータ</h3>
             <dl>
@@ -97,20 +217,12 @@ export default function PersonaPage() {
               <div><dt>ゲームプレイ情報</dt><dd>{analysis.evidence.gameplay}</dd></div>
               <div><dt>ユーザの声</dt><dd>{analysis.evidence.voices}</dd></div>
               <div><dt>感情曲線</dt><dd>{analysis.evidence.emotionCurves}</dd></div>
+              <div><dt>Steam ライブラリ</dt><dd>{analysis.evidence.steam ? '連携済み' : '未連携'}</dd></div>
             </dl>
-            <p>分析日時: {new Date(analysis.analyzedAt).toLocaleString('ja-JP')}</p>
-          </section>
-          <section className="card">
-            <h3>強く表れた傾向</h3>
-            {analysis.leadingAxes.length === 0 ? (
-              <div className="empty-state">傾向を示す根拠が不足しています。</div>
-            ) : (
-              <ol className="leading-axes">
-                {analysis.leadingAxes.map((axis) => (
-                  <li key={axis.id}><span>{axis.label}</span><strong>{axis.score}</strong></li>
-                ))}
-              </ol>
+            {analysis.steam?.stale && (
+              <p className="stale-warning">Steam スナップショットが90日以上前のものです。再取込を推奨します。</p>
             )}
+            <p>分析日時: {new Date(analysis.analyzedAt).toLocaleString('ja-JP')}</p>
           </section>
         </div>
       )}

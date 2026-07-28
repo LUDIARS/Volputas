@@ -28,6 +28,12 @@ function createProfileClient(mode) {
     analyzePersona() {
       return request(`${base}/persona/analyze`, { method: 'POST' });
     },
+    personaHistory() {
+      // Analysis history is Git-backed and local-only for now; the online
+      // history table is a follow-up task.
+      if (!isLocal) return Promise.resolve([]);
+      return request(`${base}/persona/history`);
+    },
     evaluateEmotionCurve(recordId) {
       return request(`${base}/emotion-curves/${recordId}/evaluate`, { method: 'POST' });
     },
