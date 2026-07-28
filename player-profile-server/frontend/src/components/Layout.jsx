@@ -70,6 +70,7 @@ export default function Layout() {
           <div className="local-nav-section">体験データ</div>
           <NavLink to="/gameplay"><span className="nav-icon">▣</span><span>ゲームプレイ情報</span></NavLink>
           <NavLink to="/voices"><span className="nav-icon">◖</span><span>ユーザの声</span></NavLink>
+          <NavLink to="/voice-memos"><span className="nav-icon">●</span><span>ボイスメモ</span></NavLink>
           <NavLink to="/emotion-curves"><span className="nav-icon">⌁</span><span>感情曲線</span></NavLink>
           <NavLink to="/comparisons"><span className="nav-icon">⚖</span><span>どっちが好き?</span></NavLink>
           <div className="local-nav-section">自分を知る</div>

@@ -120,11 +120,11 @@ function analyzePersonaV2(sources, analyzedAt) {
     aversions: collectAversions([
       ...fromRecords.aversionEvidence,
       ...survey.aversionEvidence,
-      ...mechanicAversionEvidence(sources.voices),
+      ...mechanicAversionEvidence(sources.voices, sources.voiceMemos),
     ]),
     affect,
     classification,
-    mechanicReactions: collectMechanicReactions(sources.voices),
+    mechanicReactions: collectMechanicReactions(sources.voices, sources.voiceMemos),
     population: null,
     steam: steam.meta,
     evidence: {
@@ -132,6 +132,8 @@ function analyzePersonaV2(sources, analyzedAt) {
       surveyDefinitions: definitions.length,
       steam: steam.meta ? 1 : 0,
       comparisons: (sources.comparisons || []).length,
+      voiceMemos: (sources.voiceMemos || [])
+        .filter((record) => String(record.transcript || '').trim()).length,
     },
     axes: legacy.axes,
     leadingAxes: legacy.leadingAxes,

@@ -630,3 +630,37 @@
 .comparison-hint {
   margin-top: 1rem;
 }
+
+.voice-record-button {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius);
+  color: var(--color-danger);
+  background: rgba(255, 77, 106, 0.08);
+  font-weight: 700;
+}
+
+.voice-recording {
+  color: white;
+  background: var(--color-danger);
+}
+
+.voice-recording-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  color: var(--color-text-muted);
+}
+
+.voice-recording-preview audio,
+.voice-memo-audio {
+  width: 100%;
+}
+
+.voice-transcript-pending {
+  color: var(--color-text-muted);
+  font-style: italic;
+}

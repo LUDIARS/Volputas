@@ -20,6 +20,7 @@ export default function ProfileMedia({ as = 'img', kind, recordId, ...props }) {
   }, [client, kind, recordId]);
 
   if (!source) return <div className="media-loading">メディアを読み込み中…</div>;
+  if (as === 'audio') return <audio {...props} src={source} />;
   if (as === 'video') return <video {...props} src={source} />;
   return <img {...props} src={source} />;
 }

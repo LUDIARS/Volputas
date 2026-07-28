@@ -75,20 +75,20 @@ function socialSignal(text, sentiment, source) {
   };
 }
 
-function voiceContributions(record) {
-  const source = (field) => ({ kind: 'voice', id: record.id || null, field });
+function voiceContributions(record, sourceKind = 'voice', commentField = 'comment') {
+  const source = (field) => ({ kind: sourceKind, id: record.id || null, field });
   const sentiment = Number(record.sentiment) || 0;
   const v1 = [
     entry('emotionalEngagement', Math.abs(sentiment) / 2, 1.5, source('sentiment')),
-    entry('reflection', textStrength(record.comment, REFLECTION_FULL_AT), 1.5, source('comment')),
+    entry('reflection', textStrength(record.comment, REFLECTION_FULL_AT), 1.5, source(commentField)),
   ];
   if (record.scopeType === 'content') {
     v1.push(entry('exploration', 0.6, 0.75, source('scopeType')));
   }
 
   const text = [record.comment, ...(record.tags || [])].filter(Boolean).join(' ');
-  const aspects = aspectTextContributions(text, { weight: 1.5, source: source('comment') });
-  const social = socialSignal(text, sentiment, source('comment'));
+  const aspects = aspectTextContributions(text, { weight: 1.5, source: source(commentField) });
+  const social = socialSignal(text, sentiment, source(commentField));
 
   return {
     contributions: [
@@ -98,6 +98,17 @@ function voiceContributions(record) {
     ],
     aversionEvidence: [...aspects.aversionEvidence, ...social.aversionEvidence],
   };
+}
+
+function voiceMemoContributions(record) {
+  if (typeof record?.transcript !== 'string' || !record.transcript.trim()) {
+    return { contributions: [], aversionEvidence: [] };
+  }
+  return voiceContributions({
+    ...record,
+    comment: record.transcript,
+    scopeType: 'game',
+  }, 'voicememo', 'transcript');
 }
 
 function emotionCurveContributions(record) {
@@ -174,6 +185,7 @@ function collectSourceContributions(sources) {
   const results = [
     ...sources.gameplay.map(gameplayContributions),
     ...sources.voices.map(voiceContributions),
+    ...(sources.voiceMemos || []).map(voiceMemoContributions),
     ...sources.emotionCurves.map(emotionCurveContributions),
     ...sources.surveys.map(surveyContributions),
   ];
@@ -189,4 +201,5 @@ module.exports = {
   gameplayContributions,
   surveyContributions,
   voiceContributions,
+  voiceMemoContributions,
 };

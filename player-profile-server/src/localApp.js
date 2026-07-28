@@ -28,6 +28,7 @@ function createLocalApp({
   responseStore = new LocalResponseStore(),
   surveyPublisher,
   surveyDefinitionStore = new SurveyDefinitionStore(),
+  voiceMemoStore = new ProfileRecordStore('voicememos'),
   voiceStore = new ProfileRecordStore('voices'),
   personaService,
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
@@ -39,6 +40,7 @@ function createLocalApp({
   const resolvedPersonaService = personaService || new PersonaService({
     emotionCurveStore,
     gameplayStore,
+    voiceMemoStore,
     voiceStore,
     surveyDefinitionStore,
   });
@@ -65,6 +67,7 @@ function createLocalApp({
     responseStore,
     surveyPublisher: resolvedSurveyPublisher,
     surveyDefinitionStore,
+    voiceMemoStore,
     voiceStore,
   }));
 

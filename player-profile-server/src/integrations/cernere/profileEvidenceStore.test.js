@@ -7,6 +7,7 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   const columns = {
     gameplay_records: null,
     voice_records: null,
+    voicememo_records: null,
     emotion_curve_records: null,
     persona_analysis: null,
     profile_media: null,
@@ -48,6 +49,16 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   });
   assert.equal((await store.list('local-user', 'gameplay'))[0].id, gameplay.id);
 
+  const voiceMemo = await store.create('local-user', 'voice-memos', {
+    gameTitle: 'Cernere Game',
+    audioFileName: 'memo.webm',
+    transcript: 'ガチャは苦手',
+    sentiment: -2,
+    polarity: 'dislike',
+    mechanicIds: ['core/gacha'],
+  });
+  assert.equal((await store.list('local-user', 'voice-memos'))[0].id, voiceMemo.id);
+
   const owned = await store.findOwned('local-user', gameplay.id);
   assert.equal(owned.kind, 'gameplay');
   assert.equal(owned.ownerId, '11111111-1111-4111-8111-111111111111');
@@ -68,12 +79,20 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   const first = await persona.analyze('local-user');
   assert.equal(first.recomputed, true);
   assert.equal(first.analysis.evidence.gameplay, 1);
+  assert.equal(first.analysis.evidence.voiceMemos, 1);
+  assert.deepEqual(first.analysis.mechanicReactions, [{
+    mechanicId: 'core/gacha',
+    sentiment: -2,
+    samples: 1,
+    sources: [`voicememo:${voiceMemo.id}`],
+  }]);
   const unchanged = await persona.analyze('local-user');
   assert.equal(unchanged.recomputed, false);
 
   assert.ok(calls.every((call) =>
     ['managed_project', 'volputas_survey'].includes(call.module)));
   assert.equal(columns.gameplay_records.length, 1);
+  assert.equal(columns.voicememo_records.length, 1);
   assert.equal(columns.profile_media.length, 1);
   assert.equal(columns.persona_analysis.sourceFingerprint.length, 64);
 });

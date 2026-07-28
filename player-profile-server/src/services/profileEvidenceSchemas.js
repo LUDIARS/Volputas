@@ -124,6 +124,25 @@ function validateVoiceInput(body = {}) {
   };
 }
 
+function validateVoiceMemoInput(body = {}) {
+  return {
+    gameTitle: requiredText(body.gameTitle, 'Game title'),
+    audioFileName: requiredText(body.audioFileName, 'Audio file name', 255),
+    durationSeconds: optionalNumber(body.durationSeconds, 0, 3600),
+    sentiment: optionalNumber(body.sentiment, -2, 2) ?? 0,
+    polarity: body.polarity === 'like' || body.polarity === 'dislike' ? body.polarity : null,
+    mechanicIds: validateMechanicIds(body.mechanicIds),
+    // A recording may be saved before the owner manually transcribes it.
+    // Until this is non-empty, the record is media only and contributes no evidence.
+    transcript: optionalText(body.transcript, 8000),
+    tags: optionalText(body.tags, 500)
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 20),
+  };
+}
+
 // One-tap stamps map onto the valence/arousal circumplex so persona analysis
 // keeps working on stamp-only entries without new axes.
 const EMOTION_STAMPS = {
@@ -228,5 +247,6 @@ module.exports = {
   validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
+  validateVoiceMemoInput,
   validateVoiceInput,
 };
