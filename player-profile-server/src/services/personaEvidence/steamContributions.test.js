@@ -98,3 +98,35 @@ test('analyzePersonaV2 merges steam evidence and demotes achiever confidence on 
   assert.equal(withoutSteam.evidence.steam, 0);
   assert.equal(withoutSteam.steam, null);
 });
+
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const { appendAnalysisHistory, readAnalysisHistorySeries } = require('./analysisHistory');
+
+test('analysis history series returns per-axis scores from v2 snapshots', async (t) => {
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-history-'));
+  t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
+  const context = { repositoryRoot, name: 'trend-tester' };
+
+  for (const [analyzedAt, score] of [
+    ['2026-07-26T00:00:00.000Z', 0.4],
+    ['2026-07-27T00:00:00.000Z', 0.6],
+  ]) {
+    await appendAnalysisHistory({
+      ...context,
+      analysis: {
+        schemaVersion: 2,
+        analyzedAt,
+        preferenceAxes: { 'style.narrative': { score } },
+      },
+    });
+  }
+
+  const series = await readAnalysisHistorySeries(context);
+  assert.equal(series.length, 2);
+  assert.deepEqual(series.map((entry) => entry.scores['style.narrative']), [0.4, 0.6]);
+
+  const empty = await readAnalysisHistorySeries({ repositoryRoot, name: 'nobody' });
+  assert.deepEqual(empty, []);
+});

@@ -331,6 +331,21 @@ function createLocalRoutes({
     }
   });
 
+  router.get('/persona/history', async (_req, res, next) => {
+    try {
+      const { config, gitAuthor } = await configuredContext();
+      return res.json({
+        ok: true,
+        data: await personaService.historySeries({
+          repositoryRoot: gitAuthor.repositoryRoot,
+          name: config.name,
+        }),
+      });
+    } catch (error) {
+      return next(asAppError(error));
+    }
+  });
+
   return router;
 }
 

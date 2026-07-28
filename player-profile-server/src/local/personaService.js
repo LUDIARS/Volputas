@@ -2,7 +2,10 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { analyzePersonaV2 } = require('../services/personaEvidence/analyzePersonaV2');
-const { appendAnalysisHistory } = require('../services/personaEvidence/analysisHistory');
+const {
+  appendAnalysisHistory,
+  readAnalysisHistorySeries,
+} = require('../services/personaEvidence/analysisHistory');
 const { collectionDirectory, insideRepository } = require('../services/profileDataPaths');
 const { canonicalize, fingerprintSources } = require('../services/personaFingerprint');
 const { countUserEvidence } = require('../services/personaEvidence/evidenceCount');
@@ -89,6 +92,13 @@ class PersonaService {
       }
       throw error;
     }
+  }
+
+  async historySeries(context) {
+    return readAnalysisHistorySeries({
+      repositoryRoot: context.repositoryRoot,
+      name: context.name,
+    });
   }
 
   async status(context) {

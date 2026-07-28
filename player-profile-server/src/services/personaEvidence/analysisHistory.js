@@ -64,9 +64,34 @@ async function listAnalysisHistory({ repositoryRoot, name }) {
   }
 }
 
+// Compact per-axis score series for the trend UI (design §5.3). Only v2
+// snapshots carry preferenceAxes; anything else in the directory is skipped.
+async function readAnalysisHistorySeries({ repositoryRoot, name, limit = 40 }) {
+  const directory = historyDirectory(repositoryRoot, name);
+  const files = await listAnalysisHistory({ repositoryRoot, name });
+  const selected = files.slice(-limit);
+  const entries = [];
+  for (const file of selected) {
+    let snapshot;
+    try {
+      snapshot = JSON.parse(await fs.readFile(path.join(directory, file), 'utf8'));
+    } catch {
+      continue; // best-effort: a corrupt history snapshot must not break the trend view
+    }
+    if (snapshot.schemaVersion !== 2 || !snapshot.preferenceAxes) continue;
+    entries.push({
+      analyzedAt: snapshot.analyzedAt,
+      scores: Object.fromEntries(Object.entries(snapshot.preferenceAxes)
+        .map(([axis, value]) => [axis, value.score])),
+    });
+  }
+  return entries;
+}
+
 module.exports = {
   HISTORY_LIMIT,
   RECENT_KEEP,
   appendAnalysisHistory,
   listAnalysisHistory,
+  readAnalysisHistorySeries,
 };
