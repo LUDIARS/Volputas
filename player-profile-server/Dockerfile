@@ -9,13 +9,24 @@ RUN npm run build --prefix frontend
 
 FROM node:20-alpine
 
+RUN apk add --no-cache clamav ffmpeg
+
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json package-lock.json ./
 COPY lib/ ./lib/
-RUN npm ci --omit=dev
+
+# sentiment-core is a file: dependency that ships only sources — build its dist
+# before the production install so require('@ludiars/sentiment-core') resolves.
+RUN cd lib/lapilli/packages/sentiment-core \
+    && npm install --include=dev --package-lock=false \
+    && npm run build \
+    && rm -rf node_modules \
+    && cd /app \
+    && npm ci --omit=dev
 
 COPY src/ ./src/
+COPY scripts/ ./scripts/
 COPY migrations/ ./migrations/
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 

@@ -14,6 +14,8 @@ import PersonaPage from './pages/PersonaPage';
 import ProfilePage from './pages/ProfilePage';
 import SessionsPage from './pages/SessionsPage';
 import SettingsPage from './pages/SettingsPage';
+import ImpressionPage from './pages/ImpressionPage';
+import VideoReviewUploadPage from './pages/VideoReviewUploadPage';
 import SurveysPage from './pages/SurveysPage';
 import VoicePage from './pages/VoicePage';
 import './styles/localProfile.css';
@@ -71,6 +73,8 @@ function OnlineRoutes() {
           <Route path="analysis" element={<AnalysisPage />} />
           {EvidenceRoutes()}
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="impressions/:id" element={<ImpressionPage />} />
+          <Route path="video-reviews/new" element={<VideoReviewUploadPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

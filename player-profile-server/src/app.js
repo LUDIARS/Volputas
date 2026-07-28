@@ -10,6 +10,7 @@ const {
   normalizeJsonBodyError,
 } = require('./middleware/errorHandler');
 const { initKeyStore } = require('./services/jwks');
+const { startSessionMaintenance } = require('./services/sessionMaintenance');
 const { closeProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
 const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
 const { assertOnlineConfiguration } = require('./services/onlineConfiguration');
@@ -34,6 +35,8 @@ const timelineRoutes = require('./routes/timelines');
 const tuningRoutes = require('./routes/tuning');
 const abilityRoutes = require('./routes/ability');
 const delegationRoutes = require('./routes/delegations');
+const impressionRoutes = require('./routes/impressions');
+const impressionReactionRoutes = require('./routes/impressionReactions');
 const memoriaRoutes = require('./routes/memoria');
 const corpusManifestRoutes = require('./routes/corpusManifest');
 const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
@@ -44,6 +47,7 @@ const glabSurveyPath = '/api/v1/integrations/glab/surveys';
 let server = null;
 let stopPromise = null;
 let glabSurveyService = null;
+let stopSessionMaintenance = null;
 
 function getGlabSurveyService() {
   if (!glabSurveyService) glabSurveyService = createGlabSurveyService();
@@ -120,6 +124,8 @@ app.use('/api/v1', timelineRoutes);
 app.use('/api/v1', tuningRoutes);
 app.use('/api/v1', abilityRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
+app.use('/api/v1', impressionRoutes);
+app.use('/api/v1', impressionReactionRoutes);
 app.use('/api/v1/profile-data', profileEvidenceRoutes);
 
 if (fs.existsSync(path.join(frontendDirectory, 'index.html'))) {
@@ -145,6 +151,7 @@ async function start() {
   getGlabSurveyService();
   await initKeyStore();
   console.log('JWKS key store initialized');
+  stopSessionMaintenance = startSessionMaintenance();
 
   server = app.listen(config.port, () => {
     console.log(`Player Profile Server running on port ${config.port} [${config.nodeEnv}]`);
@@ -170,6 +177,8 @@ function stop() {
     } catch (error) {
       serverCloseError = error;
     }
+    stopSessionMaintenance?.();
+    stopSessionMaintenance = null;
     closeProfileEvidenceStore();
     const activeIntegration = glabSurveyService;
     glabSurveyService = null;

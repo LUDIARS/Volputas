@@ -8,6 +8,7 @@ const { issueTokens, refreshAccessToken, revokeAllTokens } = require('../service
 const { getJWKS } = require('../services/jwks');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
+const { parseNativeLogin, verifyCodeVerifier } = require('../services/nativeLogin');
 
 const STATE_TTL_SECONDS = 600;
 const TICKET_TTL_SECONDS = 60;
@@ -51,7 +52,11 @@ function createAuthRouter({
       const state = await createUniqueSecret(
         oneTimeStore,
         'oauth_state',
-        { provider: source.key, createdAt: Date.now() },
+        {
+          provider: source.key,
+          createdAt: Date.now(),
+          nativeLogin: parseNativeLogin(req.query),
+        },
         STATE_TTL_SECONDS
       );
       return res.json({ ok: true, data: { authorizationUrl: source.buildAuthorizationUrl(state) } });
@@ -93,9 +98,15 @@ function createAuthRouter({
       const ticket = await createUniqueSecret(
         oneTimeStore,
         'login_ticket',
-        { userId },
+        { userId, nativeLogin: stateData.nativeLogin || null },
         TICKET_TTL_SECONDS
       );
+      if (stateData.nativeLogin) {
+        const redirectUrl = new URL(stateData.nativeLogin.redirectUri);
+        redirectUrl.searchParams.set('ticket', ticket);
+        redirectUrl.searchParams.set('state', stateData.nativeLogin.nonce);
+        return res.redirect(302, redirectUrl.toString());
+      }
       const completeUrl = new URL('/auth/complete', config.frontendUrl);
       completeUrl.hash = `ticket=${encodeURIComponent(ticket)}`;
       return res.redirect(302, completeUrl.toString());
@@ -118,6 +129,13 @@ function createAuthRouter({
         return res.status(401).json({
           ok: false,
           error: { code: 'INVALID_TICKET', message: 'Invalid or expired login ticket' },
+        });
+      }
+      if (ticketData.nativeLogin
+          && !verifyCodeVerifier(req.body?.code_verifier, ticketData.nativeLogin.codeChallenge)) {
+        return res.status(401).json({
+          ok: false,
+          error: { code: 'INVALID_PKCE_VERIFIER', message: 'Invalid PKCE code verifier' },
         });
       }
       return res.json({ ok: true, data: tokenEnvelope(await issue(ticketData.userId)) });

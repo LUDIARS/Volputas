@@ -72,6 +72,8 @@ export async function api(path, options = {}) {
     }
   }
 
+  if (res.status === 204) return { ok: true, data: null };
+
   const json = await res.json();
   if (!json.ok) {
     const err = new Error(json.error?.message || 'API error');

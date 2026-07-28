@@ -49,6 +49,32 @@ function createLogsRouter({
     }
   });
 
+  // POST /api/v1/sessions/:id/heartbeat — checkpoint Spectator playtime
+  router.post('/:id/heartbeat', validate({
+    params: { id: { required: true, type: 'uuid' } },
+    body: { occurred_at: { required: true, type: 'string' } },
+  }), async (req, res, next) => {
+    try {
+      const elapsedMs = req.body.elapsed_ms;
+      const activeMs = req.body.active_ms;
+      const occurredAt = new Date(req.body.occurred_at);
+      if (!Number.isSafeInteger(elapsedMs) || elapsedMs < 0
+          || !Number.isSafeInteger(activeMs) || activeMs < 0 || activeMs > elapsedMs
+          || !Number.isFinite(occurredAt.getTime())) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'heartbeat playtime or occurred_at is invalid');
+      }
+      const session = await sessionModel.heartbeat(req.params.id, req.user.id, {
+        elapsedMs,
+        activeMs,
+        occurredAt: occurredAt.toISOString(),
+      });
+      if (!session) throw new AppError(404, 'NOT_FOUND', 'Open session not found');
+      return res.json({ ok: true, data: session });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
   // PATCH /api/v1/sessions/:id — end a session
   router.patch('/:id', validate({
     params: { id: { required: true, type: 'uuid' } },

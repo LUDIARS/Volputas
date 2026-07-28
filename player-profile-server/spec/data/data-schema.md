@@ -39,6 +39,8 @@ updated: 2026-07-28
 | `game_beat_scripts` | master | Voluptas運用者 | PostgreSQL | 不要 | versioned controlled vocabulary |
 | `steam_profiles` | user | 本人が連携したSteam公開プロフィール | PostgreSQL | 必要 | 本人単位アクセス。公開プロフィール(communityvisibilitystate=3)のみ連携許可 |
 | `steam_owned_games` | user-derived | Steam Web API (GetOwnedGames) スナップショット | PostgreSQL | 必要 | 本人単位アクセス。同期のたびに全置換、ジャンル等の追加取得は行わない |
+| `play_impressions` / `impression_assets` | user | 投稿した本人 | PostgreSQL + private object storage | 必要 | 所有者認証、署名付きPUT/GET、media検査・変換、期限付き原本削除 |
+| `impression_reactions` | user | 動画を見た本人 | PostgreSQL | 必要 | 所有者認証。動画内時刻、`comment/positive/negative`、本人入力本文を保持 |
 | `memoria_links` | user | 本人が発行したMemoria共有token | PostgreSQL | 必要 | tokenはAES-256-GCM暗号化して保存 (Steamの平文保存とは異なる — 本人の作業データへの読み取り権限そのものであるため) |
 | `personality_drafts` | user-derived | Memoria性格傾向exportの計算結果 | PostgreSQL | 必要 | 承認(approve)されるまで`player_profiles`には反映されない。生テキストは含まない(集計済み数値のみ) |
 

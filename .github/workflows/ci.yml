@@ -40,3 +40,6 @@ jobs:
       - name: Build frontend
         working-directory: player-profile-server/frontend
         run: npm run build
+      - name: Test frontend
+        working-directory: player-profile-server/frontend
+        run: npm test

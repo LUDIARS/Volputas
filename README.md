@@ -248,3 +248,11 @@ player-profile-server/
 ## ライセンス
 
 [MIT](./LICENSE) © 2026 LUDIARS
+
+## Spectator メディア / 動画レビュー
+
+- **viewer reaction timeline** — 動画内時刻付きコメントを30秒ビンへ集約し、ビートごとの意図一致度とDesignGapを算出
+- **動画レビュー** — Volputas 単体で録画済み動画をアップロードし、本人が「ここ良かった／ここ悪かった／コメント」を再生位置へ記録
+
+投稿・署名URL・media worker の運用は
+[player-profile-server/SPECTATOR_MEDIA.md](./player-profile-server/SPECTATOR_MEDIA.md) を参照。
