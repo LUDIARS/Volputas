@@ -5,6 +5,7 @@ const {
   weightedMean,
 } = require('@ludiars/sentiment-core');
 const db = require('../config/database');
+const { isTrialResultType, isCorrectOutcome } = require('./trialResult');
 
 const ALGO_VERSION = 1;
 
@@ -57,10 +58,12 @@ function aggregatePlaySession(events, binMs = 30_000) {
     const start = Math.floor(event.monoMs / binMs) * binMs;
     const bin = bins.get(start) || { events: 0, attempts: 0, correct: 0, retries: 0 };
     bin.events += 1;
-    if (event.eventType === 'trial_result') {
+    // Recognise the §6.4 trial_result shape (outcome/corrections) as well as the
+    // legacy bare `trial_result` + correct/retries payload the timeline shipped with.
+    if (isTrialResultType(event.eventType)) {
       bin.attempts += 1;
-      if (event.eventData?.correct === true) bin.correct += 1;
-      bin.retries += Number(event.eventData?.retries) || 0;
+      if (isCorrectOutcome(event.eventData)) bin.correct += 1;
+      bin.retries += Number(event.eventData?.corrections ?? event.eventData?.retries) || 0;
     }
     bins.set(start, bin);
   }

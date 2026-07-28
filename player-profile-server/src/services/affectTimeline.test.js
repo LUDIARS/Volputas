@@ -25,3 +25,14 @@ test('instrumented play events produce deterministic session metrics', () => {
   assert.equal(series[0].metrics.accuracy, 0.5);
   assert.equal(series[0].metrics.retries, 1);
 });
+
+test('play session metrics recognise the §6.4 trial_result shape', () => {
+  const series = aggregatePlaySession([
+    { monoMs: 100, eventType: 'ludellus.trial_result', eventData: { outcome: 'correct', corrections: 1 } },
+    { monoMs: 200, eventType: 'ludellus.trial_result', eventData: { outcome: 'timeout', corrections: 0 } },
+  ], 30_000);
+  assert.equal(series[0].metrics.attempts, 2);
+  assert.equal(series[0].metrics.correct, 1);
+  assert.equal(series[0].metrics.accuracy, 0.5);
+  assert.equal(series[0].metrics.retries, 1);
+});
