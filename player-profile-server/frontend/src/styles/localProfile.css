@@ -591,3 +591,42 @@
   cursor: pointer;
   border: none;
 }
+
+.comparison-stats {
+  margin-bottom: 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.comparison-pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0.9rem;
+}
+
+.comparison-card {
+  min-height: 9rem;
+  padding: 1.2rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface, none);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.comparison-card:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: rgba(108, 99, 255, 0.08);
+}
+
+.comparison-vs {
+  align-self: center;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.comparison-hint {
+  margin-top: 1rem;
+}

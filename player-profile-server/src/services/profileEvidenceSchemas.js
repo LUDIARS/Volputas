@@ -203,9 +203,29 @@ function validateEmotionCurveInput(body = {}) {
   };
 }
 
+// Pairwise comparison (design §4.1): experience cards reference the fixed
+// deck; game comparisons carry free-form titles.
+function validateComparisonInput(body = {}) {
+  const kind = body.kind === 'game' ? 'game' : 'experience';
+  const itemA = requiredText(body.itemA, 'Item A', 120);
+  const itemB = requiredText(body.itemB, 'Item B', 120);
+  if (itemA === itemB) {
+    throw Object.assign(new Error('Comparison items must differ'), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  if (body.winner !== 'a' && body.winner !== 'b') {
+    throw Object.assign(new Error('Winner must be "a" or "b"'), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  return { kind, itemA, itemB, winner: body.winner };
+}
+
 module.exports = {
   EMOTION_STAMPS,
   calculateDedication,
+  validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
   validateVoiceInput,

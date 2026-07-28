@@ -6,7 +6,9 @@ const {
   validateLocalConfig,
 } = require('./localConfigStore');
 const { listSurveysWithResponseStatus } = require('./surveyResponseStatus');
+const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
 const {
+  validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
   validateVoiceInput,
@@ -22,6 +24,7 @@ function asAppError(error, statusCode = 400) {
 }
 
 function createLocalRoutes({
+  comparisonStore,
   configStore,
   gitCli,
   gitAuthorReader,
@@ -233,6 +236,11 @@ function createLocalRoutes({
   collectionRoutes('/gameplay', gameplayStore, validateGameplayInput);
   collectionRoutes('/voices', voiceStore, validateVoiceInput);
   collectionRoutes('/emotion-curves', emotionCurveStore, validateEmotionCurveInput);
+  collectionRoutes('/comparisons', comparisonStore, validateComparisonInput);
+
+  router.get('/comparisons/deck', (_req, res) => {
+    res.json({ ok: true, data: EXPERIENCE_CARDS.map(({ id, text }) => ({ id, text })) });
+  });
 
   async function readGameLogText(context, recordId) {
     const media = await mediaStore.resolve({ ...context, kind: 'gamelogs', recordId });
