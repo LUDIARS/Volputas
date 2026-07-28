@@ -61,6 +61,10 @@ function validateObject(data, rules, location) {
       errors.push(`${location}.${field} must be an object`);
     }
 
+    if (rule.type === 'boolean' && typeof value !== 'boolean') {
+      errors.push(`${location}.${field} must be a boolean`);
+    }
+
     if (rule.maxLength && typeof value === 'string' && value.length > rule.maxLength) {
       errors.push(`${location}.${field} must be at most ${rule.maxLength} characters`);
     }

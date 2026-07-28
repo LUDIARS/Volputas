@@ -8,6 +8,7 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [locale, setLocale] = useState('');
+  const [researchExportConsent, setResearchExportConsent] = useState(false);
   const [identities, setIdentities] = useState([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -29,6 +30,7 @@ export default function SettingsPage() {
       setDisplayName(user.display_name || '');
       setAvatarUrl(user.avatar_url || '');
       setLocale(user.locale || 'ja');
+      setResearchExportConsent(user.research_export_consent === true);
     }
     loadIdentities();
     loadSteamStatus();
@@ -159,6 +161,7 @@ export default function SettingsPage() {
           display_name: displayName,
           avatar_url: avatarUrl || null,
           locale,
+          research_export_consent: researchExportConsent,
         },
       });
       await refetchUser();
@@ -240,6 +243,20 @@ export default function SettingsPage() {
                 <option value="ko">Korean (ko)</option>
                 <option value="zh">Chinese (zh)</option>
               </select>
+            </div>
+
+            <div className="form-group consent-setting">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={researchExportConsent}
+                  onChange={(event) => setResearchExportConsent(event.target.checked)}
+                />
+                ペルソナの研究提供（仮名化）に同意する
+              </label>
+              <p className="muted">
+                既定は off です。同意時も実名・メール・アカウント ID・回答本文は出力されません。
+              </p>
             </div>
 
             <button type="submit" className="btn-primary" disabled={saving}>
