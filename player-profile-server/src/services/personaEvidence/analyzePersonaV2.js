@@ -6,6 +6,8 @@ const { analyzePersona } = require('../personaEvidenceAnalysis');
 const { classifyFromSurveyRecords } = require('../classificationEngine');
 const { collectFreeTextSamples, computeAffectProfile } = require('../affectProfile');
 const { aggregateContributions } = require('./aggregateContributions');
+const { cardSortContributions } = require('./cardSortContributions');
+const { combineMechanicReactions } = require('./combineMechanicReactions');
 const { collectMechanicReactions, mechanicAversionEvidence } = require('./mechanicReactions');
 const { comparisonContributions } = require('./comparisonContributions');
 const { collectSourceContributions } = require('./sourceContributions');
@@ -60,11 +62,13 @@ function analyzePersonaV2(sources, analyzedAt) {
   const fromRecords = collectSourceContributions(sources);
   const steam = steamContributions(sources.steam || null, analyzedAt, sources.steamAppMeta || null);
   const comparisons = comparisonContributions(sources.comparisons || []);
+  const cardSort = cardSortContributions(sources.cardSorts || []);
   const contributions = [
     ...fromRecords.contributions,
     ...survey.contributions,
     ...steam.contributions,
     ...comparisons.contributions,
+    ...cardSort.contributions,
   ];
   const aggregated = aggregateContributions(contributions);
 
@@ -121,10 +125,14 @@ function analyzePersonaV2(sources, analyzedAt) {
       ...fromRecords.aversionEvidence,
       ...survey.aversionEvidence,
       ...mechanicAversionEvidence(sources.voices),
+      ...cardSort.aversionEvidence,
     ]),
     affect,
     classification,
-    mechanicReactions: collectMechanicReactions(sources.voices),
+    mechanicReactions: combineMechanicReactions(
+      collectMechanicReactions(sources.voices),
+      cardSort.mechanicReactions
+    ),
     population: null,
     steam: steam.meta,
     evidence: {
@@ -132,6 +140,7 @@ function analyzePersonaV2(sources, analyzedAt) {
       surveyDefinitions: definitions.length,
       steam: steam.meta ? 1 : 0,
       comparisons: (sources.comparisons || []).length,
+      cardSorts: (sources.cardSorts || []).length,
     },
     axes: legacy.axes,
     leadingAxes: legacy.leadingAxes,

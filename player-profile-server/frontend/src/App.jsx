@@ -4,6 +4,7 @@ import { RuntimeModeProvider, useRuntimeMode } from './hooks/useRuntimeMode';
 import Layout from './components/Layout';
 import LocalLayout from './components/LocalLayout';
 import AnalysisPage from './pages/AnalysisPage';
+import CardSortPage from './pages/CardSortPage';
 import ComparisonPage from './pages/ComparisonPage';
 import DashboardPage from './pages/DashboardPage';
 import EmotionCurvePage from './pages/EmotionCurvePage';
@@ -43,6 +44,7 @@ function EvidenceRoutes() {
       <Route path="voices" element={<VoicePage />} />
       <Route path="emotion-curves" element={<EmotionCurvePage />} />
       <Route path="comparisons" element={<ComparisonPage />} />
+      <Route path="card-sort" element={<CardSortPage />} />
       <Route path="persona" element={<PersonaPage />} />
     </>
   );
