@@ -1,125 +1,13 @@
 const db = require('../config/database');
 const profileModel = require('../models/profileModel');
-
-// =============================================================================
-// Hobby Classification Patterns
-// =============================================================================
-
-// Pattern 1: Gamer Pattern
-// Based on Magic: The Gathering psychographics (Timmy/Johnny/Spike + Vorthos/Melvin)
-// Each main type has 4 subtypes
-const GAMER_TYPES = {
-  timmy: {
-    label: 'Timmy/Tammy',
-    description: 'Power gamer — seeks impressive, visceral experiences',
-    subtypes: ['power', 'social', 'diversity', 'adrenaline'],
-  },
-  johnny: {
-    label: 'Johnny/Jenny',
-    description: 'Combo player — seeks creative self-expression',
-    subtypes: ['combo', 'offbeat', 'uber', 'eliminator'],
-  },
-  spike: {
-    label: 'Spike',
-    description: 'Tournament player — seeks to prove ability through winning',
-    subtypes: ['innovator', 'tuner', 'analyst', 'nut'],
-  },
-  vorthos: {
-    label: 'Vorthos',
-    description: 'Flavor enthusiast — values story, art, and world-building',
-    subtypes: ['creative', 'collector', 'loremaster', 'cosplayer'],
-  },
-  melvin: {
-    label: 'Melvin',
-    description: 'Mechanics enthusiast — appreciates elegant system design',
-    subtypes: ['designer', 'optimizer', 'theorist', 'completionist'],
-  },
-};
-
-// Pattern 2: Mechanics Pattern
-// Based on Roger Caillois' "Man and Play" (Les jeux et les hommes)
-const MECHANICS_TYPES = {
-  agon: {
-    label: 'Agon',
-    description: 'Competition — structured contests of skill and merit',
-  },
-  alea: {
-    label: 'Alea',
-    description: 'Chance/Luck — outcomes determined by fortune and randomness',
-  },
-  ilinx: {
-    label: 'Ilinx',
-    description: 'Vertigo/Thrill — pursuit of disorientation and altered perception',
-  },
-  mimicry: {
-    label: 'Mimicry',
-    description: 'Imitation/Roleplay — becoming another through simulation',
-  },
-};
-
-// Pattern 3: Story Dynamics
-// Based on Eric Berne's life scripts (Transactional Analysis)
-const STORY_TYPES = {
-  winner: {
-    label: 'Winner Script',
-    description: 'Pursues goals and achieves them — growth-oriented narrative',
-  },
-  banal: {
-    label: 'Banal Script',
-    description: 'Follows conventional paths — stability-oriented narrative',
-  },
-  loser: {
-    label: 'Loser Script',
-    description: 'Faces setbacks as recurring theme — conflict-oriented narrative',
-  },
-};
-
-// =============================================================================
-// Classification Dimensions (flat list for vector storage)
-// =============================================================================
-
-const DIMENSIONS = [
-  // Gamer Pattern (5 main types)
-  'gamer_timmy',
-  'gamer_johnny',
-  'gamer_spike',
-  'gamer_vorthos',
-  'gamer_melvin',
-  // Mechanics Pattern (4 types)
-  'mechanics_agon',
-  'mechanics_alea',
-  'mechanics_ilinx',
-  'mechanics_mimicry',
-  // Story Dynamics (3 types)
-  'story_winner',
-  'story_banal',
-  'story_loser',
-];
-
-// =============================================================================
-// Classification Schema (exported for API consumers)
-// =============================================================================
-
-const CLASSIFICATION_SCHEMA = {
-  gamer: {
-    label: 'Gamer Pattern',
-    description: 'MTG psychographic profiles — how and why you play',
-    types: GAMER_TYPES,
-    dimensions: ['gamer_timmy', 'gamer_johnny', 'gamer_spike', 'gamer_vorthos', 'gamer_melvin'],
-  },
-  mechanics: {
-    label: 'Mechanics Pattern',
-    description: "Caillois' play categories — what kind of play attracts you",
-    types: MECHANICS_TYPES,
-    dimensions: ['mechanics_agon', 'mechanics_alea', 'mechanics_ilinx', 'mechanics_mimicry'],
-  },
-  story: {
-    label: 'Story Dynamics',
-    description: "Berne's life scripts — what narrative arc drives you",
-    types: STORY_TYPES,
-    dimensions: ['story_winner', 'story_banal', 'story_loser'],
-  },
-};
+const {
+  CLASSIFICATION_SCHEMA,
+  DIMENSIONS,
+  GAMER_TYPES,
+  MECHANICS_TYPES,
+  STORY_TYPES,
+} = require('./hobbyPatternDefinitions');
+const { scoreGamerSubtypes, selectPrimarySubtype } = require('./subtypeScoring');
 
 // =============================================================================
 // Event → Dimension Mapping
@@ -234,7 +122,8 @@ async function analyzeUser(userId) {
   const tags = deriveTags(normalizedVector, classification);
 
   // Step 6: Detect gamer subtypes
-  const subtypes = detectSubtypes(normalizedVector, classification);
+  const measuredSubtypes = await loadMeasuredSubtypeScores(userId);
+  const subtypes = detectSubtypes(normalizedVector, classification, measuredSubtypes);
 
   // Step 7: Update profile
   await profileModel.upsert(userId, {});
@@ -315,6 +204,27 @@ async function aggregatePlayEvents(userId, vector, counts) {
   }
 }
 
+// Choice questions may carry a `scoring` map ({ answerValue: -1..1 }), shared with the
+// 15-axis preferenceAxes engine (see preferenceAxes.js scoreQuestion). When present it takes
+// precedence and is rescaled to this engine's 0..10 domain. Falls back to the legacy
+// per-option `weight` (already 0..10) for surveys authored before `scoring` existed.
+function choiceWeight(question, answer) {
+  const configured = question.scoring?.[String(answer)];
+  if (Number.isFinite(Number(configured))) {
+    const clamped = Math.max(-1, Math.min(1, Number(configured)));
+    return (clamped + 1) * 5;
+  }
+  const selected = Array.isArray(question.options)
+    ? question.options.find((option) => {
+      if (!option || typeof option !== 'object') return option === answer;
+      return option.value === answer || option.label === answer;
+    })
+    : null;
+  return selected && typeof selected === 'object' && Number.isFinite(Number(selected.weight))
+    ? Number(selected.weight)
+    : 5;
+}
+
 async function integrateSurveyResponses(userId, vector, counts, database = db) {
   const { rows } = await database.query(
     `SELECT sr.answers, s.questions
@@ -347,20 +257,25 @@ async function integrateSurveyResponses(userId, vector, counts, database = db) {
         vector[dimIndex] += normalizedScore * 10;
         counts[dimIndex] += 1;
       } else if (question.type === 'choice') {
-        const selected = Array.isArray(question.options)
-          ? question.options.find((option) => {
-            if (!option || typeof option !== 'object') return option === answer;
-            return option.value === answer || option.label === answer;
-          })
-          : null;
-        const choiceWeight = selected && typeof selected === 'object' && Number.isFinite(Number(selected.weight))
-          ? Number(selected.weight)
-          : 5;
-        vector[dimIndex] += choiceWeight;
+        vector[dimIndex] += choiceWeight(question, answer);
         counts[dimIndex] += 1;
       }
     }
   }
+}
+
+// Subtype answers live in the same survey_responses rows as everything else, but they do not
+// contribute to the 12-dimension vector — they narrow an already-determined main type — so they
+// are aggregated separately by subtypeScoring.js instead of inside integrateSurveyResponses.
+async function loadMeasuredSubtypeScores(userId, database = db) {
+  const { rows } = await database.query(
+    `SELECT sr.answers, s.questions
+     FROM survey_responses sr
+     JOIN surveys s ON sr.survey_id = s.id
+     WHERE sr.user_id = $1`,
+    [userId]
+  );
+  return scoreGamerSubtypes(rows);
 }
 
 function normalize(vector, counts) {
@@ -406,12 +321,29 @@ function classifyPatterns(vector) {
   return result;
 }
 
-function detectSubtypes(vector, classification) {
+// `measuredSubtypes` comes from the dedicated `gamer-subtypes` survey (see
+// src/surveys/gamerSubtypesSurvey.js). When the respondent answered it, the subtype is read
+// from those answers. Otherwise the legacy positional heuristic below is used, which derives
+// nothing from actual subtype questions — hence the explicit `source` field, so a consumer can
+// tell a measured subtype from a guessed one instead of treating both as a result.
+function detectSubtypes(vector, classification, measuredSubtypes = {}) {
   const gamer = classification.gamer;
   if (!gamer || !gamer.primary) return {};
 
   const gamerType = GAMER_TYPES[gamer.primary];
   if (!gamerType || !gamerType.subtypes) return {};
+
+  const measured = selectPrimarySubtype(gamer.primary, measuredSubtypes);
+  if (measured) {
+    return {
+      gamerType: gamer.primary,
+      gamerLabel: gamerType.label,
+      source: 'survey',
+      primarySubtype: measured.primarySubtype,
+      subtypeScores: measured.subtypeScores,
+      subtypeSamples: measured.subtypeSamples,
+    };
+  }
 
   // This heuristic remains experimental until calibrated against labelled player data.
   // Determine subtype based on secondary pattern signals
@@ -441,6 +373,7 @@ function detectSubtypes(vector, classification) {
   return {
     gamerType: gamer.primary,
     gamerLabel: gamerType.label,
+    source: 'heuristic',
     primarySubtype: subtypeScoring[0]?.subtype || null,
     subtypeScores: Object.fromEntries(subtypeScoring.map((s) => [s.subtype, s.score])),
   };
@@ -483,6 +416,7 @@ function deriveTags(vector, classification) {
 
 module.exports = {
   analyzeUser,
+  detectSubtypes,
   DIMENSIONS,
   CLASSIFICATION_SCHEMA,
   GAMER_TYPES,
@@ -490,4 +424,6 @@ module.exports = {
   STORY_TYPES,
   EVENT_DIMENSION_MAP,
   integrateSurveyResponses,
+  loadMeasuredSubtypeScores,
+  SURVEY_DIMENSION_MAP,
 };

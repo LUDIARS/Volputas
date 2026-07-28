@@ -84,3 +84,36 @@ export async function api(path, options = {}) {
 
   return json;
 }
+
+export async function apiUpload(path, file) {
+  let token = getToken();
+  let response = await fetch(path, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': file.type || 'application/octet-stream',
+    },
+    body: file,
+  });
+  if (response.status === 401 && localStorage.getItem(REFRESH_KEY)) {
+    token = await refreshAccessToken();
+    response = await fetch(path, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': file.type || 'application/octet-stream',
+      },
+      body: file,
+    });
+  }
+  const payload = await response.json().catch(() => ({
+    ok: false,
+    error: { message: `Upload failed with status ${response.status}` },
+  }));
+  if (!response.ok || !payload.ok) {
+    const error = new Error(payload.error?.message || 'Media upload failed');
+    error.code = payload.error?.code;
+    throw error;
+  }
+  return payload.data;
+}

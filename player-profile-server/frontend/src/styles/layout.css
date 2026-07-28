@@ -68,6 +68,69 @@
   font-size: 1rem;
 }
 
+.survey-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.survey-nav-tree {
+  margin: 0.25rem 0 0.5rem 2.25rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--color-border);
+}
+
+.survey-nav-category + .survey-nav-category {
+  margin-top: 0.65rem;
+}
+
+.survey-nav-category-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sidebar-nav .survey-nav-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.45rem;
+  padding: 0.35rem;
+  font-size: 0.76rem;
+}
+
+.survey-nav-item.active {
+  background: rgba(108, 99, 255, 0.15);
+  color: var(--color-primary);
+}
+
+.survey-status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-top: 0.25rem;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.survey-status-dot.answered {
+  background: var(--color-accent);
+}
+
+.survey-nav-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.survey-nav-empty {
+  padding: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
 .sidebar-user {
   padding: 1rem 1.25rem;
   border-top: 1px solid var(--color-border);
@@ -118,6 +181,30 @@
 }
 .sidebar-user .logout-btn:hover { color: var(--color-danger); }
 
+.settings-link {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+}
+
+.settings-link:hover,
+.settings-link.active {
+  color: var(--color-primary);
+  background: rgba(108, 99, 255, 0.15);
+}
+
+.local-mode-footer .user-name {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 /* Main content */
 .main-content {
   flex: 1;
@@ -147,6 +234,7 @@
   .sidebar-header h1, .sidebar-header .subtitle,
   .sidebar-nav span:not(.nav-icon),
   .sidebar-user .user-info { display: none; }
+  .survey-nav-tree { display: none; }
   .sidebar-nav a { justify-content: center; padding: 0.75rem; }
   .main-content { margin-left: 60px; padding: 1rem; }
 }

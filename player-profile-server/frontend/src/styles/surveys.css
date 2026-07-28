@@ -4,6 +4,13 @@
   gap: 1.25rem;
 }
 
+.survey-page-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .survey-list h3,
 .survey-form h3 {
   font-size: 1rem;

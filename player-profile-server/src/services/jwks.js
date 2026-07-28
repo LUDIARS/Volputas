@@ -1,21 +1,20 @@
 const crypto = require('crypto');
-const jose = require('node-jose');
 
-let keyStore = null;
+const keyStore = new Map();
 let currentKid = null;
 
 async function initKeyStore() {
-  if (keyStore) return;
+  if (currentKid) return;
 
-  keyStore = jose.JWK.createKeyStore();
-
-  const key = await keyStore.generate('RSA', 2048, {
-    alg: 'RS256',
-    use: 'sig',
-    kid: generateKid(),
+  const { generateKeyPair } = await import('jose');
+  const kid = generateKid();
+  const { privateKey, publicKey } = await generateKeyPair('RS256', {
+    extractable: true,
+    modulusLength: 2048,
   });
 
-  currentKid = key.kid;
+  keyStore.set(kid, { privateKey, publicKey });
+  currentKid = kid;
 }
 
 function generateKid() {
@@ -24,21 +23,30 @@ function generateKid() {
 
 async function getJWKS() {
   await initKeyStore();
-  return keyStore.toJSON();
+  const { exportJWK } = await import('jose');
+  const keys = await Promise.all(Array.from(keyStore, async ([kid, key]) => ({
+    ...await exportJWK(key.publicKey),
+    alg: 'RS256',
+    kid,
+    use: 'sig',
+  })));
+  return { keys };
 }
 
 async function getSigningKey(kid) {
   await initKeyStore();
 
-  const key = keyStore.get(kid || currentKid);
+  const resolvedKid = kid || currentKid;
+  const key = keyStore.get(resolvedKid);
   if (!key) {
     throw new Error('Signing key not found');
   }
 
+  const { exportPKCS8, exportSPKI } = await import('jose');
   return {
-    privateKey: key.toPEM(true),
-    publicKey: key.toPEM(false),
-    kid: key.kid,
+    privateKey: await exportPKCS8(key.privateKey),
+    publicKey: await exportSPKI(key.publicKey),
+    kid: resolvedKid,
   };
 }
 
