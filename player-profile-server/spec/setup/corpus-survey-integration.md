@@ -53,3 +53,12 @@ runnerを呼び、失敗時はbackendを起動しない。既存column/tableは�
 
 過去の実験migrationが`visible_to_glab DEFAULT true`を作成済みでも、009はdefaultと既存行を
 いったんfalseへ収束させ、同migrationで明示したseedだけを公開する。
+
+この収束は**初回適用時のみ**行う。009は`_migrations`台帳に自身の適用記録があるかを参照し、
+記録済みなら一括opt-outとseedの公開引き上げをskipする。seedのupsertも`ON CONFLICT`の更新対象を
+定義列（title/description/questions/category）に限定し、`visible_to_glab`と`is_active`は
+運用値を保持する。したがって台帳適用済みの環境へpsql等で009を手動再適用しても、
+公開中のsurveyが非公開へ巻き戻ることはない。
+
+台帳適用済み環境では通常のrunnerが009をskipするため、この修正の適用に再migrationは不要
+（schema変更を伴わない防御的修正）。

@@ -142,11 +142,20 @@ function createLocalRoutes({
         dataRepositoryPath,
         name: gitAuthor.name,
       });
-      const surveyData = await surveyDefinitionStore.ensureDefault(gitAuthor.repositoryRoot);
+      // アンケート定義の正本はデータリポジトリ (VolputasData) 側にある。設定を保存する前に
+      // 実際に読めることを確認し、定義が1本も無いディレクトリを「設定済み」として
+      // 受け入れない。ここで既定のアンケートを書き出すと正本がコード側とリポジトリ側の
+      // 2箇所になり、リポジトリを更新しても古い定義が残り続ける。
+      const surveys = await surveyDefinitionStore.list(gitAuthor.repositoryRoot);
       const config = await configStore.write(candidate);
       return res.json({
         ok: true,
-        data: { configured: true, config, gitAuthor, surveyData },
+        data: {
+          configured: true,
+          config,
+          gitAuthor,
+          surveys: { count: surveys.length, ids: surveys.map((survey) => survey.id) },
+        },
       });
     } catch (error) {
       return next(asAppError(error));

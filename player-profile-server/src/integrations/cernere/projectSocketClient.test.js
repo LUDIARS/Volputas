@@ -46,6 +46,36 @@ class FakeSocket extends EventEmitter {
   }
 }
 
+function tick() {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+function lifecycleHarness({ requestTimeoutMs = 50, autoClose = true } = {}) {
+  const sockets = [];
+  let requestNumber = 0;
+  const client = new CernereProjectSocketClient({
+    baseUrl: 'https://cernere.test',
+    clientId: 'client-id',
+    clientSecret: 'client-secret',
+    openState: 1,
+    requestTimeoutMs,
+    fetchImpl: async () => Response.json({ accessToken: 'project-token' }),
+    createWebSocket: () => {
+      const socket = new FakeSocket({ autoClose });
+      sockets.push(socket);
+      return socket;
+    },
+    requestId: () => `request-${++requestNumber}`,
+  });
+  return { client, sockets };
+}
+
+async function authenticate(socket) {
+  socket.readyState = 1;
+  socket.emit('message', JSON.stringify({ type: 'connected' }));
+  await tick();
+}
+
 function clientHarness({ requestTimeoutMs } = {}) {
   let resolveSocket;
   const socketCreated = new Promise((resolve) => { resolveSocket = resolve; });
@@ -394,5 +424,112 @@ test('stale socket error and close events cannot reject a newer generation', asy
   }));
 
   assert.deepEqual(await secondRequest, { generation: 2 });
+  await client.close();
+});
+
+test('serializes a burst of concurrent start and stop calls', async () => {
+  const { client, sockets } = lifecycleHarness();
+  const starts = [client.start(), client.start(), client.start()];
+  const stops = [client.close(), client.close()];
+
+  const settledStops = await Promise.all(stops);
+  assert.deepEqual(settledStops, [undefined, undefined]);
+
+  for (const start of starts) {
+    await assert.rejects(start, (error) => (
+      error instanceof CernereIntegrationError && /client is closed/.test(error.message)
+    ));
+  }
+
+  assert.ok(sockets.length <= 1, `at most one socket may be created, saw ${sockets.length}`);
+  for (const socket of sockets) assert.equal(socket.readyState, 3);
+  assert.equal(client.connections.size, 0);
+  assert.equal(client.connection, null);
+  assert.equal(client.pending.size, 0);
+});
+
+test('a stop racing an in-flight start leaves no orphan socket behind', async () => {
+  const { client, sockets } = lifecycleHarness();
+  const firstStart = client.start();
+  while (sockets.length < 1) await tick();
+
+  const stop = client.close();
+  const restart = client.start();
+
+  await assert.rejects(firstStart, /client is closed/);
+  await assert.rejects(restart, /client is closed/);
+  await stop;
+
+  assert.equal(sockets.length, 1);
+  assert.equal(sockets[0].readyState, 3);
+  assert.equal(client.connections.size, 0);
+  assert.equal(client.connection, null);
+  assert.equal(client.pending.size, 0);
+});
+
+test('retires a timed-out connection and reconnects on the next request', async () => {
+  const { client, sockets } = lifecycleHarness({ requestTimeoutMs: 50 });
+
+  const timedOut = client.request('volputas_survey', 'get_response', {});
+  while (sockets.length < 1) await tick();
+  await authenticate(sockets[0]);
+  await assert.rejects(timedOut, /timed out/);
+
+  // The half-open socket must not be handed to the next caller.
+  assert.equal(client.connection, null);
+  assert.equal(sockets[0].readyState, 3);
+  assert.equal(client.pending.size, 0);
+
+  const retried = client.request('volputas_survey', 'get_response', {});
+  while (sockets.length < 2) await tick();
+  assert.notEqual(sockets[1], sockets[0]);
+  await authenticate(sockets[1]);
+
+  const sent = sockets[1].sent.find((message) => message.type === 'module_request');
+  assert.ok(sent, 'the retried request is sent on the fresh socket');
+  sockets[1].emit('message', JSON.stringify({
+    type: 'module_response',
+    request_id: sent.request_id,
+    payload: { reconnected: true },
+  }));
+  assert.deepEqual(await retried, { reconnected: true });
+  await client.close();
+});
+
+test('a retired generation cannot settle a newer generation pending request', async () => {
+  const { client, sockets } = lifecycleHarness({ requestTimeoutMs: 60, autoClose: false });
+
+  const timedOut = client.request('volputas_survey', 'get_response', {});
+  while (sockets.length < 1) await tick();
+  await authenticate(sockets[0]);
+  await assert.rejects(timedOut, /timed out/);
+  assert.equal(client.connection, null);
+
+  const fresh = client.request('volputas_survey', 'get_response', {});
+  while (sockets.length < 2) await tick();
+  await authenticate(sockets[1]);
+  assert.equal(client.pending.size, 1);
+
+  // The retired socket replays late traffic that reuses the new request id.
+  sockets[0].emit('message', JSON.stringify({
+    type: 'module_response',
+    request_id: 'request-2',
+    payload: { from: 'stale-generation' },
+  }));
+  sockets[0].emit('message', JSON.stringify({
+    type: 'error',
+    request_id: 'request-2',
+    code: 'stale',
+  }));
+  sockets[0].emit('close');
+  await tick();
+  assert.equal(client.pending.size, 1, 'stale traffic must not settle the new pending request');
+
+  sockets[1].emit('message', JSON.stringify({
+    type: 'module_response',
+    request_id: 'request-2',
+    payload: { from: 'current-generation' },
+  }));
+  assert.deepEqual(await fresh, { from: 'current-generation' });
   await client.close();
 });

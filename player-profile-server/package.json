@@ -26,7 +26,7 @@
     "export:utterances": "node scripts/export-utterances.js",
     "export:personas": "node scripts/export-personas.js",
     "purge:delegation-claims": "node scripts/purge-delegation-claims.js",
-    "seed:gamer-survey": "node scripts/seed-gamer-survey.js"
+    "seed:surveys": "node scripts/seed-surveys.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

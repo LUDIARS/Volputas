@@ -11,6 +11,7 @@ tags:
   - privacy
 status: implemented
 related:
+  - ./gamer-survey-suite.md
   - ../plan/local-okf-survey-data.md
   - ../interface/local-survey-git-workflow.md
   - ../setup/local-okf-survey.md

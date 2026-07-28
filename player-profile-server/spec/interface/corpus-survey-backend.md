@@ -124,8 +124,12 @@ Voluptas backendはExcubitorが起動時注入するproject credentialで
 - `volputas_survey.get_response`
 - `volputas_survey.save_response`
 
-requestは`request_id`で相関し、各requestのtimeoutでは対象requestのみを、socket closeまたは
+requestは`request_id`で相関し、各requestのtimeoutでは対象requestのみを呼び出し元へ失敗させる。
+無応答はhalf-open TCPと区別できないため、timeoutしたconnectionはretireして即座にclientから切り離し
+(同generationの残pendingも失敗させる)、次のrequestは新しいconnectionを張り直す。socket closeまたは
 protocol errorでは同じconnection generationのpending requestをすべて明示的に失敗させる。
+start (connect/reconnect) とstop (shutdown) は単一のlifecycle queueで直列化し、
+同時呼び出しでも2つのconnect、あるいはconnectとshutdownが交錯しないようにする。
 shutdownは進行中loginをabortし、対象socketのcloseを待ち、shutdown後の
 再接続を拒否する。古いsocketを含む全connectionを追跡し、close handshakeが完了しない場合は
 timeout後にterminateする。古いsocketのeventは新しいgenerationのpending requestへ作用しない。
