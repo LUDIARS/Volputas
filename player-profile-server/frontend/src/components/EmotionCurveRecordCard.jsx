@@ -39,29 +39,38 @@ export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
           <span className="tag">プレイ後 {record.daysAfterPlay} 日</span>
         )}
       </div>
-      <ProfileMedia
-        as="video"
-        className="emotion-video"
-        kind="videos"
-        recordId={record.id}
-        controls
-        preload="metadata"
-      />
+      {record.mode !== 'memory' && (
+        <ProfileMedia
+          as="video"
+          className="emotion-video"
+          kind="videos"
+          recordId={record.id}
+          controls
+          preload="metadata"
+        />
+      )}
       <div className="emotion-timeline">
         {record.entries.map((entry, index) => {
           const stamp = entry.stamp ? STAMP_BY_ID[entry.stamp] : null;
+          const at = record.mode === 'memory'
+            ? `${entry.position}%`
+            : formatTime(entry.timeSeconds);
           return (
-            <div className="emotion-point" key={`${entry.timeSeconds}-${index}`}>
-              <strong>{formatTime(entry.timeSeconds)}</strong>
+            <div className="emotion-point" key={`${at}-${index}`}>
+              <strong>{at}</strong>
               <span className={`valence valence-${entry.valence}`} title={stamp ? stamp.label : undefined}>
                 {stamp ? stamp.emoji : `${entry.valence > 0 ? '+' : ''}${entry.valence}`}
               </span>
-              <p>{entry.comment || (stamp ? stamp.label : '')}</p>
+              <p>
+                {entry.progressLabel && <span className="tag">{entry.progressLabel}</span>}
+                {entry.comment || (stamp ? ` ${stamp.label}` : '')}
+              </p>
             </div>
           );
         })}
       </div>
       <div className="tags-row">
+        {record.mode === 'memory' && <span className="tag">記憶スケッチ</span>}
         {record.narrativeArc && <span className="tag">Arc: {record.narrativeArc}</span>}
         {record.journeyStage && <span className="tag">Journey: {record.journeyStage}</span>}
         {record.totalPlaytimeHours !== null && record.totalPlaytimeHours !== undefined && (

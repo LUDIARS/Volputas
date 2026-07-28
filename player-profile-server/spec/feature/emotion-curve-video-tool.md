@@ -111,6 +111,7 @@ persona-engine-v2 との整合: LLM は opt-in 補助であり、決定的なペ
 
 ## 非目標
 
-- 動画なし memory モード (= v2 設計 T7。別タスク)
+- ~~動画なし memory モード~~ → **T7 で実装済み** (`mode: 'memory'`、`entries[].position` 0..100%、
+  `entries[].progressLabel` 進行アンカー、分析は記憶バイアス分 weight 0.75 掛け)
 - 動画・ログの機械解釈 (Vision / ログの決定的パース) — ログは LLM への文脈供給のみ
 - 評価結果のペルソナ evidence への還流 (v2 パイプライン確立後に検討)

@@ -92,3 +92,32 @@ test('emotion stamps default valence and arousal and allow comment-free entries'
     entries: [{ timeSeconds: 5, stamp: 'unknown' }],
   }), (error) => error.code === 'INVALID_PROFILE_INPUT');
 });
+
+test('memory-mode emotion curves need positions instead of a video', () => {
+  const sketch = validateEmotionCurveInput({
+    gameTitle: 'Example',
+    mode: 'memory',
+    entries: [
+      { position: 80, stamp: 'hype', progressLabel: 'ラスボス' },
+      { position: 20, stamp: 'stress' },
+    ],
+  });
+  assert.equal(sketch.mode, 'memory');
+  assert.equal(sketch.videoFileName, '');
+  assert.deepEqual(sketch.entries.map((entry) => entry.position), [20, 80]);
+  assert.equal(sketch.entries[1].progressLabel, 'ラスボス');
+  assert.equal(sketch.entries[0].timeSeconds, undefined);
+
+  // position is mandatory in memory mode…
+  assert.throws(() => validateEmotionCurveInput({
+    gameTitle: 'Example',
+    mode: 'memory',
+    entries: [{ stamp: 'hype' }],
+  }), (error) => error.code === 'INVALID_PROFILE_INPUT');
+
+  // …and video mode still requires the video file name.
+  assert.throws(() => validateEmotionCurveInput({
+    gameTitle: 'Example',
+    entries: [{ timeSeconds: 5, stamp: 'hype' }],
+  }), (error) => error.code === 'INVALID_PROFILE_INPUT');
+});
