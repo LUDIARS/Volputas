@@ -4,6 +4,7 @@ const path = require('node:path');
 const { LocalConfigStore } = require('./local/localConfigStore');
 const { GitCli } = require('./local/gitCli');
 const { GitAuthorReader } = require('./local/gitAuthorReader');
+const { GitSurveyPublisher } = require('./local/gitSurveyPublisher');
 const { LocalResponseStore } = require('./local/localResponseStore');
 const { SurveyDefinitionStore } = require('./local/surveyDefinitionStore');
 const { createLocalRoutes } = require('./local/localRoutes');
@@ -24,6 +25,7 @@ function createLocalApp({
   gameplayStore = new ProfileRecordStore('gameplay'),
   mediaStore = new ProfileMediaStore(),
   responseStore = new LocalResponseStore(),
+  surveyPublisher,
   surveyDefinitionStore = new SurveyDefinitionStore(),
   voiceStore = new ProfileRecordStore('voices'),
   personaService,
@@ -40,6 +42,7 @@ function createLocalApp({
   });
   const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
     || new EmotionCurveEvaluationService({ llmClient: createLlmTextClient() });
+  const resolvedSurveyPublisher = surveyPublisher || new GitSurveyPublisher(gitCli);
   app.use(helmet());
   app.use(express.json({ limit: '1mb' }));
   app.get('/health', (_req, res) => {
@@ -58,6 +61,7 @@ function createLocalApp({
     mediaStore,
     personaService: resolvedPersonaService,
     responseStore,
+    surveyPublisher: resolvedSurveyPublisher,
     surveyDefinitionStore,
     voiceStore,
   }));

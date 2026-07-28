@@ -6,6 +6,7 @@ const execFileAsync = promisify(execFile);
 async function defaultGitRunner(args) {
   return execFileAsync('git', args, {
     encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
     windowsHide: true,
   });
 }
@@ -38,6 +39,15 @@ class GitCli {
     throw Object.assign(new Error(status.error), {
       code: 'GIT_CLI_UNAVAILABLE',
     });
+  }
+
+  async execute(args) {
+    if (!Array.isArray(args) || args.length === 0) {
+      throw Object.assign(new Error('Git command arguments are required'), {
+        code: 'INVALID_GIT_COMMAND',
+      });
+    }
+    return this.runGit(args);
   }
 }
 

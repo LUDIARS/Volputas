@@ -71,7 +71,11 @@ export default function LocalSurveysPage() {
         body: { answers },
       });
       setSavedPath(result.filePath);
-      setSuccess('回答をVolputasDataへ保存しました');
+      setSuccess(
+        result.gitSync.committed
+          ? `回答を保存し、GitHubへ同期しました（commit ${result.gitSync.commit}）`
+          : `回答は変更済みのため、GitHubとの同期だけ確認しました（commit ${result.gitSync.commit}）`
+      );
       markSurveyAnswered(survey.id, result.response.updatedAt);
     } catch (requestError) {
       setError(requestError.message);
