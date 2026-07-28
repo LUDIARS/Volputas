@@ -5,6 +5,7 @@ const { analyzePersonaV2 } = require('../services/personaEvidence/analyzePersona
 const { appendAnalysisHistory } = require('../services/personaEvidence/analysisHistory');
 const { collectionDirectory, insideRepository } = require('../services/profileDataPaths');
 const { canonicalize, fingerprintSources } = require('../services/personaFingerprint');
+const { countUserEvidence } = require('../services/personaEvidence/evidenceCount');
 
 async function readJsonFiles(directory) {
   let entries;
@@ -94,7 +95,7 @@ class PersonaService {
     const sources = await this.readSources(context);
     const sourceFingerprint = fingerprintSources(sources);
     const analysis = await this.readAnalysis(context.repositoryRoot, context.name);
-    const evidenceCount = Object.values(sources).reduce((sum, records) => sum + records.length, 0);
+    const evidenceCount = countUserEvidence(sources);
     return {
       analysis,
       evidenceCount,
@@ -104,7 +105,7 @@ class PersonaService {
 
   async analyze(context) {
     const sources = await this.readSources(context);
-    const evidenceCount = Object.values(sources).reduce((sum, records) => sum + records.length, 0);
+    const evidenceCount = countUserEvidence(sources);
     if (evidenceCount === 0) {
       throw Object.assign(new Error('Register or answer at least one item before analysis'), {
         code: 'PERSONA_INPUT_REQUIRED',

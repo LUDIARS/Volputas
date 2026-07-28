@@ -61,7 +61,10 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   const media = await store.findMedia('local-user', gameplay.id, 'screenshots');
   assert.match(media.storageKey, /screenshots/);
 
-  const persona = new OnlinePersonaService(store, () => new Date('2026-07-26T01:00:00.000Z'));
+  const persona = new OnlinePersonaService(store, {
+    steamModel: { getProfile: async () => null, getOwnedGames: async () => [] },
+    now: () => new Date('2026-07-26T01:00:00.000Z'),
+  });
   const first = await persona.analyze('local-user');
   assert.equal(first.recomputed, true);
   assert.equal(first.analysis.evidence.gameplay, 1);

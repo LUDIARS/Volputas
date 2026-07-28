@@ -65,6 +65,17 @@ const steamModel = {
     return rows;
   },
 
+  async getOwnedGames(userId) {
+    const { rows } = await db.query(
+      `SELECT app_id, name, playtime_forever_minutes, playtime_2weeks_minutes
+       FROM steam_owned_games
+       WHERE user_id = $1
+       ORDER BY playtime_forever_minutes DESC`,
+      [userId]
+    );
+    return rows;
+  },
+
   async deleteByUserId(userId) {
     await db.transaction(async (client) => {
       await client.query('DELETE FROM steam_owned_games WHERE user_id = $1', [userId]);

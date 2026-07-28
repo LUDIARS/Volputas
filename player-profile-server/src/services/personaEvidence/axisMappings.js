@@ -35,6 +35,21 @@ const SURVEY_CHOICE_AXIS_QUESTIONS = Object.freeze({
   'favorite-experience': EXPERIENCE_AXIS_MAP,
 });
 
+// Steam storefront genre labels (lowercased) → axes. Used with the
+// steam_app_meta cache (design §3.2.1); labels without a stable preference
+// reading (indie, free to play, early access, casual) are deliberately absent.
+const STEAM_GENRE_AXIS_MAP = Object.freeze({
+  rpg: [['style.narrative', 0.6], ['style.explorer', 0.4]],
+  adventure: [['style.explorer', 1]],
+  action: [['style.competitor', 0.5], ['style.mastery', 0.5]],
+  strategy: [['style.mastery', 0.6], ['style.autonomy', 0.4]],
+  simulation: [['style.autonomy', 0.6], ['style.collector', 0.4]],
+  sports: [['style.competitor', 1]],
+  racing: [['style.competitor', 0.6], ['style.mastery', 0.4]],
+  'massively multiplayer': [['style.socializer', 1]],
+  puzzle: [['style.mastery', 1]],
+});
+
 // sentiment-core aspect key → axes. Only aspects with an unambiguous axis
 // reading are mapped; fun/content/performance/graphics carry no stable
 // preference-axis meaning on their own.
@@ -60,6 +75,7 @@ module.exports = {
   ASPECT_AXIS_MAP,
   EXPERIENCE_AXIS_MAP,
   GENRE_AXIS_MAP,
+  STEAM_GENRE_AXIS_MAP,
   SURVEY_CHOICE_AXIS_QUESTIONS,
   mapChoiceToContributions,
 };

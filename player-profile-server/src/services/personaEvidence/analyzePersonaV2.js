@@ -7,6 +7,7 @@ const { classifyFromSurveyRecords } = require('../classificationEngine');
 const { collectFreeTextSamples, computeAffectProfile } = require('../affectProfile');
 const { aggregateContributions } = require('./aggregateContributions');
 const { collectSourceContributions } = require('./sourceContributions');
+const { steamContributions } = require('./steamContributions');
 const { surveyAxisContributions } = require('./surveyAxisContributions');
 
 const ENGAGEMENT_AXES = ['emotionalEngagement', 'reflection'];
@@ -55,9 +56,11 @@ function analyzePersonaV2(sources, analyzedAt) {
   const definitions = sources.surveyDefinitions || [];
   const survey = surveyAxisContributions(sources.surveys, definitions);
   const fromRecords = collectSourceContributions(sources);
+  const steam = steamContributions(sources.steam || null, analyzedAt, sources.steamAppMeta || null);
   const contributions = [
     ...fromRecords.contributions,
     ...survey.contributions,
+    ...steam.contributions,
   ];
   const aggregated = aggregateContributions(contributions);
 
@@ -65,6 +68,19 @@ function analyzePersonaV2(sources, analyzedAt) {
     axis,
     aggregated[axis] || emptyAxis(),
   ]));
+  // A largely unplayed library makes completion-family self-reports less
+  // trustworthy (design §3.2): demote achiever confidence one step.
+  if (steam.meta?.completionConfidencePenalty) {
+    const achiever = preferenceAxes['style.achiever'];
+    const demoted = { high: 'medium', medium: 'low' }[achiever.confidence];
+    if (demoted) {
+      preferenceAxes['style.achiever'] = {
+        ...achiever,
+        confidence: demoted,
+        confidenceNote: 'steam-backlog-demotion',
+      };
+    }
+  }
   const engagement = Object.fromEntries(ENGAGEMENT_AXES.map((axis) => [
     axis,
     aggregated[`engagement.${axis}`] || emptyAxis(),
@@ -105,7 +121,12 @@ function analyzePersonaV2(sources, analyzedAt) {
     classification,
     mechanicReactions: [],
     population: null,
-    evidence: { ...legacy.evidence, surveyDefinitions: definitions.length },
+    steam: steam.meta,
+    evidence: {
+      ...legacy.evidence,
+      surveyDefinitions: definitions.length,
+      steam: steam.meta ? 1 : 0,
+    },
     axes: legacy.axes,
     leadingAxes: legacy.leadingAxes,
     note: legacy.note,

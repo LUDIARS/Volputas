@@ -1,28 +1,46 @@
 const { analyzePersonaV2 } = require('./personaEvidence/analyzePersonaV2');
 const { fingerprintSources } = require('./personaFingerprint');
+const { countUserEvidence } = require('./personaEvidence/evidenceCount');
+const defaultSteamModel = require('../models/steamModel');
 
 class OnlinePersonaService {
-  constructor(model, now = () => new Date()) {
+  constructor(model, { steamModel = defaultSteamModel, now = () => new Date() } = {}) {
     this.model = model;
+    this.steamModel = steamModel;
     this.now = now;
   }
 
+  // Steam data lives in the Voluptas DB (not the Cernere-owned evidence
+  // store); the snapshot carries last_synced_at so the fingerprint goes stale
+  // when the library is re-imported (design §3.2).
+  async readSteamSnapshot(userId) {
+    const profile = await this.steamModel.getProfile(userId);
+    if (!profile) return null;
+    return {
+      fetchedAt: profile.last_synced_at
+        ? new Date(profile.last_synced_at).toISOString()
+        : null,
+      games: await this.steamModel.getOwnedGames(userId),
+    };
+  }
+
   async readSources(userId) {
-    const [surveys, gameplay, voices, emotionCurves, surveyDefinitions] = await Promise.all([
+    const [surveys, gameplay, voices, emotionCurves, surveyDefinitions, steam] = await Promise.all([
       this.model.listSurveyResponses(userId),
       this.model.list(userId, 'gameplay'),
       this.model.list(userId, 'voices'),
       this.model.list(userId, 'emotion-curves'),
       this.model.listSurveyDefinitions(),
+      this.readSteamSnapshot(userId),
     ]);
-    return { surveys, gameplay, voices, emotionCurves, surveyDefinitions };
+    return { surveys, gameplay, voices, emotionCurves, surveyDefinitions, steam };
   }
 
   async status(userId) {
     const sources = await this.readSources(userId);
     const sourceFingerprint = fingerprintSources(sources);
     const analysis = await this.model.readAnalysis(userId);
-    const evidenceCount = Object.values(sources).reduce((sum, records) => sum + records.length, 0);
+    const evidenceCount = countUserEvidence(sources);
     return {
       analysis,
       evidenceCount,
@@ -32,7 +50,7 @@ class OnlinePersonaService {
 
   async analyze(userId) {
     const sources = await this.readSources(userId);
-    const evidenceCount = Object.values(sources).reduce((sum, records) => sum + records.length, 0);
+    const evidenceCount = countUserEvidence(sources);
     if (evidenceCount === 0) {
       throw Object.assign(new Error('Register or answer at least one item before analysis'), {
         code: 'PERSONA_INPUT_REQUIRED',
