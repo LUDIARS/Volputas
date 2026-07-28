@@ -24,7 +24,7 @@ export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
       setShowEvaluation(true);
     } catch (reason) {
       setError(reason.code === 'LLM_NOT_CONFIGURED'
-        ? 'AI 評価は未設定です。サーバに ANTHROPIC_API_KEY を設定してください。'
+        ? 'AI 評価を実行できません。サーバで Claude CLI (claude) を使えるようにするか、VOLPUTAS_LLM_BACKEND=anthropic と ANTHROPIC_API_KEY を設定してください。'
         : reason.message);
     } finally {
       setEvaluating(false);
@@ -72,6 +72,10 @@ export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
         )}
         {record.gameLogFileName && <span className="tag">ログ: {record.gameLogFileName}</span>}
       </div>
+      <p className="evaluation-llm-notice">
+        AI 評価は、この記録のスタンプ・メモ・プレイ時間・添付ゲームログとペルソナ分析を
+        LLM (Claude) に送信して生成します。
+      </p>
       <div className="evaluation-actions">
         <button type="button" className="btn-outline" disabled={evaluating} onClick={evaluate}>
           {evaluating ? 'AI 評価中…' : record.evaluation ? 'AI 評価を更新' : 'AI でこの感情曲線を評価'}

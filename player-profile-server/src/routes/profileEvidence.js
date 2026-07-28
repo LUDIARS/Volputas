@@ -12,7 +12,7 @@ const {
 const { ProfileMediaStore } = require('../services/profileMediaStore');
 const { OnlinePersonaService } = require('../services/onlinePersonaService');
 const { issueMediaTicket, verifyMediaTicket } = require('../services/mediaTicketService');
-const { AnthropicTextClient } = require('../services/llm/anthropicTextClient');
+const { createLlmTextClient } = require('../services/llm/createLlmTextClient');
 const { EmotionCurveEvaluationService } = require('../services/emotionCurveEvaluationService');
 
 const MEDIA_RECORD_KIND = {
@@ -38,7 +38,7 @@ function createProfileEvidenceRouter({
   const router = Router();
   const resolvedPersonaService = personaService || new OnlinePersonaService(model);
   const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
-    || new EmotionCurveEvaluationService({ llmClient: new AnthropicTextClient() });
+    || new EmotionCurveEvaluationService({ llmClient: createLlmTextClient() });
 
   router.get('/media/:kind/:recordId', async (req, res, next) => {
     try {

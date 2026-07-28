@@ -73,10 +73,20 @@ evaluate は都度実行 (再実行で上書き)。ペルソナは保存済み `
 
 ## LLM 呼び出し
 
-- `src/services/llm/anthropicTextClient.js` — transport。`ANTHROPIC_API_KEY` 必須、
-  未設定なら `LLM_NOT_CONFIGURED` (503) で **fail-fast** (RULE_CODE §7.1: 無言スタブ禁止)。
-  モデルは `VOLPUTAS_LLM_MODEL` (既定 `claude-opus-5`)。サーバ側 fallback
-  (`fallbacks: "default"`) を有効化し、ポリシー由来の refusal は推奨代替モデルで再実行される。
+- backend は `src/services/llm/createLlmTextClient.js` で選択する
+  (`VOLPUTAS_LLM_BACKEND`、既定 **`claude-cli`**)。
+  - **`claude-cli` (既定)** — `src/services/llm/claudeCliTextClient.js`。ローカルの
+    Claude Code CLI を `claude -p --output-format text` で起動し、プロンプトは stdin で渡す。
+    API キー不要。CLI 不在なら `LLM_NOT_CONFIGURED` (503) で **fail-fast**
+    (RULE_CODE §7.1: 無言スタブ禁止)。コマンドは `VOLPUTAS_CLAUDE_CLI` で差し替え可、
+    モデルは `VOLPUTAS_LLM_MODEL` (未指定なら CLI 側の既定)。timeout 5 分。
+  - **`anthropic` (明示 opt-in)** — `src/services/llm/anthropicTextClient.js`。
+    `ANTHROPIC_API_KEY` 必須、未設定なら `LLM_NOT_CONFIGURED` (503)。
+    モデルは `VOLPUTAS_LLM_MODEL` (既定 `claude-opus-5`)。サーバ側 fallback
+    (`fallbacks: "default"`) を有効化し、ポリシー由来の refusal は推奨代替モデルで再実行される。
+- **LLM 使用の明示**: UI (レコードカード) に「スタンプ・メモ・プレイ時間・ゲームログと
+  ペルソナ分析を LLM (Claude) に送信して生成する」旨を常時表示する。送信されるのは
+  当該レコードと保存済みペルソナ分析のみで、他レコードや認証情報は含まない。
 - `src/services/emotionCurveEvaluationPrompt.js` — 純関数のプロンプト構築 (テスト対象)。
   ゲームログは先頭 20,000 文字に切り詰め。ペルソナ未分析時は「分析待ち」と明示させる。
 - `src/services/emotionCurveEvaluationService.js` — 評価 1 回のオーケストレーション。
