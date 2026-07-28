@@ -60,8 +60,10 @@ Volputas-Data/
         └── gamer-preference.json
 ```
 
-回答JSONにはNameとGit Authorを記録する。アプリは自動commit/pushを行わないため、
-レビュー後に通常のGitフローでデータリポジトリへ反映する。
+回答JSONにはNameとGit Authorを記録する。WebUIで回答を保存すると、その回答JSONだけを
+自動でcommitし、データリポジトリの現在のupstreamへpushする。ほかの変更やstage済み
+ファイルは回答commitに含めない。pushに失敗した場合も回答JSONとcommitはローカルに残り、
+WebUIへGit設定・ネットワーク・push権限の確認を促すエラーを表示する。
 
 Nameはデータリポジトリの`git config user.name`から自動設定する。
 一覧の回答状態は`answers/<Name>/<survey-id>.json`の存在から算出する。

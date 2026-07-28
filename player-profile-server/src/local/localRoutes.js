@@ -14,7 +14,11 @@ const {
 
 function asAppError(error, statusCode = 400) {
   if (error instanceof AppError) return error;
-  return new AppError(statusCode, error.code || 'LOCAL_OPERATION_FAILED', error.message);
+  return new AppError(
+    error.statusCode || statusCode,
+    error.code || 'LOCAL_OPERATION_FAILED',
+    error.message
+  );
 }
 
 function createLocalRoutes({
@@ -27,6 +31,7 @@ function createLocalRoutes({
   mediaStore,
   personaService,
   responseStore,
+  surveyPublisher,
   surveyDefinitionStore,
   voiceStore,
 }) {
@@ -214,7 +219,12 @@ function createLocalRoutes({
         survey,
         answers: req.body?.answers,
       });
-      return res.json({ ok: true, data: result });
+      const gitSync = await surveyPublisher.publish({
+        repositoryRoot: gitAuthor.repositoryRoot,
+        responseFilePath: result.filePath,
+        surveyId: survey.id,
+      });
+      return res.json({ ok: true, data: { ...result, gitSync } });
     } catch (error) {
       return next(asAppError(error));
     }

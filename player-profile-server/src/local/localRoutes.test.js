@@ -105,3 +105,73 @@ test('synchronizes an existing config Name when Git Author changes', async (t) =
   assert.equal(payload.data.config.name, 'current-author');
   assert.equal(savedConfig.name, 'current-author');
 });
+
+test('publishes a local survey response before reporting save success', async (t) => {
+  const repositoryRoot = path.resolve('VolputasData');
+  const responseFilePath = path.join(repositoryRoot, 'answers', 'Neco', 'sample.json');
+  const survey = {
+    id: 'sample',
+    title: 'Sample survey',
+    questions: [{ id: 'choice', text: 'Choose', type: 'choice', options: ['yes'] }],
+  };
+  let publishInput;
+  const app = createLocalApp({
+    serveFrontend: false,
+    configStore: {
+      read: async () => ({
+        schemaVersion: 2,
+        dataRepositoryPath: repositoryRoot,
+        name: 'Neco',
+      }),
+      write: async (config) => config,
+    },
+    gitAuthorReader: {
+      read: async () => ({
+        repositoryRoot,
+        name: 'Neco',
+        email: 'neco@example.test',
+        remoteUrl: 'https://github.com/neco/VolputasData.git',
+      }),
+    },
+    responseStore: {
+      write: async () => ({
+        filePath: responseFilePath,
+        response: { updatedAt: '2026-07-27T00:00:00.000Z' },
+      }),
+    },
+    surveyDefinitionStore: {
+      find: async () => survey,
+    },
+    surveyPublisher: {
+      publish: async (input) => {
+        publishInput = input;
+        return {
+          committed: true,
+          pushed: true,
+          commit: 'abc1234',
+          pathspec: 'answers/Neco/sample.json',
+        };
+      },
+    },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  await new Promise((resolve) => server.once('listening', resolve));
+  const { port } = server.address();
+
+  const response = await fetch(`http://127.0.0.1:${port}/api/local/surveys/sample/response`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ answers: { choice: 'yes' } }),
+  });
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(publishInput, {
+    repositoryRoot,
+    responseFilePath,
+    surveyId: 'sample',
+  });
+  assert.equal(payload.data.gitSync.commit, 'abc1234');
+  assert.equal(payload.data.gitSync.pushed, true);
+});
