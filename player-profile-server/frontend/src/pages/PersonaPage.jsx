@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import RadarChart from '../components/RadarChart';
 import TrendChart from '../components/TrendChart';
 import { useProfileClient } from '../lib/profileClient';
+import { useRuntimeMode } from '../hooks/useRuntimeMode';
 import {
   CONFIDENCE_META,
   PREFERENCE_AXIS_META,
@@ -32,6 +33,7 @@ function contributionLabel(item) {
 
 export default function PersonaPage() {
   const client = useProfileClient();
+  const { mode } = useRuntimeMode();
   const [status, setStatus] = useState(null);
   const [history, setHistory] = useState([]);
   const [running, setRunning] = useState(false);
@@ -56,6 +58,32 @@ export default function PersonaPage() {
       client.personaHistory().then(setHistory).catch(() => {});
     } catch (reason) {
       setError(reason.message);
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  async function importPopulationReport(event) {
+    const [file] = event.target.files || [];
+    event.target.value = '';
+    if (!file) return;
+    setRunning(true);
+    setError('');
+    setMessage('');
+    try {
+      const report = JSON.parse(await file.text());
+      const result = await client.importPopulationReport(report);
+      const latest = await client.personaStatus();
+      setStatus(latest);
+      setMessage(result.updated
+        ? '母集団レポートを取り込み、全体内での位置を更新しました。'
+        : result.matched
+          ? '本人の行は見つかりましたが、v2 分析がないため更新しませんでした。'
+          : 'このユーザーに一致する仮名 ID はレポートにありませんでした。');
+    } catch (reason) {
+      setError(reason instanceof SyntaxError
+        ? '母集団レポートが正しい JSON ではありません。'
+        : reason.message);
     } finally {
       setRunning(false);
     }
@@ -109,6 +137,18 @@ export default function PersonaPage() {
         >
           {running ? '分析中…' : analysis ? '更新データで再分析' : 'ペルソナを分析'}
         </button>
+        {mode === 'local' && (
+          <label className={`btn-outline ${running ? 'disabled' : ''}`}>
+            母集団レポートを取込
+            <input
+              type="file"
+              accept="application/json,.json"
+              hidden
+              disabled={running}
+              onChange={importPopulationReport}
+            />
+          </label>
+        )}
       </div>
 
       {!analysis ? (
@@ -202,6 +242,38 @@ export default function PersonaPage() {
                   ))}
                 </ul>
               </>
+            )}
+          </section>
+
+          <section className="card persona-population">
+            <h3>全体の中での位置</h3>
+            {analysis.population ? (
+              <>
+                <strong>
+                  {analysis.population.verdict === 'major' ? '多数派に近い嗜好' : '少数派寄りの嗜好'}
+                </strong>
+                <dl>
+                  <div>
+                    <dt>近傍比率</dt>
+                    <dd>{Math.round(analysis.population.ratio * 1000) / 10}%</dd>
+                  </div>
+                  <div>
+                    <dt>近い実ユーザー</dt>
+                    <dd>
+                      {analysis.population.nearestClusterSize}
+                      {' / '}
+                      {analysis.population.realPopulation}
+                    </dd>
+                  </div>
+                </dl>
+                <small>
+                  レポート生成日時:
+                  {' '}
+                  {new Date(analysis.population.generatedAt).toLocaleString('ja-JP')}
+                </small>
+              </>
+            ) : (
+              <p className="muted">母集団レポートを取り込むと、全体内での位置を表示します。</p>
             )}
           </section>
 

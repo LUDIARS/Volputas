@@ -47,3 +47,49 @@ test('online persona export rejects malformed cursors', () => {
     code: 'INVALID_EXPORT_CURSOR',
   });
 });
+
+test('online population report uses project authentication and returns aggregate counts', async (t) => {
+  let authenticated = false;
+  let received;
+  const app = express();
+  app.use(express.json());
+  app.use('/api/personas', createPersonaExportRouter({
+    authenticateMiddleware: (_req, _res, next) => {
+      authenticated = true;
+      next();
+    },
+    service: { async listPage() { return { personas: [], nextCursor: null }; } },
+    populationService: {
+      async import(report) {
+        received = report;
+        return { received: 1, matched: 1, updated: 1 };
+      },
+    },
+  }));
+  const server = app.listen(0, '127.0.0.1');
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  await new Promise((resolve) => server.once('listening', resolve));
+
+  const report = {
+    generatedAt: '2026-07-28T00:00:00.000Z',
+    realPopulation: 10,
+    entries: [],
+  };
+  const response = await fetch(
+    `http://127.0.0.1:${server.address().port}/api/personas/population-report`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(report),
+    }
+  );
+  assert.equal(response.status, 200);
+  assert.equal(authenticated, true);
+  assert.deepEqual(received, report);
+  assert.deepEqual((await response.json()).data, {
+    received: 1,
+    matched: 1,
+    updated: 1,
+  });
+  assert.equal(response.headers.get('cache-control'), 'private, no-store');
+});
