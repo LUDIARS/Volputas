@@ -1,0 +1,76 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { CernereProfileEvidenceStore } = require('./profileEvidenceStore');
+const { OnlinePersonaService } = require('../../services/onlinePersonaService');
+
+test('Cernere store keeps evidence, media metadata, and persona in managed-project columns', async () => {
+  const columns = {
+    gameplay_records: null,
+    voice_records: null,
+    emotion_curve_records: null,
+    persona_analysis: null,
+    profile_media: null,
+  };
+  const calls = [];
+  const projectClient = {
+    async request(module, action, payload) {
+      calls.push({ module, action, payload });
+      if (module === 'managed_project' && action === 'get_user_data') {
+        return Object.fromEntries(payload.columns.map((column) => [column, columns[column]]));
+      }
+      if (module === 'managed_project' && action === 'set_user_data') {
+        Object.assign(columns, payload.data);
+        return { ok: true, updated: Object.keys(payload.data) };
+      }
+      if (module === 'volputas_survey' && action === 'get_response') return null;
+      throw new Error(`Unexpected command: ${module}.${action}`);
+    },
+    close() {},
+  };
+  const timestamps = [
+    new Date('2026-07-26T00:00:00.000Z'),
+    new Date('2026-07-26T00:01:00.000Z'),
+    new Date('2026-07-26T00:02:00.000Z'),
+  ];
+  const store = new CernereProfileEvidenceStore({
+    projectClient,
+    userResolver: { resolve: async () => '11111111-1111-4111-8111-111111111111' },
+    surveyModel: { findActive: async () => [] },
+    now: () => timestamps.shift() || new Date('2026-07-26T00:03:00.000Z'),
+  });
+
+  const gameplay = await store.create('local-user', 'gameplay', {
+    gameTitle: 'Cernere Game',
+    playtimeHours: 100,
+    completionPercent: 80,
+    selfRatedMastery: 4,
+    dedication: { score: 82 },
+  });
+  assert.equal((await store.list('local-user', 'gameplay'))[0].id, gameplay.id);
+
+  const owned = await store.findOwned('local-user', gameplay.id);
+  assert.equal(owned.kind, 'gameplay');
+  assert.equal(owned.ownerId, '11111111-1111-4111-8111-111111111111');
+
+  await store.saveMedia('local-user', {
+    recordId: gameplay.id,
+    kind: 'screenshots',
+    contentType: 'image/png',
+    bytes: 4,
+  });
+  const media = await store.findMedia('local-user', gameplay.id, 'screenshots');
+  assert.match(media.storageKey, /screenshots/);
+
+  const persona = new OnlinePersonaService(store, () => new Date('2026-07-26T01:00:00.000Z'));
+  const first = await persona.analyze('local-user');
+  assert.equal(first.recomputed, true);
+  assert.equal(first.analysis.evidence.gameplay, 1);
+  const unchanged = await persona.analyze('local-user');
+  assert.equal(unchanged.recomputed, false);
+
+  assert.ok(calls.every((call) =>
+    ['managed_project', 'volputas_survey'].includes(call.module)));
+  assert.equal(columns.gameplay_records.length, 1);
+  assert.equal(columns.profile_media.length, 1);
+  assert.equal(columns.persona_analysis.sourceFingerprint.length, 64);
+});

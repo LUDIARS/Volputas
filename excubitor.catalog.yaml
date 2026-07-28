@@ -15,7 +15,6 @@ services:
     runtime: node
     cwd: ${ARS_ROOT}/Voluptas/player-profile-server
     command: npm run dev
-    build_command: npm --prefix frontend run build
     allow_hot_reload: true
     depends_on: [infra-postgres, cernere]
     autostart: false
