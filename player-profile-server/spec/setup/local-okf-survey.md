@@ -20,12 +20,26 @@ updated: 2026-07-28
 
 # Local survey setup
 
+## データリポジトリの位置づけ
+
+`LUDIARS/VolputasData` は **public な template** で、アンケート定義と匿名サンプルの配布元。
+実運用では template をコピーした**自分の private データリポジトリ**を作り、回答はそこへ push する
+(private visibility guard はこのコピーに対して働く。template 自体は public のままでよい)。
+
+```bash
+# 例: template から private データリポジトリを作る
+gh repo create <owner>/<your-volputas-data> --private --template LUDIARS/VolputasData
+```
+
+作成したら `player-profile-server/config/local-survey.json` の
+`dataRepository.githubRepository` を `<owner>/<your-volputas-data>` に変更する。
+
 ## Prerequisites
 
 - Node.js 20以上
 - Git
 - GitHub CLI (`gh`)
-- private repository `LUDIARS/VolputasData` へのread/write権限
+- 上記で作成した private データリポジトリへのread/write権限
 
 ## Setup
 
@@ -36,7 +50,7 @@ gh auth login
 npm --prefix player-profile-server run setup:survey-data
 ```
 
-scriptは`LUDIARS/VolputasData`の`main`を
+scriptは`config/local-survey.json`が指すデータリポジトリの`main`を
 `player-profile-server/private/survey-data`へcloneする。submodule登録や親gitlink更新は
 行わない。
 
@@ -48,14 +62,14 @@ git -C player-profile-server/private/survey-data remote get-url origin
 git -C player-profile-server/private/survey-data status --short --branch
 ```
 
-originは`https://github.com/LUDIARS/VolputasData.git`を指す必要がある。credentialを
-remote URLへ埋め込まない。
+originは`config/local-survey.json`の`dataRepository.githubRepository`と同じ
+リポジトリを指す必要がある。credentialをremote URLへ埋め込まない。
 
-visibilityがprivateであることも確認する。回答は本人branchへpushされるため、
+データリポジトリのvisibilityがprivateであることも確認する。回答は本人branchへpushされるため、
 public/internalなrepositoryではCLIが設問を出す前に停止する。
 
 ```bash
-gh repo view LUDIARS/VolputasData --json visibility --jq .visibility
+gh repo view <owner>/<your-volputas-data> --json visibility --jq .visibility
 ```
 
 ## Run
