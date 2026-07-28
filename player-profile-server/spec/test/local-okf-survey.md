@@ -31,16 +31,16 @@ updated: 2026-07-28
 
 ## Repository validation
 
-- canonical owner/nameとpublic visibilityだけを受理する。
-- private、別repository、API失敗、不正JSONを拒否する。
+- canonical owner/nameとprivate visibilityだけを受理する。
+- public、internal、別repository、API失敗、不正JSONを拒否する。
 - APIの生出力やcredentialをエラーへ含めない。
 
-## Local-only workflow
+## Publish workflow
 
-- 引数省略時もoffline preparationを使う。
-- `--save-only`指定時も同じlocal-only結果になる。
-- remote publication要求は明示的に拒否する。
-- `git push`を呼ばない。
+- `--save-only`指定時はoffline preparationを使い、`git push`を呼ばない。
+- 省略時は本人branchへpushし、stage対象がdefinitionと当該responseだけであることを確認する。
+- `allowRemotePublish`未設定のconfigではpushせず`REMOTE_PUBLICATION_DISABLED`で失敗する。
+- non-fast-forwardをforceしない。
 
 ## Filesystem safety
 

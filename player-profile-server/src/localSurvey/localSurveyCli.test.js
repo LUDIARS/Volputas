@@ -36,7 +36,7 @@ test('CLI does not expose a rejected --answers path', async () => {
     }),
     createRunner: () => ({ run: () => ({ stdout: '' }) }),
     resolveIdentity: () => ({ id: '42', login: 'player' }),
-    assertPublicRepository: () => ({ visibility: 'public' }),
+    assertPrivateRepository: () => ({ isPrivate: true, visibility: 'private' }),
   });
 
   assert.equal(exitCode, 1);
@@ -100,7 +100,7 @@ test('CLI answers the selected survey rather than the default one', async () => 
     }),
     createRunner: () => ({ run: () => ({ stdout: 'revision\n' }) }),
     resolveIdentity: () => ({ id: '42', login: 'player' }),
-    assertPublicRepository: () => ({ visibility: 'public' }),
+    assertPrivateRepository: () => ({ isPrivate: true, visibility: 'private' }),
     collectAnswers: () => ({}),
     runWorkflow: ({ definition }) => {
       answeredDefinition = definition;

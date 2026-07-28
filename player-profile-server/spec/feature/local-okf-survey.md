@@ -1,7 +1,7 @@
 ---
 type: feature
 title: "Local survey"
-description: "公開アンケート定義を独立cloneし、本人回答をremoteへ送らずローカル保存する機能。"
+description: "アンケート定義を独立cloneし、本人回答をprivate data repositoryの本人branchへ保存・publishする機能。"
 service: volputas
 domain: survey
 tags:
@@ -24,26 +24,32 @@ updated: 2026-07-28
 
 ## User story
 
-利用者として、Volputas serverやPostgreSQLを起動せずに公開アンケートへ回答し、
-回答を自分のPCだけへ保存したい。回答はcanonical public repositoryへ送信されない。
+利用者として、Volputas serverやPostgreSQLを起動せずにアンケートへ回答し、
+回答を自分だけがアクセスできる場所へ残したい。
 
 ## Preconditions
 
 - Node.js 20以上、Git、GitHub CLIが利用できる。
 - `gh`で本人identityを取得できる。
-- `npm run setup:survey-data`で`VolputasData`を独立clone済みである。
+- `npm run setup:survey-data`でdata repositoryを独立clone済みである。
 - cloneの`origin`とGitHub上のcanonical repository identityが一致する。
+- **data repositoryがprivateである**。回答は本人branchへpushされるため、
+  public/internalなrepositoryでは設問を出す前に停止する。
 
 ## Behavior
 
 1. CLI引数と回答を検証する。
 2. GitHub numeric user IDとlogin snapshotを解決する。
-3. repository lockを取得する。
-4. definition snapshotとresponseをatomic writeする。
-5. local-only結果を表示し、lockを解放する。
+3. data repositoryのprivate visibilityを検証する。
+4. repository lockを取得する。
+5. 本人branch `responses/github-<numeric-id>` を作成またはswitchする。
+6. definition snapshotとresponseをatomic writeする。
+7. publish modeなら2 pathだけをstage・commitし、本人branchへpushする。
+8. 結果を表示し、lockを解放する。
 
-`--save-only`の有無にかかわらずremote publicationは行わない。公開定義や匿名サンプルを
-更新する場合は、通常のbranch・PR workflowを別途使用する。
+`--save-only`はlocal本人branchへの保存で止め、commit/pushを行わない。省略時はpublishする。
+publishには`dataRepository.allowRemotePublish: true`が必要であり、設定が無ければ
+pushせず失敗する。`main`へ回答を書かない。
 
 ## Privacy
 

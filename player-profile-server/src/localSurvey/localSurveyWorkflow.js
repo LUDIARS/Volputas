@@ -51,6 +51,7 @@ async function runLocalSurveyWorkflow({
     baseBranch: config.baseBranch,
     branchPrefix: config.responseBranchPrefix,
     gitCommand: config.gitCommand,
+    allowRemotePublish: config.allowRemotePublish,
   }, { runner });
   const lock = lockFactory({
     repositoryRoot: config.dataRepositoryRoot,

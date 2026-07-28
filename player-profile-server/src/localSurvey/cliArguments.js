@@ -7,7 +7,7 @@ const DEFAULT_SURVEY_ID = 'gamer-preferences';
 function parseLocalSurveyArguments(argv) {
   const options = {
     answersPath: null,
-    saveOnly: true,
+    saveOnly: false,
     surveyId: DEFAULT_SURVEY_ID,
     help: false,
   };

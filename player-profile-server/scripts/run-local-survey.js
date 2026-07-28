@@ -3,7 +3,7 @@
 const path = require('node:path');
 const { readAnswersFile } = require('../src/localSurvey/answerFile');
 const { parseLocalSurveyArguments } = require('../src/localSurvey/cliArguments');
-const { assertPublicGithubRepository } = require(
+const { assertPrivateGithubRepository } = require(
   '../src/localSurvey/githubRepositoryVisibility'
 );
 const { resolveGithubIdentity } = require('../src/localSurvey/githubIdentity');
@@ -29,7 +29,7 @@ Options:
   --survey <id>     Survey to answer (default: gamer-preferences).
                     Available: ${SURVEY_ID_LIST}
   --answers <path>  Read a UTF-8 JSON object keyed by question ID.
-  --save-only       Compatibility flag; local-only storage is always enforced.
+  --save-only       Write files on the local identity branch without commit/push.
   --help, -h        Show this help.
 `;
 
@@ -53,7 +53,7 @@ async function main({
   errorOutput = process.stderr,
   now = () => new Date(),
 } = {}, {
-  assertPublicRepository = assertPublicGithubRepository,
+  assertPrivateRepository = assertPrivateGithubRepository,
   collectAnswers = collectInteractiveAnswers,
   createRunner = createProcessRunner,
   loadConfig = loadLocalSurveyConfig,
@@ -77,7 +77,7 @@ async function main({
       runner,
       githubCommand: config.githubCommand,
     });
-    assertPublicRepository({
+    assertPrivateRepository({
       cwd: config.serverRoot,
       repository: config.githubRepository,
       githubCommand: config.githubCommand,
