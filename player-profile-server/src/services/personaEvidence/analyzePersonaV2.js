@@ -6,6 +6,7 @@ const { analyzePersona } = require('../personaEvidenceAnalysis');
 const { classifyFromSurveyRecords } = require('../classificationEngine');
 const { collectFreeTextSamples, computeAffectProfile } = require('../affectProfile');
 const { aggregateContributions } = require('./aggregateContributions');
+const { collectMechanicReactions, mechanicAversionEvidence } = require('./mechanicReactions');
 const { collectSourceContributions } = require('./sourceContributions');
 const { steamContributions } = require('./steamContributions');
 const { surveyAxisContributions } = require('./surveyAxisContributions');
@@ -116,10 +117,11 @@ function analyzePersonaV2(sources, analyzedAt) {
     aversions: collectAversions([
       ...fromRecords.aversionEvidence,
       ...survey.aversionEvidence,
+      ...mechanicAversionEvidence(sources.voices),
     ]),
     affect,
     classification,
-    mechanicReactions: [],
+    mechanicReactions: collectMechanicReactions(sources.voices),
     population: null,
     steam: steam.meta,
     evidence: {
