@@ -39,6 +39,7 @@ function createLocalApp({
     emotionCurveStore,
     gameplayStore,
     voiceStore,
+    surveyDefinitionStore,
   });
   const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
     || new EmotionCurveEvaluationService({ llmClient: createLlmTextClient() });

@@ -31,21 +31,42 @@ async function readJsonFiles(directory) {
 }
 
 class PersonaService {
-  constructor({ gameplayStore, voiceStore, emotionCurveStore, now = () => new Date() }) {
+  constructor({
+    gameplayStore,
+    voiceStore,
+    emotionCurveStore,
+    surveyDefinitionStore = null,
+    now = () => new Date(),
+  }) {
     this.gameplayStore = gameplayStore;
     this.voiceStore = voiceStore;
     this.emotionCurveStore = emotionCurveStore;
+    this.surveyDefinitionStore = surveyDefinitionStore;
     this.now = now;
   }
 
+  async readSurveyDefinitions(repositoryRoot) {
+    if (!this.surveyDefinitionStore) return [];
+    try {
+      return await this.surveyDefinitionStore.list(repositoryRoot);
+    } catch (error) {
+      // A repository without survey definitions is a legitimate state for
+      // persona analysis (other evidence still counts); only that case is
+      // tolerated here.
+      if (error.code === 'SURVEY_DATA_MISSING') return [];
+      throw error;
+    }
+  }
+
   async readSources({ repositoryRoot, name }) {
-    const [surveys, gameplay, voices, emotionCurves] = await Promise.all([
+    const [surveys, gameplay, voices, emotionCurves, surveyDefinitions] = await Promise.all([
       readJsonFiles(collectionDirectory(repositoryRoot, 'answers', name)),
       this.gameplayStore.list({ repositoryRoot, name }),
       this.voiceStore.list({ repositoryRoot, name }),
       this.emotionCurveStore.list({ repositoryRoot, name }),
+      this.readSurveyDefinitions(repositoryRoot),
     ]);
-    return { surveys, gameplay, voices, emotionCurves };
+    return { surveys, gameplay, voices, emotionCurves, surveyDefinitions };
   }
 
   analysisPath(repositoryRoot, name) {

@@ -94,4 +94,5 @@ module.exports = {
   getPreferenceAxes,
   recomputePreferenceAxes,
   scorePreferenceAxes,
+  scoreQuestion,
 };

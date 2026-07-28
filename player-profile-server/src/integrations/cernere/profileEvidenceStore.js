@@ -125,6 +125,12 @@ class CernereProfileEvidenceStore {
     }));
   }
 
+  async listSurveyDefinitions() {
+    // Question metadata for persona analysis; the catalog itself is not
+    // per-user data, so no owner resolution is involved.
+    return this.surveyModel.findActive();
+  }
+
   async listSurveyStatuses(localUserId, surveyIds) {
     const ownerId = await this.resolveOwnerId(localUserId);
     return this.projectClient.request('volputas_survey', 'list_response_statuses', {

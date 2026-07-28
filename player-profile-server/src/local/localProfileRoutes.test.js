@@ -104,6 +104,7 @@ test('local profile routes persist evidence, stream media, and cache persona ana
   assert.equal(firstAnalysis.recomputed, true);
   assert.deepEqual(firstAnalysis.analysis.evidence, {
     surveys: 0,
+    surveyDefinitions: 0,
     gameplay: 1,
     voices: 1,
     emotionCurves: 1,
