@@ -409,3 +409,9 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.evaluation-llm-notice {
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}

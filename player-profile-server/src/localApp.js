@@ -8,7 +8,7 @@ const { LocalResponseStore } = require('./local/localResponseStore');
 const { SurveyDefinitionStore } = require('./local/surveyDefinitionStore');
 const { createLocalRoutes } = require('./local/localRoutes');
 const { PersonaService } = require('./local/personaService');
-const { AnthropicTextClient } = require('./services/llm/anthropicTextClient');
+const { createLlmTextClient } = require('./services/llm/createLlmTextClient');
 const { EmotionCurveEvaluationService } = require('./services/emotionCurveEvaluationService');
 const { ProfileMediaStore } = require('./services/profileMediaStore');
 const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
@@ -39,7 +39,7 @@ function createLocalApp({
     voiceStore,
   });
   const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
-    || new EmotionCurveEvaluationService({ llmClient: new AnthropicTextClient() });
+    || new EmotionCurveEvaluationService({ llmClient: createLlmTextClient() });
   app.use(helmet());
   app.use(express.json({ limit: '1mb' }));
   app.get('/health', (_req, res) => {
