@@ -62,6 +62,10 @@ export default function Layout() {
             <span className="nav-icon">&#9679;</span>
             <span>Video Review</span>
           </NavLink>
+          <NavLink to="/game-reviews/new">
+            <span className="nav-icon">&#9733;</span>
+            <span>Game Review</span>
+          </NavLink>
           <SurveyNavigation surveys={surveys} loading={surveysLoading} />
           <div className="local-nav-section">体験データ</div>
           <NavLink to="/gameplay"><span className="nav-icon">▣</span><span>ゲームプレイ情報</span></NavLink>
