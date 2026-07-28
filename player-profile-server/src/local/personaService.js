@@ -1,7 +1,8 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
-const { analyzePersona } = require('../services/personaEvidenceAnalysis');
+const { analyzePersonaV2 } = require('../services/personaEvidence/analyzePersonaV2');
+const { appendAnalysisHistory } = require('../services/personaEvidence/analysisHistory');
 const { collectionDirectory, insideRepository } = require('../services/profileDataPaths');
 const { canonicalize, fingerprintSources } = require('../services/personaFingerprint');
 
@@ -95,7 +96,7 @@ class PersonaService {
     }
 
     const analysis = {
-      ...analyzePersona(sources, this.now().toISOString()),
+      ...analyzePersonaV2(sources, this.now().toISOString()),
       sourceFingerprint,
     };
     const filePath = this.analysisPath(context.repositoryRoot, context.name);
@@ -108,6 +109,11 @@ class PersonaService {
       await fs.unlink(temporaryPath).catch(() => {});
       throw error;
     }
+    await appendAnalysisHistory({
+      repositoryRoot: context.repositoryRoot,
+      name: context.name,
+      analysis,
+    });
     return { analysis, recomputed: true, filePath };
   }
 }

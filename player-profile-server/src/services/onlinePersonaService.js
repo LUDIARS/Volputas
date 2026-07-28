@@ -1,4 +1,4 @@
-const { analyzePersona } = require('./personaEvidenceAnalysis');
+const { analyzePersonaV2 } = require('./personaEvidence/analyzePersonaV2');
 const { fingerprintSources } = require('./personaFingerprint');
 
 class OnlinePersonaService {
@@ -43,7 +43,7 @@ class OnlinePersonaService {
       return { analysis: existing, recomputed: false };
     }
     const analysis = {
-      ...analyzePersona(sources, this.now().toISOString()),
+      ...analyzePersonaV2(sources, this.now().toISOString()),
       sourceFingerprint,
     };
     await this.model.writeAnalysis(userId, analysis);
