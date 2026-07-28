@@ -4,6 +4,7 @@
 // answers on aversion-eligible axes double as aversion evidence.
 const { PREFERENCE_AXES } = require('../preferenceAxisDefinitions');
 const { scoreQuestion } = require('../preferenceAxes');
+const { SURVEY_CHOICE_AXIS_QUESTIONS, mapChoiceToContributions } = require('./axisMappings');
 
 const AXIS_SET = new Set(PREFERENCE_AXES);
 const SURVEY_AXIS_WEIGHT = 2;
@@ -33,9 +34,21 @@ function surveyAxisContributions(responses, definitions) {
     if (!definition || !Array.isArray(definition.questions)) continue;
     if (!response.answers || typeof response.answers !== 'object') continue;
     for (const question of definition.questions) {
-      if (!AXIS_SET.has(question.axis)) continue;
       const answer = response.answers[question.id];
       if (answer === undefined || answer === null) continue;
+
+      // Axis-less descriptive choices (genre / emotionSeeks) map through the
+      // §3.7 vocabulary tables at weight 1.
+      const choiceMap = SURVEY_CHOICE_AXIS_QUESTIONS[question.id];
+      if (!AXIS_SET.has(question.axis)) {
+        if (choiceMap) {
+          contributions.push(...mapChoiceToContributions(choiceMap, answer, {
+            weight: 1,
+            source: { kind: 'survey', id: surveyId, field: question.id },
+          }));
+        }
+        continue;
+      }
       const score = scoreQuestion(question, answer);
       if (score === null) continue;
       const source = { kind: 'survey', id: surveyId, field: question.id };

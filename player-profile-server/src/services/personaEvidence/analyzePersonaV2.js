@@ -8,7 +8,6 @@ const { collectFreeTextSamples, computeAffectProfile } = require('../affectProfi
 const { aggregateContributions } = require('./aggregateContributions');
 const { collectSourceContributions } = require('./sourceContributions');
 const { surveyAxisContributions } = require('./surveyAxisContributions');
-const { mapV1Contribution } = require('./v1AxisMapping');
 
 const ENGAGEMENT_AXES = ['emotionalEngagement', 'reflection'];
 
@@ -55,8 +54,9 @@ function collectAversions(aversionEvidence) {
 function analyzePersonaV2(sources, analyzedAt) {
   const definitions = sources.surveyDefinitions || [];
   const survey = surveyAxisContributions(sources.surveys, definitions);
+  const fromRecords = collectSourceContributions(sources);
   const contributions = [
-    ...collectSourceContributions(sources).flatMap(mapV1Contribution),
+    ...fromRecords.contributions,
     ...survey.contributions,
   ];
   const aggregated = aggregateContributions(contributions);
@@ -97,7 +97,10 @@ function analyzePersonaV2(sources, analyzedAt) {
     analyzedAt,
     preferenceAxes,
     engagement,
-    aversions: collectAversions(survey.aversionEvidence),
+    aversions: collectAversions([
+      ...fromRecords.aversionEvidence,
+      ...survey.aversionEvidence,
+    ]),
     affect,
     classification,
     mechanicReactions: [],
