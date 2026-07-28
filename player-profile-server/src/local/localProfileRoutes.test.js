@@ -106,6 +106,7 @@ test('local profile routes persist evidence, stream media, and cache persona ana
     surveys: 0,
     surveyDefinitions: 0,
     steam: 0,
+    comparisons: 0,
     gameplay: 1,
     voices: 1,
     emotionCurves: 1,

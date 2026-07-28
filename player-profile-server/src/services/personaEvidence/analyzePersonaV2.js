@@ -7,6 +7,7 @@ const { classifyFromSurveyRecords } = require('../classificationEngine');
 const { collectFreeTextSamples, computeAffectProfile } = require('../affectProfile');
 const { aggregateContributions } = require('./aggregateContributions');
 const { collectMechanicReactions, mechanicAversionEvidence } = require('./mechanicReactions');
+const { comparisonContributions } = require('./comparisonContributions');
 const { collectSourceContributions } = require('./sourceContributions');
 const { steamContributions } = require('./steamContributions');
 const { surveyAxisContributions } = require('./surveyAxisContributions');
@@ -58,10 +59,12 @@ function analyzePersonaV2(sources, analyzedAt) {
   const survey = surveyAxisContributions(sources.surveys, definitions);
   const fromRecords = collectSourceContributions(sources);
   const steam = steamContributions(sources.steam || null, analyzedAt, sources.steamAppMeta || null);
+  const comparisons = comparisonContributions(sources.comparisons || []);
   const contributions = [
     ...fromRecords.contributions,
     ...survey.contributions,
     ...steam.contributions,
+    ...comparisons.contributions,
   ];
   const aggregated = aggregateContributions(contributions);
 
@@ -128,6 +131,7 @@ function analyzePersonaV2(sources, analyzedAt) {
       ...legacy.evidence,
       surveyDefinitions: definitions.length,
       steam: steam.meta ? 1 : 0,
+      comparisons: (sources.comparisons || []).length,
     },
     axes: legacy.axes,
     leadingAxes: legacy.leadingAxes,

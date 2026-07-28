@@ -34,6 +34,9 @@ function createProfileClient(mode) {
       if (!isLocal) return Promise.resolve([]);
       return request(`${base}/persona/history`);
     },
+    comparisonDeck() {
+      return request(`${base}/comparisons/deck`);
+    },
     evaluateEmotionCurve(recordId) {
       return request(`${base}/emotion-curves/${recordId}/evaluate`, { method: 'POST' });
     },

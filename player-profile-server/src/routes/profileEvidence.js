@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { AppError } = require('../middleware/errorHandler');
 const { getProfileEvidenceStore } = require('../integrations/cernere/createProfileEvidenceStore');
 const {
+  validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
   validateVoiceInput,
@@ -100,6 +101,11 @@ function createProfileEvidenceRouter({
   collectionRoutes('/gameplay', 'gameplay', validateGameplayInput);
   collectionRoutes('/voices', 'voices', validateVoiceInput);
   collectionRoutes('/emotion-curves', 'emotion-curves', validateEmotionCurveInput);
+  collectionRoutes('/comparisons', 'comparisons', validateComparisonInput);
+
+  router.get('/comparisons/deck', (_req, res) => {
+    res.json({ ok: true, data: EXPERIENCE_CARDS.map(({ id, text }) => ({ id, text })) });
+  });
 
   router.post('/emotion-curves/:recordId/evaluate', async (req, res, next) => {
     try {

@@ -4,6 +4,7 @@ const COLUMN_BY_KIND = {
   gameplay: 'gameplay_records',
   voices: 'voice_records',
   'emotion-curves': 'emotion_curve_records',
+  comparisons: 'comparison_records',
 };
 
 function requireArray(value, column) {
