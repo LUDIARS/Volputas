@@ -93,9 +93,12 @@ test('analyzePersonaV2 wires survey metadata into axes, aversions, and affect', 
   assert.equal(narrative.evidenceWeight >= SURVEY_AXIS_WEIGHT, true);
   assert.ok(narrative.contributions.some((item) => item.source.field === 'q_narrative'));
 
-  assert.equal(analysis.aversions.length, 1);
-  assert.equal(analysis.aversions[0].target, 'style.routine_tolerance');
-  assert.match(analysis.aversions[0].sources[0], /survey:gamer-preferences#q_routine/);
+  // The strongly negative routine answer becomes an aversion; the free text
+  // (「泣いた」を含む負極性の文で story に言及) additionally yields an
+  // aspect:story aversion via the T4 text analysis.
+  const routineAversion = analysis.aversions.find((item) => item.target === 'style.routine_tolerance');
+  assert.ok(routineAversion);
+  assert.match(routineAversion.sources[0], /survey:gamer-preferences#q_routine/);
 
   // Freetext answers reach the shared 20D affect vector.
   assert.ok(analysis.affect);
@@ -105,7 +108,7 @@ test('analyzePersonaV2 wires survey metadata into axes, aversions, and affect', 
   assert.equal(analysis.evidence.surveyDefinitions, 1);
 });
 
-test('analyzePersonaV2 stays functional without definitions (affect null, no aversions)', () => {
+test('analyzePersonaV2 stays functional without definitions', () => {
   const sources = {
     surveys: [RESPONSE],
     gameplay: [],
@@ -113,11 +116,12 @@ test('analyzePersonaV2 stays functional without definitions (affect null, no ave
     emotionCurves: [],
   };
   const analysis = analyzePersonaV2(sources, '2026-07-28T15:00:00.000Z');
+  // Definition-dependent outputs are absent…
   assert.equal(analysis.affect, null);
-  assert.deepEqual(analysis.aversions, []);
-  // The v1 keyword heuristics still run (answer text mentions 物語), but no
-  // question-metadata contribution can exist without a definition.
   const narrative = analysis.preferenceAxes['style.narrative'];
   assert.ok(!narrative.contributions.some((item) => item.source.field === 'q_narrative'));
   assert.equal(analysis.preferenceAxes['style.routine_tolerance'].score, null);
+  assert.ok(!analysis.aversions.some((item) => item.target === 'style.routine_tolerance'));
+  // …but raw answer text still runs through the aspect analysis.
+  assert.ok(analysis.aversions.every((item) => item.target.startsWith('aspect:')));
 });

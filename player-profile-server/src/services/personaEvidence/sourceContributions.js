@@ -1,15 +1,22 @@
-// Per-source EvidenceContribution extraction (design §3.0). Pure functions:
-// record in → v1-axis contributions with provenance out. The scoring rules are
-// a faithful port of the v1 analyzer; quality upgrades land in T2–T5.
+// Per-source EvidenceContribution extraction (design §3.0/§3.3). Pure
+// functions: record in → v2-axis contributions + aversion evidence out.
+// Text is interpreted through sentiment-core aspects (negative mentions turn
+// into aversions instead of positive axis signal); the only remaining keyword
+// heuristic is the social one, polarity-gated, until sentiment-core grows a
+// social aspect (Lapilli #14).
 const {
-  NARRATIVE_TERMS,
   SOCIAL_TERMS,
-  SURVEY_NARRATIVE_TERMS,
-  SURVEY_SOCIAL_TERMS,
   clamp,
   containsAny,
   textStrength,
 } = require('./textSignals');
+const { aspectTextContributions } = require('./aspectTextContributions');
+const { mapV1Contribution } = require('./v1AxisMapping');
+
+// 「文字数=内省」 heuristic: compressed per design §3.3 (fullAt 600) and kept
+// inside the engagement compartment only (the v1→v2 mapping already routes
+// reflection there).
+const REFLECTION_FULL_AT = 600;
 
 function entry(axis, value, weight, source, note) {
   return { axis, value: clamp(value), weight, source, ...(note ? { note } : {}) };
@@ -34,30 +41,63 @@ function gameplayContributions(record) {
       source('achievements')
     ));
   }
-  contributions.push(entry('reflection', textStrength(record.userInfo), 0.75, source('userInfo')));
-  if (record.screenshotFileName) {
-    contributions.push(entry('exploration', 0.55, 0.5, source('screenshotFileName')));
+  contributions.push(entry(
+    'reflection',
+    textStrength(record.userInfo, REFLECTION_FULL_AT),
+    0.5,
+    source('userInfo')
+  ));
+  // v1's screenshot-presence→exploration signal is retired (§3.3); the
+  // annotated gallery (T11) becomes the deliberate replacement.
+  return { contributions: contributions.flatMap(mapV1Contribution), aversionEvidence: [] };
+}
+
+// Social keyword matching survives with a polarity gate: the respondent's own
+// sentiment (slider, or analyzed valence for free text) decides whether a
+// social mention is a preference or an aversion.
+function socialSignal(text, sentiment, source) {
+  if (!containsAny([text], SOCIAL_TERMS)) return { contributions: [], aversionEvidence: [] };
+  if (sentiment >= 0) {
+    return {
+      contributions: [{
+        axis: 'style.socializer', value: 0.8, weight: 1.5, source, note: 'keyword match',
+      }],
+      aversionEvidence: [],
+    };
   }
-  return contributions;
+  return {
+    contributions: [],
+    aversionEvidence: [{
+      target: 'style.socializer',
+      strength: Number(Math.min(1, Math.abs(sentiment) / 2).toFixed(4)),
+      source,
+    }],
+  };
 }
 
 function voiceContributions(record) {
   const source = (field) => ({ kind: 'voice', id: record.id || null, field });
-  const contributions = [
-    entry('emotionalEngagement', Math.abs(Number(record.sentiment) || 0) / 2, 1.5, source('sentiment')),
-    entry('reflection', textStrength(record.comment), 1.5, source('comment')),
+  const sentiment = Number(record.sentiment) || 0;
+  const v1 = [
+    entry('emotionalEngagement', Math.abs(sentiment) / 2, 1.5, source('sentiment')),
+    entry('reflection', textStrength(record.comment, REFLECTION_FULL_AT), 1.5, source('comment')),
   ];
   if (record.scopeType === 'content') {
-    contributions.push(entry('exploration', 0.6, 0.75, source('scopeType')));
+    v1.push(entry('exploration', 0.6, 0.75, source('scopeType')));
   }
-  const terms = [record.comment, ...(record.tags || [])];
-  if (containsAny(terms, NARRATIVE_TERMS)) {
-    contributions.push(entry('narrative', 0.85, 1.5, source('comment'), 'keyword match'));
-  }
-  if (containsAny(terms, SOCIAL_TERMS)) {
-    contributions.push(entry('social', 0.8, 1.5, source('comment'), 'keyword match'));
-  }
-  return contributions;
+
+  const text = [record.comment, ...(record.tags || [])].filter(Boolean).join(' ');
+  const aspects = aspectTextContributions(text, { weight: 1.5, source: source('comment') });
+  const social = socialSignal(text, sentiment, source('comment'));
+
+  return {
+    contributions: [
+      ...v1.flatMap(mapV1Contribution),
+      ...aspects.contributions,
+      ...social.contributions,
+    ],
+    aversionEvidence: [...aspects.aversionEvidence, ...social.aversionEvidence],
+  };
 }
 
 function emotionCurveContributions(record) {
@@ -74,6 +114,8 @@ function emotionCurveContributions(record) {
       0
     ) / entries.length;
     contributions.push(entry('emotionalEngagement', (averageEmotion + averageArousal) / 2, 2, source('entries')));
+    // Timed comments stay on the shorter 240 scale — they are per-moment notes,
+    // not long-form reflection.
     contributions.push(entry(
       'reflection',
       entries.reduce((sum, item) => sum + textStrength(item.comment, 240), 0) / entries.length,
@@ -83,38 +125,54 @@ function emotionCurveContributions(record) {
   }
   if (record.narrativeArc) contributions.push(entry('narrative', 0.9, 2, source('narrativeArc')));
   if (record.journeyStage) contributions.push(entry('exploration', 0.6, 0.75, source('journeyStage')));
-  return contributions;
+  return { contributions: contributions.flatMap(mapV1Contribution), aversionEvidence: [] };
 }
 
 function surveyContributions(response) {
   const id = response.id || response.survey?.id || null;
   const source = (field) => ({ kind: 'survey', id, field });
   const values = Object.values(response.answers || {});
-  if (values.length === 0) return [];
-  const contributions = [];
+  if (values.length === 0) return { contributions: [], aversionEvidence: [] };
+  const v1 = [];
   const numeric = values.map(Number).filter(Number.isFinite);
   if (numeric.length > 0) {
     const average = numeric.reduce((sum, value) => sum + value, 0) / numeric.length;
-    contributions.push(entry('mastery', clamp((average - 1) / 4), 0.5, source('answers')));
+    v1.push(entry('mastery', clamp((average - 1) / 4), 0.5, source('answers')));
   }
-  contributions.push(entry('reflection', clamp(values.length / 12), 0.75, source('answers')));
-  const text = values.map(String);
-  if (containsAny(text, SURVEY_NARRATIVE_TERMS)) {
-    contributions.push(entry('narrative', 0.75, 0.75, source('answers'), 'keyword match'));
-  }
-  if (containsAny(text, SURVEY_SOCIAL_TERMS)) {
-    contributions.push(entry('social', 0.75, 0.75, source('answers'), 'keyword match'));
-  }
-  return contributions;
+  v1.push(entry('reflection', clamp(values.length / 12), 0.75, source('answers')));
+
+  const text = values.filter((value) => typeof value === 'string').join(' ');
+  const aspects = aspectTextContributions(text, { weight: 0.75, source: source('answers') });
+  // Free text has no sentiment slider; the analyzed valence (0..1, 0.5
+  // neutral) gates the social keyword the same way.
+  const valence = aspects.valence === null ? 0.5 : aspects.valence;
+  const social = socialSignal(text, valence >= 0.5 ? 1 : -1, source('answers'));
+
+  return {
+    contributions: [
+      ...v1.flatMap(mapV1Contribution),
+      ...aspects.contributions,
+      // Survey text is weaker evidence than a dedicated voice entry.
+      ...social.contributions.map((item) => ({ ...item, value: 0.75, weight: 0.75 })),
+    ],
+    aversionEvidence: [
+      ...aspects.aversionEvidence,
+      ...social.aversionEvidence.map((item) => ({ ...item, strength: 0.5 })),
+    ],
+  };
 }
 
 function collectSourceContributions(sources) {
-  return [
-    ...sources.gameplay.flatMap(gameplayContributions),
-    ...sources.voices.flatMap(voiceContributions),
-    ...sources.emotionCurves.flatMap(emotionCurveContributions),
-    ...sources.surveys.flatMap(surveyContributions),
+  const results = [
+    ...sources.gameplay.map(gameplayContributions),
+    ...sources.voices.map(voiceContributions),
+    ...sources.emotionCurves.map(emotionCurveContributions),
+    ...sources.surveys.map(surveyContributions),
   ];
+  return {
+    contributions: results.flatMap((result) => result.contributions),
+    aversionEvidence: results.flatMap((result) => result.aversionEvidence),
+  };
 }
 
 module.exports = {
