@@ -139,8 +139,11 @@ worktree、複製folder、直接の`npm run dev`からサービスを起動し�
 ### DBなしでアンケートに回答する
 
 ローカル経路はVolputas serverを起動しない。Node.js 20、Git、GitHub CLIが必要で、
-GitHub CLIの現在の認証ユーザーを本人として扱う。`setup:survey-data` は公開データ
-リポジトリ `LUDIARS/VolputasData` を `private/survey-data` へ独立cloneする。
+GitHub CLIの現在の認証ユーザーを本人として扱う。`LUDIARS/VolputasData` は
+**public な template** であり、実運用ではこれをコピーした自分の **private データ
+リポジトリ** を作って `config/local-survey.json` で指定する (回答が push されるのは
+このコピーで、CLI の private visibility guard もコピーに対して働く)。
+`setup:survey-data` は設定されたデータリポジトリを `private/survey-data` へ独立cloneする。
 これはsubmoduleではなく、Volputas本体のgitlinkにも記録されない。
 
 ```bash

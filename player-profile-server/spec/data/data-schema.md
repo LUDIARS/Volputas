@@ -27,7 +27,7 @@ updated: 2026-07-28
 |---|---|---|---|---|---|
 | `users` / `federated_identities` | user | Voluptas認証境界 | PostgreSQL | 必要 | 認証済み本人のみ。raw profile allowlist、token非ログ化 |
 | `player_profiles` | user | 本人承認済みVoluptas profile | PostgreSQL | 必要 | 本人更新。代理claimはaccept後のみ反映 |
-| 公開アンケート定義 | master | `LUDIARS/VolputasData` main | `private/survey-data/surveys/*.json` | 不要 | public review、version固定、filenameとsurvey ID一致 |
+| 公開アンケート定義 | master | `LUDIARS/VolputasData` (public template) → 運用者のprivateコピー main | `private/survey-data/surveys/*.json` | 不要 | public review、version固定、filenameとsurvey ID一致 |
 | ローカルアンケート回答 | user | 利用者のlocal filesystem | 独立clone内のignored local-data path | 必要 | 親/子双方のgitignore、remote publish禁止、回答非ログ化 |
 | Corpus公開アンケート設問 | master | Voluptas | Voluptas PostgreSQL `surveys.questions` | 保護不要 | `is_active=true`かつ`visible_to_glab=true`だけをcategory allowlistで公開 |
 | Corpus回答・回答済み状態 | user | Cernereログイン中の本人 | Cernere `volputas_survey_responses` / `volputas_survey_answers` | 必要 | Cernere `sub`本人単位、Voluptas project command限定、TEXT/INTEGER正規化 |
@@ -46,8 +46,13 @@ updated: 2026-07-28
 
 ## アンケート回答の権威
 
-公開アンケート定義と匿名サンプルの正本は、独立cloneした
-`LUDIARS/VolputasData`のmainである。ローカルモードで新規に収集した回答は
+`LUDIARS/VolputasData` は **public な template repository** であり、アンケート定義と
+匿名サンプルの配布元である。実運用ではこの template をコピーした**運用者自身の private
+データリポジトリ**を作り、`config/local-survey.json` の `dataRepository.githubRepository`
+でそのコピーを指す。回答が push されるのは常にこのコピーであり、CLI の private visibility
+guard もコピーに対して働く (template 自体は public のままでよい)。
+
+ローカルモードで新規に収集した回答は
 利用者のlocal filesystemだけを正本とし、remote commit/pushを行わない。
 親Volputasはclone directory全体をignoreし、VolputasDataも回答・体験データpathをignoreする。
 PostgreSQLへ暗黙に二重書き込みしない。将来、分析用importerを追加する場合は、
@@ -68,9 +73,11 @@ GitHub identity は `github_user_id`（numeric ID）を安定キーとし、`git
 スナップショットとする。login変更で別人扱いしない。GitHub token、メール、OAuth payload、
 アクセストークン、回答値をログ・commit message・lock fileへ記録しない。
 
-`LUDIARS/VolputasData`は本人回答をbranchへ保持するためprivate repositoryでなければならない。
-個人回答の保持・削除はlocal operatorの責任とし、repository administratorsは未送信のlocal dataを
-保持しない。個人データが誤commitされた場合は参照削除だけで完了とみなさず、履歴書き換え、
+回答を保持する**データリポジトリ (VolputasData template のコピー) は private repository
+でなければならない** (`private: true` かつ `visibility: "private"`。internal も不可)。
+template である `LUDIARS/VolputasData` 自体は回答を持たないため public でよい。
+個人回答の保持・削除はデータリポジトリの operator の責任とし、template の administrators は
+未送信の local data を保持しない。個人データが誤commitされた場合は参照削除だけで完了とみなさず、履歴書き換え、
 PR/fork/cache、clone・backupまで含めてincident手順へescalateする。
 
 Voluptas固有のプロフィール・委任データはサービスDBに保持する。表示名、メール、provider subjectなど
