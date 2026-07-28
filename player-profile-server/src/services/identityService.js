@@ -9,7 +9,15 @@ async function findOrCreateUser(provider, providerSub, profile, rawProfile = {},
         'SELECT user_id FROM federated_identities WHERE provider = $1 AND provider_sub = $2',
         [provider, providerSub]
       );
-      if (existing.rows[0]) return existing.rows[0].user_id;
+      if (existing.rows[0]) {
+        await client.query(
+          `UPDATE federated_identities
+              SET verified_at = now()
+            WHERE provider = $1 AND provider_sub = $2`,
+          [provider, providerSub]
+        );
+        return existing.rows[0].user_id;
+      }
 
       const userId = uuidv4();
       await client.query(
@@ -18,8 +26,9 @@ async function findOrCreateUser(provider, providerSub, profile, rawProfile = {},
         [userId, profile.displayName || 'Player', profile.avatarUrl || null, profile.locale || 'ja']
       );
       await client.query(
-        `INSERT INTO federated_identities (user_id, provider, provider_sub, email, raw_profile)
-         VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO federated_identities
+           (user_id, provider, provider_sub, email, raw_profile, verified_at)
+         VALUES ($1, $2, $3, $4, $5, now())`,
         [
           userId,
           provider,
@@ -36,7 +45,15 @@ async function findOrCreateUser(provider, providerSub, profile, rawProfile = {},
       'SELECT user_id FROM federated_identities WHERE provider = $1 AND provider_sub = $2',
       [provider, providerSub]
     );
-    if (rows[0]) return rows[0].user_id;
+    if (rows[0]) {
+      await database.query(
+        `UPDATE federated_identities
+            SET verified_at = now()
+          WHERE provider = $1 AND provider_sub = $2`,
+        [provider, providerSub]
+      );
+      return rows[0].user_id;
+    }
     throw error;
   }
 }

@@ -1,5 +1,4 @@
 const db = require('../config/database');
-const { pickProfileFields } = require('../services/profileFields');
 
 const identityModel = {
   async findByProviderSub(provider, providerSub) {
@@ -12,26 +11,24 @@ const identityModel = {
 
   async findByUserId(userId) {
     const { rows } = await db.query(
-      'SELECT id, provider, provider_sub, email, linked_at FROM federated_identities WHERE user_id = $1',
+      `SELECT id, provider, provider_sub, email, linked_at, verified_at
+         FROM federated_identities
+        WHERE user_id = $1`,
       [userId]
     );
     return rows;
   },
 
-  async create({ userId, provider, providerSub, email, rawProfile }) {
+  async findVerifiedByProvider(userId, provider) {
     const { rows } = await db.query(
-      `INSERT INTO federated_identities (user_id, provider, provider_sub, email, raw_profile)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, user_id, provider, provider_sub, email, linked_at`,
-      [
-        userId,
-        provider,
-        providerSub,
-        email || null,
-        rawProfile ? JSON.stringify(pickProfileFields(provider, rawProfile)) : null,
-      ]
+      `SELECT id, provider, provider_sub, linked_at, verified_at
+         FROM federated_identities
+        WHERE user_id = $1
+          AND provider = $2
+          AND verified_at IS NOT NULL`,
+      [userId, provider]
     );
-    return rows[0];
+    return rows[0] || null;
   },
 
   async deleteByProvider(userId, provider) {

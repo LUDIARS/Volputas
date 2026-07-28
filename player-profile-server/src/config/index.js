@@ -100,6 +100,11 @@ const config = {
     encryptionKey: process.env.MEMORIA_LINK_ENCRYPTION_KEY || '',
   },
 
+  discuterePersonaBridge: {
+    baseUrl: process.env.DISCUTERE_PERSONA_BRIDGE_URL || '',
+    token: process.env.DISCUTERE_PERSONA_BRIDGE_TOKEN || '',
+  },
+
   db: databaseConfig(process.env),
 
   jwt: {

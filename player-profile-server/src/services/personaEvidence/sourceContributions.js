@@ -76,7 +76,11 @@ function socialSignal(text, sentiment, source) {
 }
 
 function voiceContributions(record, sourceKind = 'voice', commentField = 'comment') {
-  const source = (field) => ({ kind: sourceKind, id: record.id || null, field });
+  const resolvedSourceKind = record.sourceKind === 'discussion' ? 'discussion' : sourceKind;
+  const sourceId = resolvedSourceKind === 'discussion'
+    ? record.sourceRef || record.id || null
+    : record.id || null;
+  const source = (field) => ({ kind: resolvedSourceKind, id: sourceId, field });
   const sentiment = Number(record.sentiment) || 0;
   const v1 = [
     entry('emotionalEngagement', Math.abs(sentiment) / 2, 1.5, source('sentiment')),

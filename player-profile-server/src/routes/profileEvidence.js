@@ -16,6 +16,10 @@ const { OnlinePersonaService } = require('../services/onlinePersonaService');
 const { issueMediaTicket, verifyMediaTicket } = require('../services/mediaTicketService');
 const { createLlmTextClient } = require('../services/llm/createLlmTextClient');
 const { EmotionCurveEvaluationService } = require('../services/emotionCurveEvaluationService');
+const identityModel = require('../models/identityModel');
+const userModel = require('../models/userModel');
+const { DiscussionBridgeClient } = require('../services/discussionBridgeClient');
+const { DiscussionImportService } = require('../services/discussionImportService');
 
 const MEDIA_RECORD_KIND = {
   screenshots: 'gameplay',
@@ -33,6 +37,7 @@ function createProfileEvidenceRouter({
   model = getProfileEvidenceStore(),
   mediaStore = new ProfileMediaStore(),
   personaService,
+  discussionImportService,
   emotionCurveEvaluator,
   mediaRoot = config.profileMedia.root,
   issueTicket = issueMediaTicket,
@@ -42,6 +47,16 @@ function createProfileEvidenceRouter({
   const resolvedPersonaService = personaService || new OnlinePersonaService(model);
   const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
     || new EmotionCurveEvaluationService({ llmClient: createLlmTextClient() });
+  const resolvedDiscussionImportService = discussionImportService
+    || new DiscussionImportService({
+      bridgeClient: new DiscussionBridgeClient({
+        baseUrl: config.discuterePersonaBridge.baseUrl,
+        token: config.discuterePersonaBridge.token,
+      }),
+      evidenceStore: model,
+      identityModel,
+      userModel,
+    });
 
   router.get('/media/:kind/:recordId', async (req, res, next) => {
     try {
@@ -103,6 +118,22 @@ function createProfileEvidenceRouter({
   collectionRoutes('/gameplay', 'gameplay', validateGameplayInput);
   collectionRoutes('/voices', 'voices', validateVoiceInput);
   collectionRoutes('/voice-memos', 'voice-memos', validateVoiceMemoInput);
+
+  router.post('/discussion-voices/sync', async (req, res, next) => {
+    try {
+      return res.json({
+        ok: true,
+        data: await resolvedDiscussionImportService.sync(req.user.id),
+      });
+    } catch (error) {
+      if (error instanceof AppError) return next(error);
+      return next(new AppError(
+        error.statusCode || 502,
+        error.code || 'DISCUSSION_IMPORT_FAILED',
+        error.message
+      ));
+    }
+  });
   collectionRoutes('/emotion-curves', 'emotion-curves', validateEmotionCurveInput);
   collectionRoutes('/comparisons', 'comparisons', validateComparisonInput);
 

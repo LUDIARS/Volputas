@@ -25,7 +25,7 @@ updated: 2026-07-28
 
 | データ名 | 種類 | 権威ソース | 保存先 | 保護要否 | 保護方法 |
 |---|---|---|---|---|---|
-| `users` / `federated_identities` | user | Voluptas認証境界 | PostgreSQL | 必要 | 認証済み本人のみ。raw profile allowlist、token非ログ化 |
+| `users` / `federated_identities` | user | Voluptas認証境界 | PostgreSQL | 必要 | 認証済み本人のみ。議論還流同意は既定 off、Discord identity は OIDC `verified_at` 必須。raw profile allowlist、token非ログ化 |
 | `player_profiles` | user | 本人承認済みVoluptas profile | PostgreSQL | 必要 | 本人更新。代理claimはaccept後のみ反映 |
 | 公開アンケート定義 | master | `LUDIARS/VolputasData` (public template) → 運用者のprivateコピー main | `private/survey-data/surveys/*.json` | 不要 | public review、version固定、filenameとsurvey ID一致 |
 | ローカルアンケート回答 | user | 利用者のlocal filesystem | 独立clone内のignored local-data path | 必要 | 親/子双方のgitignore、remote publish禁止、回答非ログ化 |

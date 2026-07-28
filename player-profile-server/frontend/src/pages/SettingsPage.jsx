@@ -8,11 +8,14 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [locale, setLocale] = useState('');
+  const [discussionImportConsent, setDiscussionImportConsent] = useState(false);
   const [identities, setIdentities] = useState([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [discussionBusy, setDiscussionBusy] = useState(false);
+  const [discussionMessage, setDiscussionMessage] = useState('');
 
   const [steamStatus, setSteamStatus] = useState(null);
   const [steamInput, setSteamInput] = useState('');
@@ -29,6 +32,7 @@ export default function SettingsPage() {
       setDisplayName(user.display_name || '');
       setAvatarUrl(user.avatar_url || '');
       setLocale(user.locale || 'ja');
+      setDiscussionImportConsent(user.discussion_import_consent === true);
     }
     loadIdentities();
     loadSteamStatus();
@@ -159,6 +163,7 @@ export default function SettingsPage() {
           display_name: displayName,
           avatar_url: avatarUrl || null,
           locale,
+          discussion_import_consent: discussionImportConsent,
         },
       });
       await refetchUser();
@@ -175,9 +180,31 @@ export default function SettingsPage() {
     if (!confirm(`Unlink ${provider}?`)) return;
     try {
       await api(`/api/v1/users/me/identities/${provider}`, { method: 'DELETE' });
-      loadIdentities();
+      await loadIdentities();
+      await refetchUser();
     } catch (err) {
       setError(err.message || 'Failed to unlink');
+    }
+  }
+
+  async function handleSyncDiscussion() {
+    setDiscussionBusy(true);
+    setError('');
+    setDiscussionMessage('');
+    try {
+      const response = await api('/api/v1/profile-data/discussion-voices/sync', {
+        method: 'POST',
+      });
+      const { imported, duplicate } = response.data;
+      setDiscussionMessage(
+        imported > 0
+          ? `${imported} 件の本人発話を取り込みました。`
+          : `新しい本人発話はありませんでした（重複 ${duplicate} 件）。`
+      );
+    } catch (err) {
+      setError(err.message || 'Discutere 議論ログの取込に失敗しました');
+    } finally {
+      setDiscussionBusy(false);
     }
   }
 
@@ -192,6 +219,10 @@ export default function SettingsPage() {
       setDeleting(false);
     }
   }
+
+  const verifiedDiscordIdentity = identities.find(
+    (identity) => identity.provider === 'discord' && identity.verified_at
+  );
 
   return (
     <div>
@@ -242,9 +273,41 @@ export default function SettingsPage() {
               </select>
             </div>
 
+            <div className="form-group consent-setting">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={discussionImportConsent}
+                  disabled={!verifiedDiscordIdentity}
+                  onChange={(event) => setDiscussionImportConsent(event.target.checked)}
+                />
+                自分の Discutere / Discord 発言をペルソナ分析に取り込む
+              </label>
+              <p className="muted">
+                明示同意した場合だけ、認証済み Discord ID に一致する本人発話を取り込みます。
+                AI 発話・他人の発話・外部クロールデータは対象外です。
+              </p>
+              {!verifiedDiscordIdentity && (
+                <p className="muted">
+                  有効にするには Discord でサインインし、認証済み identity を作成してください。
+                </p>
+              )}
+            </div>
+
             <button type="submit" className="btn-primary" disabled={saving}>
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
+            {user?.discussion_import_consent && verifiedDiscordIdentity && (
+              <button
+                type="button"
+                className="btn-outline"
+                disabled={discussionBusy}
+                onClick={handleSyncDiscussion}
+              >
+                {discussionBusy ? '取込中…' : 'Di 議論ログを今すぐ取込'}
+              </button>
+            )}
+            {discussionMessage && <div className="success-message">{discussionMessage}</div>}
           </form>
         </div>
 
