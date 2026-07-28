@@ -12,6 +12,7 @@ const {
   validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
+  validatePitchInput,
   validateVoiceInput,
 } = require('../services/profileEvidenceSchemas');
 
@@ -34,6 +35,7 @@ function createLocalRoutes({
   emotionCurveStore,
   gameplayStore,
   mediaStore,
+  pitchStore,
   personaService,
   responseStore,
   surveyPublisher,
@@ -240,6 +242,7 @@ function createLocalRoutes({
   collectionRoutes('/emotion-curves', emotionCurveStore, validateEmotionCurveInput);
   collectionRoutes('/comparisons', comparisonStore, validateComparisonInput);
   collectionRoutes('/card-sorts', cardSortStore, validateCardSortInput);
+  collectionRoutes('/pitches', pitchStore, validatePitchInput);
 
   router.get('/comparisons/deck', (_req, res) => {
     res.json({ ok: true, data: EXPERIENCE_CARDS.map(({ id, text }) => ({ id, text })) });

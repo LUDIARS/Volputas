@@ -26,6 +26,7 @@ function createLocalApp({
   emotionCurveStore = new ProfileRecordStore('emotion-curves'),
   gameplayStore = new ProfileRecordStore('gameplay'),
   mediaStore = new ProfileMediaStore(),
+  pitchStore = new ProfileRecordStore('pitches'),
   responseStore = new LocalResponseStore(),
   surveyPublisher,
   surveyDefinitionStore = new SurveyDefinitionStore(),
@@ -42,6 +43,7 @@ function createLocalApp({
     comparisonStore,
     emotionCurveStore,
     gameplayStore,
+    pitchStore,
     voiceStore,
     surveyDefinitionStore,
   });
@@ -66,6 +68,7 @@ function createLocalApp({
     emotionCurveStore,
     gameplayStore,
     mediaStore,
+    pitchStore,
     personaService: resolvedPersonaService,
     responseStore,
     surveyPublisher: resolvedSurveyPublisher,

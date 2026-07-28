@@ -10,6 +10,7 @@ const { cardSortContributions } = require('./cardSortContributions');
 const { combineMechanicReactions } = require('./combineMechanicReactions');
 const { collectMechanicReactions, mechanicAversionEvidence } = require('./mechanicReactions');
 const { comparisonContributions } = require('./comparisonContributions');
+const { pitchContributions } = require('./pitchContributions');
 const { collectSourceContributions } = require('./sourceContributions');
 const { steamContributions } = require('./steamContributions');
 const { surveyAxisContributions } = require('./surveyAxisContributions');
@@ -63,12 +64,14 @@ function analyzePersonaV2(sources, analyzedAt) {
   const steam = steamContributions(sources.steam || null, analyzedAt, sources.steamAppMeta || null);
   const comparisons = comparisonContributions(sources.comparisons || []);
   const cardSort = cardSortContributions(sources.cardSorts || []);
+  const pitches = pitchContributions(sources.pitches || []);
   const contributions = [
     ...fromRecords.contributions,
     ...survey.contributions,
     ...steam.contributions,
     ...comparisons.contributions,
     ...cardSort.contributions,
+    ...pitches.contributions,
   ];
   const aggregated = aggregateContributions(contributions);
 
@@ -98,7 +101,10 @@ function analyzePersonaV2(sources, analyzedAt) {
 
   // Freetext answers feed the shared 20D affect vector (design §3.1 merges the
   // former standalone affect recompute into this pipeline).
-  const affect = computeAffectProfile(collectFreeTextSamples(joinedRecords));
+  const affect = computeAffectProfile([
+    ...collectFreeTextSamples(joinedRecords),
+    ...pitches.affectSamples,
+  ]);
 
   // 12-classification (MTG psychographics + Caillois + story dynamics) via the
   // shared pure engine (design §3.6). Null when no dimension-tagged question
@@ -131,7 +137,8 @@ function analyzePersonaV2(sources, analyzedAt) {
     classification,
     mechanicReactions: combineMechanicReactions(
       collectMechanicReactions(sources.voices),
-      cardSort.mechanicReactions
+      cardSort.mechanicReactions,
+      pitches.mechanicReactions
     ),
     population: null,
     steam: steam.meta,
@@ -141,6 +148,7 @@ function analyzePersonaV2(sources, analyzedAt) {
       steam: steam.meta ? 1 : 0,
       comparisons: (sources.comparisons || []).length,
       cardSorts: (sources.cardSorts || []).length,
+      pitches: (sources.pitches || []).length,
     },
     axes: legacy.axes,
     leadingAxes: legacy.leadingAxes,

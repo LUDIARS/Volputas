@@ -6,6 +6,7 @@ const { OnlinePersonaService } = require('../../services/onlinePersonaService');
 test('Cernere store keeps evidence, media metadata, and persona in managed-project columns', async () => {
   const columns = {
     card_sort_records: null,
+    pitch_records: null,
     gameplay_records: null,
     voice_records: null,
     emotion_curve_records: null,
@@ -54,6 +55,12 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
     bucket: 'love',
   });
   assert.equal((await store.list('local-user', 'card-sorts'))[0].id, cardSort.id);
+  const pitch = await store.create('local-user', 'pitches', {
+    title: 'Changing Tower',
+    body: 'ローグライクの塔を設計する。',
+    referenceGames: '',
+  });
+  assert.equal((await store.list('local-user', 'pitches'))[0].id, pitch.id);
 
   const owned = await store.findOwned('local-user', gameplay.id);
   assert.equal(owned.kind, 'gameplay');
@@ -76,13 +83,23 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   assert.equal(first.recomputed, true);
   assert.equal(first.analysis.evidence.gameplay, 1);
   assert.equal(first.analysis.evidence.cardSorts, 1);
+  assert.equal(first.analysis.evidence.pitches, 1);
   assert.equal(first.analysis.preferenceAxes['style.explorer'].score, 1);
-  assert.deepEqual(first.analysis.mechanicReactions[0], {
+  assert.deepEqual(first.analysis.mechanicReactions.find((item) =>
+    item.mechanicId === 'open-world/fast-travel'), {
     mechanicId: 'open-world/fast-travel',
     sentiment: 1,
     samples: 1,
     sources: [`cardsort:${cardSort.id}`],
   });
+  assert.deepEqual(first.analysis.mechanicReactions.find((item) =>
+    item.mechanicId === 'runner/procedural-track'), {
+    mechanicId: 'runner/procedural-track',
+    sentiment: 1,
+    samples: 1,
+    sources: [`pitch:${pitch.id}`],
+  });
+  assert.equal(first.analysis.affect.sampleTexts, 1);
   const unchanged = await persona.analyze('local-user');
   assert.equal(unchanged.recomputed, false);
 
@@ -90,6 +107,7 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
     ['managed_project', 'volputas_survey'].includes(call.module)));
   assert.equal(columns.gameplay_records.length, 1);
   assert.equal(columns.card_sort_records.length, 1);
+  assert.equal(columns.pitch_records.length, 1);
   assert.equal(columns.profile_media.length, 1);
   assert.equal(columns.persona_analysis.sourceFingerprint.length, 64);
 });

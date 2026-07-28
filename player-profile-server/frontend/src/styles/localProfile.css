@@ -789,3 +789,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+.pitch-body {
+  white-space: pre-wrap;
+}
+
+.pitch-references {
+  color: var(--color-text-muted);
+  margin-top: 1rem;
+  white-space: pre-wrap;
+}

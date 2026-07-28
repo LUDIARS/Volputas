@@ -8,6 +8,7 @@ const USER_EVIDENCE_KEYS = [
   'emotionCurves',
   'comparisons',
   'cardSorts',
+  'pitches',
 ];
 
 function countUserEvidence(sources) {

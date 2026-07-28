@@ -32,6 +32,7 @@ class OnlinePersonaService {
       emotionCurves,
       comparisons,
       cardSorts,
+      pitches,
       surveyDefinitions,
       steam,
     ] = await Promise.all([
@@ -41,6 +42,7 @@ class OnlinePersonaService {
       this.model.list(userId, 'emotion-curves'),
       this.model.list(userId, 'comparisons'),
       this.model.list(userId, 'card-sorts'),
+      this.model.list(userId, 'pitches'),
       this.model.listSurveyDefinitions(),
       this.readSteamSnapshot(userId),
     ]);
@@ -51,6 +53,7 @@ class OnlinePersonaService {
       emotionCurves,
       comparisons,
       cardSorts,
+      pitches,
       surveyDefinitions,
       steam,
     };
