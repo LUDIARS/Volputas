@@ -3,6 +3,7 @@
 // v1-compatible view (axes/leadingAxes) retained until the 15-axis UI (T6).
 const { PREFERENCE_AXES } = require('../preferenceAxisDefinitions');
 const { analyzePersona } = require('../personaEvidenceAnalysis');
+const { classifyFromSurveyRecords } = require('../classificationEngine');
 const { collectFreeTextSamples, computeAffectProfile } = require('../affectProfile');
 const { aggregateContributions } = require('./aggregateContributions');
 const { collectSourceContributions } = require('./sourceContributions');
@@ -69,11 +70,22 @@ function analyzePersonaV2(sources, analyzedAt) {
     aggregated[`engagement.${axis}`] || emptyAxis(),
   ]));
 
+  const joinedRecords = joinResponsesWithDefinitions(sources.surveys, definitions);
+
   // Freetext answers feed the shared 20D affect vector (design §3.1 merges the
   // former standalone affect recompute into this pipeline).
-  const affect = computeAffectProfile(collectFreeTextSamples(
-    joinResponsesWithDefinitions(sources.surveys, definitions)
-  ));
+  const affect = computeAffectProfile(collectFreeTextSamples(joinedRecords));
+
+  // 12-classification (MTG psychographics + Caillois + story dynamics) via the
+  // shared pure engine (design §3.6). Null when no dimension-tagged question
+  // was answered — distinct from an all-zero profile.
+  const surveyClassification = classifyFromSurveyRecords(joinedRecords);
+  const classification = surveyClassification && {
+    ...surveyClassification.classification,
+    tags: surveyClassification.tags,
+    subtypes: surveyClassification.subtypes,
+    dimensionVector: surveyClassification.vector,
+  };
 
   // v1-compatible compartment: the current UI and exports still read the
   // 8-axis shape. T6 removes it together with the old radar.
@@ -87,6 +99,7 @@ function analyzePersonaV2(sources, analyzedAt) {
     engagement,
     aversions: collectAversions(survey.aversionEvidence),
     affect,
+    classification,
     mechanicReactions: [],
     population: null,
     evidence: { ...legacy.evidence, surveyDefinitions: definitions.length },
