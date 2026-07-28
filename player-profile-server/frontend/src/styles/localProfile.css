@@ -552,3 +552,42 @@
   grid-column: 1 / -1;
   font-size: 0.8rem;
 }
+
+.polarity-toggle {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.polarity-toggle button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: none;
+}
+
+.polarity-active-like {
+  border-color: var(--color-accent) !important;
+  color: var(--color-accent);
+  background: rgba(0, 212, 170, 0.1) !important;
+}
+
+.polarity-active-dislike {
+  border-color: var(--color-danger) !important;
+  color: var(--color-danger);
+  background: rgba(255, 77, 106, 0.1) !important;
+}
+
+.mechanic-picker {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.mechanic-picker input {
+  flex: 1;
+}
+
+.mechanic-chip {
+  cursor: pointer;
+  border: none;
+}

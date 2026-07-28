@@ -1,0 +1,220 @@
+{
+  "generatedFrom": "Ludus/spec/data/game-lexicon/features",
+  "mechanics": [
+    {
+      "id": "action/camera-follow",
+      "nameJa": "追従カメラ",
+      "nameEn": "Camera Follow"
+    },
+    {
+      "id": "action/combo-system",
+      "nameJa": "コンボシステム",
+      "nameEn": "Combo System"
+    },
+    {
+      "id": "action/dodge-roll",
+      "nameJa": "回避 (ローリング)",
+      "nameEn": "Dodge Roll"
+    },
+    {
+      "id": "action/hitstop",
+      "nameJa": "ヒットストップ",
+      "nameEn": "Hitstop"
+    },
+    {
+      "id": "core/health-system",
+      "nameJa": "体力システム",
+      "nameEn": "Health System"
+    },
+    {
+      "id": "core/hitbox-system",
+      "nameJa": "ヒットボックスシステム",
+      "nameEn": "Hitbox System"
+    },
+    {
+      "id": "core/input-buffer",
+      "nameJa": "入力バッファ",
+      "nameEn": "Input Buffer"
+    },
+    {
+      "id": "core/inventory",
+      "nameJa": "インベントリ",
+      "nameEn": "Inventory"
+    },
+    {
+      "id": "core/save-load",
+      "nameJa": "セーブ/ロード",
+      "nameEn": "Save/Load"
+    },
+    {
+      "id": "core/score-system",
+      "nameJa": "スコアシステム",
+      "nameEn": "Score System"
+    },
+    {
+      "id": "fighting/command-input",
+      "nameJa": "コマンド入力",
+      "nameEn": "Command Input"
+    },
+    {
+      "id": "fighting/frame-data",
+      "nameJa": "フレームデータ",
+      "nameEn": "Frame Data"
+    },
+    {
+      "id": "fighting/guard-throw",
+      "nameJa": "ガード / 投げ",
+      "nameEn": "Guard / Throw"
+    },
+    {
+      "id": "fighting/round-system",
+      "nameJa": "ラウンド制",
+      "nameEn": "Round System"
+    },
+    {
+      "id": "moba/hero-skill",
+      "nameJa": "ヒーロースキル",
+      "nameEn": "Hero Skill"
+    },
+    {
+      "id": "moba/minion-wave",
+      "nameJa": "ミニオンウェーブ",
+      "nameEn": "Minion Wave"
+    },
+    {
+      "id": "moba/rollback-netcode",
+      "nameJa": "ロールバックネットコード",
+      "nameEn": "Rollback Netcode"
+    },
+    {
+      "id": "moba/tower-objective",
+      "nameJa": "タワー / オブジェクト",
+      "nameEn": "Tower / Objective"
+    },
+    {
+      "id": "open-world/day-night-cycle",
+      "nameJa": "昼夜サイクル",
+      "nameEn": "Day/Night Cycle"
+    },
+    {
+      "id": "open-world/fast-travel",
+      "nameJa": "ファストトラベル",
+      "nameEn": "Fast Travel"
+    },
+    {
+      "id": "open-world/mount-system",
+      "nameJa": "騎乗 / 乗り物",
+      "nameEn": "Mount / Vehicle"
+    },
+    {
+      "id": "open-world/world-streaming",
+      "nameJa": "ワールドストリーミング",
+      "nameEn": "World Streaming"
+    },
+    {
+      "id": "rhythm/audio-sync",
+      "nameJa": "音声同期",
+      "nameEn": "Audio Sync"
+    },
+    {
+      "id": "rhythm/combo-counter",
+      "nameJa": "コンボカウンタ",
+      "nameEn": "Combo Counter"
+    },
+    {
+      "id": "rhythm/note-chart",
+      "nameJa": "ノート譜面",
+      "nameEn": "Note Chart"
+    },
+    {
+      "id": "rhythm/timing-judge",
+      "nameJa": "タイミング判定",
+      "nameEn": "Timing Judge"
+    },
+    {
+      "id": "runner/auto-run",
+      "nameJa": "自動前進",
+      "nameEn": "Auto Run"
+    },
+    {
+      "id": "runner/lane-system",
+      "nameJa": "レーン制",
+      "nameEn": "Lane System"
+    },
+    {
+      "id": "runner/pickup-system",
+      "nameJa": "収集アイテム",
+      "nameEn": "Pickup System"
+    },
+    {
+      "id": "runner/procedural-track",
+      "nameJa": "プロシージャル生成ステージ",
+      "nameEn": "Procedural Track"
+    },
+    {
+      "id": "shooter/bullet-pattern",
+      "nameJa": "弾幕パターン",
+      "nameEn": "Bullet Pattern"
+    },
+    {
+      "id": "shooter/projectile-system",
+      "nameJa": "発射体システム",
+      "nameEn": "Projectile System"
+    },
+    {
+      "id": "shooter/recoil",
+      "nameJa": "リコイル (反動)",
+      "nameEn": "Recoil"
+    },
+    {
+      "id": "shooter/weapon-system",
+      "nameJa": "武器システム",
+      "nameEn": "Weapon System"
+    },
+    {
+      "id": "slg/hex-grid",
+      "nameJa": "ヘックス / グリッドマップ",
+      "nameEn": "Hex/Grid Map"
+    },
+    {
+      "id": "slg/resource-economy",
+      "nameJa": "資源 / 経済",
+      "nameEn": "Resource Economy"
+    },
+    {
+      "id": "slg/tech-tree",
+      "nameJa": "テック / 研究ツリー",
+      "nameEn": "Tech Tree"
+    },
+    {
+      "id": "slg/unit-action",
+      "nameJa": "ユニット行動",
+      "nameEn": "Unit Action"
+    },
+    {
+      "id": "story-jrpg/command-battle",
+      "nameJa": "コマンドバトル",
+      "nameEn": "Command Battle"
+    },
+    {
+      "id": "story-jrpg/dialogue-system",
+      "nameJa": "会話/ダイアログ",
+      "nameEn": "Dialogue System"
+    },
+    {
+      "id": "story-jrpg/leveling",
+      "nameJa": "レベル / 経験値",
+      "nameEn": "Leveling / XP"
+    },
+    {
+      "id": "story-jrpg/quest-system",
+      "nameJa": "クエストシステム",
+      "nameEn": "Quest System"
+    },
+    {
+      "id": "story-jrpg/stat-system",
+      "nameJa": "ステータス管理",
+      "nameEn": "Stat System"
+    }
+  ]
+}

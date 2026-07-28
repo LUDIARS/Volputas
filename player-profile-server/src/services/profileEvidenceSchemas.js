@@ -80,6 +80,26 @@ function validateGameplayInput(body = {}) {
   return { ...input, dedication: calculateDedication(input) };
 }
 
+const MECHANIC_ID_PATTERN = /^[a-z0-9][a-z0-9_-]*\/[a-z0-9][a-z0-9_-]*$/;
+
+function validateMechanicIds(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw Object.assign(new Error('mechanicIds must be an array'), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  return value.slice(0, 20).map((id) => {
+    const normalized = String(id).trim().toLowerCase();
+    if (!MECHANIC_ID_PATTERN.test(normalized)) {
+      throw Object.assign(new Error(`Invalid mechanic id: ${id}`), {
+        code: 'INVALID_PROFILE_INPUT',
+      });
+    }
+    return normalized;
+  });
+}
+
 function validateVoiceInput(body = {}) {
   const scopeType = body.scopeType === 'content' ? 'content' : 'game';
   return {
@@ -89,6 +109,12 @@ function validateVoiceInput(body = {}) {
       ? requiredText(body.contentName, 'Content name')
       : '',
     sentiment: optionalNumber(body.sentiment, -2, 2) ?? 0,
+    // polarity states the direction explicitly (design §3.5); the sentiment
+    // slider stays the intensity.
+    polarity: body.polarity === 'like' || body.polarity === 'dislike' ? body.polarity : null,
+    // Ludus lexicon ids like "action/dodge-roll"; membership is not enforced
+    // so the Voluptas-side overlay vocabulary keeps working.
+    mechanicIds: validateMechanicIds(body.mechanicIds),
     comment: requiredText(body.comment, 'Comment', 8000),
     tags: optionalText(body.tags, 500)
       .split(',')
