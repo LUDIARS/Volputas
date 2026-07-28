@@ -1,15 +1,28 @@
 {
-  "name": "player-profile-server",
+  "name": "volputas",
+  "productName": "Volputas",
   "version": "1.0.0",
-  "description": "Player profile backend — playstyle & personality registration server",
-  "main": "src/app.js",
+  "description": "Dual-mode player research tool backed by VolputasData or Cernere",
+  "author": "LUDIARS",
+  "repository": "https://github.com/LUDIARS/Voluptas",
+  "main": "desktop/main.js",
   "scripts": {
     "setup:submodules": "node scripts/setup-submodules.js",
+    "setup:survey-data": "node scripts/setup-survey-data.js",
+    "survey:local": "node scripts/run-local-survey.js",
+    "build:frontend": "npm --prefix frontend run build",
+    "prestart:local": "npm run build:frontend",
+    "prestart": "npm run migrate && npm run build:frontend",
+    "start:local": "node src/localApp.js",
     "start": "node src/app.js",
+    "predev": "npm run migrate",
     "dev": "node --watch src/app.js",
     "migrate": "node migrations/run.js",
-    "test": "node --test src/**/*.test.js",
+    "test": "node --test src/**/*.test.js desktop/**/*.test.js",
     "test:e2e:media": "node scripts/run-media-e2e.js --confirm-local",
+    "desktop:package": "npm run build:frontend && electron-forge package",
+    "desktop:make": "npm run build:frontend && electron-forge make",
+    "desktop:publish": "npm run build:frontend && electron-forge publish",
     "import:timeline": "node scripts/import-timeline.js",
     "export:utterances": "node scripts/export-utterances.js",
     "export:personas": "node scripts/export-personas.js",
@@ -17,22 +30,39 @@
     "worker:spectator-media": "node scripts/run-media-worker.js",
     "stack:media:config": "docker compose --env-file .env.media-dev -f compose.media-dev.yml config",
     "stack:media:up": "docker compose --env-file .env.media-dev -f compose.media-dev.yml up --build -d",
-    "stack:media:down": "docker compose --env-file .env.media-dev -f compose.media-dev.yml down"
+    "stack:media:down": "docker compose --env-file .env.media-dev -f compose.media-dev.yml down",
+    "seed:surveys": "node scripts/seed-surveys.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@ludiars/sentiment-core": "file:./lib/lapilli/packages/sentiment-core",
+    "cors": "^2.8.5",
+    "electron-squirrel-startup": "^1.0.1",
     "express": "^4.21.0",
-    "pg": "^8.13.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.4.1",
+    "jose": "^6.2.3",
     "jsonwebtoken": "^9.0.2",
     "jwks-rsa": "^3.1.0",
-    "uuid": "^10.0.0",
-    "helmet": "^8.0.0",
-    "cors": "^2.8.5",
-    "express-rate-limit": "^7.4.0",
-    "node-jose": "^2.2.0",
-    "ioredis": "^5.4.1"
+    "pg": "^8.13.0",
+    "update-electron-app": "^3.3.0",
+    "uuid": "^11.1.1",
+    "paseto": "^3.1.4",
+    "ws": "^8.21.1",
+    "zod": "^4.3.6"
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "config": {
+    "forge": "./forge.config.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
+    "@electron-forge/publisher-github": "^7.11.2",
+    "electron": "^43.2.0"
   }
 }

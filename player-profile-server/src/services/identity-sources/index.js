@@ -2,7 +2,7 @@ const config = require('../../config');
 const { createOidcSource } = require('./oidc-source');
 
 const registry = new Map(
-  ['google', 'discord'].map((key) => [key, createOidcSource(key, config.oauth[key])])
+  ['cernere', 'google', 'discord'].map((key) => [key, createOidcSource(key, config.oauth[key])])
 );
 
 function getIdentitySource(key) {

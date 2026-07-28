@@ -5,6 +5,7 @@ const {
   weightedMean,
 } = require('@ludiars/sentiment-core');
 const db = require('../config/database');
+const { isTrialResultType, isCorrectOutcome } = require('./trialResult');
 
 const ALGO_VERSION = 1;
 
@@ -57,10 +58,12 @@ function aggregatePlaySession(events, binMs = 30_000) {
     const start = Math.floor(event.monoMs / binMs) * binMs;
     const bin = bins.get(start) || { events: 0, attempts: 0, correct: 0, retries: 0 };
     bin.events += 1;
-    if (event.eventType === 'trial_result') {
+    // Recognise the §6.4 trial_result shape (outcome/corrections) as well as the
+    // legacy bare `trial_result` + correct/retries payload the timeline shipped with.
+    if (isTrialResultType(event.eventType)) {
       bin.attempts += 1;
-      if (event.eventData?.correct === true) bin.correct += 1;
-      bin.retries += Number(event.eventData?.retries) || 0;
+      if (isCorrectOutcome(event.eventData)) bin.correct += 1;
+      bin.retries += Number(event.eventData?.corrections ?? event.eventData?.retries) || 0;
     }
     bins.set(start, bin);
   }
@@ -73,6 +76,23 @@ function aggregatePlaySession(events, binMs = 30_000) {
         accuracy: metrics.attempts ? Number((metrics.correct / metrics.attempts).toFixed(4)) : null,
       },
     }));
+}
+
+// Resolve an event's play-session timeline position in monotonic ms.
+// §6.1 defines event_data.mono_ms as the client monotonic clock measured from
+// *app start*, not session start, so a raw mono_ms carries an arbitrary
+// app-uptime offset (the "recording_started_at alignment" gap). When the client
+// stamped its recording-start origin at session creation
+// (play_sessions.metadata.session_epoch_mono_ms), subtract it so the timeline's
+// t axis begins at recording start. Otherwise fall back to the original
+// behavior: app-relative mono_ms, then wall-clock (occurred_at - started_at).
+// Pure and backward-compatible: no epoch -> identical output to the legacy route.
+// See ludellus-tuning-log-design.md §6.1, §5.
+function resolveSessionMonoMs({ eventMonoMs, occurredAt, startedAt, sessionEpochMonoMs } = {}) {
+  const mono = Number(eventMonoMs);
+  const epoch = Number(sessionEpochMonoMs);
+  if (Number.isFinite(mono) && Number.isFinite(epoch)) return mono - epoch;
+  return mono || (new Date(occurredAt).getTime() - new Date(startedAt).getTime());
 }
 
 async function saveTimeline({
@@ -130,5 +150,6 @@ module.exports = {
   aggregateTimeline,
   getTimeline,
   listTimelines,
+  resolveSessionMonoMs,
   saveTimeline,
 };

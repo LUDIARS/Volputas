@@ -15,7 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
+      - name: Checkout public code submodules
+        run: git submodule update --init --recursive -- player-profile-server/lib/lapilli
       - uses: actions/setup-node@v4
         with:
           node-version: 20

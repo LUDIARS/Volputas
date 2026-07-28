@@ -1,7 +1,7 @@
 const { pickProfileFields } = require('../profileFields');
 
 function resolveProviderSub(provider, userInfo) {
-  const value = provider === 'google' ? userInfo.sub : userInfo.id;
+  const value = provider === 'google' || provider === 'cernere' ? userInfo.sub : userInfo.id;
   if (typeof value !== 'string' || value.length === 0) {
     throw Object.assign(new Error(`Identity provider did not return a stable subject for ${provider}`), {
       statusCode: 502,
@@ -12,7 +12,7 @@ function resolveProviderSub(provider, userInfo) {
 }
 
 function resolveProfile(provider, userInfo) {
-  if (provider === 'google') {
+  if (provider === 'google' || provider === 'cernere') {
     return {
       displayName: userInfo.name || 'Player',
       email: userInfo.email || null,

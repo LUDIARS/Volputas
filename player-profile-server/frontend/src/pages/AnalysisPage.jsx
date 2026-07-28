@@ -36,29 +36,79 @@ const PATTERN_LABELS = {
   },
 };
 
+// 15-axis style preferences (shared with Discutere's PREFERENCE_AXES, see
+// src/services/preferenceAxisDefinitions.js). Scores are -1..1; kept in this fixed order.
+const AXIS_LABELS = [
+  ['mtg.timmy', 'Timmy/Tammy'],
+  ['mtg.johnny', 'Johnny/Jenny'],
+  ['mtg.spike', 'Spike'],
+  ['style.achiever', 'Achiever'],
+  ['style.explorer', 'Explorer'],
+  ['style.socializer', 'Socializer'],
+  ['style.competitor', 'Competitor'],
+  ['style.collector', 'Collector'],
+  ['style.narrative', 'Narrative'],
+  ['style.relaxation', 'Relaxation'],
+  ['style.mastery', 'Mastery'],
+  ['style.onboarding_need', 'Onboarding Need'],
+  ['style.autonomy', 'Autonomy'],
+  ['style.routine_tolerance', 'Routine Tolerance'],
+  ['style.monetization_sensitivity', 'Monetization Sensitivity'],
+];
+
 export default function AnalysisPage() {
   const [profile, setProfile] = useState(null);
   const [dimensions, setDimensions] = useState([]);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [preferenceAxes, setPreferenceAxes] = useState(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [memoriaStatus, setMemoriaStatus] = useState(null);
+  const [reviewingDraft, setReviewingDraft] = useState(false);
 
   useEffect(() => {
     loadData();
+    loadMemoriaStatus();
   }, []);
 
   async function loadData() {
     try {
-      const [profileRes, dimRes] = await Promise.all([
+      const [profileRes, dimRes, analysisRes] = await Promise.all([
         api('/api/v1/users/me/profile'),
         api('/api/v1/analysis/dimensions'),
+        api('/api/v1/analysis/me'),
       ]);
       setProfile(profileRes.data);
       setDimensions(dimRes.data);
+      setPreferenceAxes(analysisRes.data.preferenceAxes || {});
     } catch { /* ignore */ }
     setLoading(false);
   }
+
+  async function loadMemoriaStatus() {
+    try {
+      const res = await api('/api/v1/users/me/memoria');
+      setMemoriaStatus(res.data);
+    } catch { /* ignore */ }
+  }
+
+  async function reviewDraft(id, decision) {
+    setReviewingDraft(true);
+    try {
+      await api(`/api/v1/users/me/memoria/drafts/${id}/${decision}`, { method: 'POST' });
+      await Promise.all([loadMemoriaStatus(), loadData()]);
+    } catch (err) {
+      setError(err.message || 'Failed to review draft');
+    } finally {
+      setReviewingDraft(false);
+    }
+  }
+
+  const pendingDraft = memoriaStatus?.linked && memoriaStatus.latestDraft?.status === 'pending'
+    ? memoriaStatus.latestDraft
+    : null;
+  const approvedMemoriaAxes = profile?.personality_data?.memoria_axes || null;
 
   async function runAnalysis() {
     setRunning(true);
@@ -66,6 +116,7 @@ export default function AnalysisPage() {
     try {
       const res = await api('/api/v1/analysis/me', { method: 'POST' });
       setAnalysisResult(res.data);
+      setPreferenceAxes(res.data.preferenceAxes || {});
       // Refresh profile
       const profileRes = await api('/api/v1/users/me/profile');
       setProfile(profileRes.data);
@@ -136,6 +187,63 @@ export default function AnalysisPage() {
           )}
         </div>
 
+        {/* Memoria-derived personality draft review */}
+        {pendingDraft && (
+          <div className="card analysis-details">
+            <h3>性格傾向ドラフト (Memoria由来・未承認)</h3>
+            <p className="muted">
+              {new Date(pendingDraft.computed_at).toLocaleString('ja-JP')} 時点の作業データから計算されました。
+              承認するとプロフィールに反映されます。
+            </p>
+            <div className="dimension-bars">
+              {(pendingDraft.axes || []).map((axis) => {
+                const pct = Math.max(0, Math.min(1, (axis.score + 1) / 2));
+                return (
+                  <div key={axis.id} className="dimension-row">
+                    <div className="dim-header">
+                      <span className="dim-name">{axis.poles[0]} ← {axis.label} → {axis.poles[1]}</span>
+                      <span className="dim-value">{axis.score.toFixed(2)}</span>
+                    </div>
+                    <div className="dim-bar-bg">
+                      <div className="dim-bar-fill" style={{ width: `${pct * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="edit-actions" style={{ marginTop: '1rem' }}>
+              <button className="btn-primary" onClick={() => reviewDraft(pendingDraft.id, 'approve')} disabled={reviewingDraft}>
+                承認してプロフィールに反映
+              </button>
+              <button className="btn-outline" onClick={() => reviewDraft(pendingDraft.id, 'reject')} disabled={reviewingDraft}>
+                却下
+              </button>
+            </div>
+          </div>
+        )}
+
+        {approvedMemoriaAxes && (
+          <div className="card analysis-details">
+            <h3>性格傾向 (Memoria由来・承認済み)</h3>
+            <div className="dimension-bars">
+              {(approvedMemoriaAxes || []).map((axis) => {
+                const pct = Math.max(0, Math.min(1, (axis.score + 1) / 2));
+                return (
+                  <div key={axis.id} className="dimension-row">
+                    <div className="dim-header">
+                      <span className="dim-name">{axis.poles[0]} ← {axis.label} → {axis.poles[1]}</span>
+                      <span className="dim-value">{axis.score.toFixed(2)}</span>
+                    </div>
+                    <div className="dim-bar-bg">
+                      <div className="dim-bar-fill primary" style={{ width: `${pct * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Pattern Radar Charts */}
         {Object.entries(patternGroups).map(([patternKey, group]) => (
           group.values.some((v) => v > 0) && (
@@ -193,6 +301,31 @@ export default function AnalysisPage() {
                   })}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* 15-axis style preferences */}
+        {preferenceAxes && Object.keys(preferenceAxes).length > 0 && (
+          <div className="card analysis-details">
+            <h3>Playstyle Axes (15)</h3>
+            <p className="muted">MTG Timmy/Johnny/Spike + Bartle-style preferences, shared with Discutere</p>
+            <div className="dimension-bars">
+              {AXIS_LABELS.filter(([id]) => preferenceAxes[id] !== undefined).map(([id, label]) => {
+                const score = preferenceAxes[id];
+                const pct = Math.max(0, Math.min(1, (score + 1) / 2));
+                return (
+                  <div key={id} className="dimension-row">
+                    <div className="dim-header">
+                      <span className="dim-name">{label}</span>
+                      <span className="dim-value">{score.toFixed(2)}</span>
+                    </div>
+                    <div className="dim-bar-bg">
+                      <div className="dim-bar-fill" style={{ width: `${pct * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

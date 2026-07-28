@@ -1,0 +1,43 @@
+# Excubitor catalog 断片 — このリポ自身のサービス定義。
+# 公開 Excubitor リポの services.yaml に private 定義 (infisical project_id 等) を
+# 焼き込まないため、 各サービスの catalog エントリは自リポに置く。
+# Excubitor が ${ARS_ROOT} 配下を走査して集積する (Excubitor catalog/FRAGMENTS.md 参照)。
+services:
+  - code: volputas
+    name: Volputas
+    domain: vo-m${DOMAIN_ROOT}
+    tier: saas
+    project_code: volputas
+    subdomain: vo-m
+    component: backend
+    port: 8892
+    repo: LUDIARS/Voluptas
+    runtime: node
+    cwd: ${ARS_ROOT}/Voluptas/player-profile-server
+    command: npm run dev
+    allow_hot_reload: true
+    depends_on: [infra-postgres, cernere]
+    autostart: false
+    env:
+      PORT: "8892"
+      JWT_ISSUER: http://localhost:8892
+      VOLPUTAS_AUDIENCE: http://${host}:${port}
+      GOOGLE_CALLBACK_URL: http://localhost:8892/auth/callback
+      DISCORD_CALLBACK_URL: http://localhost:8892/auth/callback
+    required_env: [CERNERE_BASE_URL, VOLPUTAS_AUDIENCE, VOLPUTAS_DATABASE_URL]
+    infisical:
+      project_id: 19c9e77d-646c-4a0e-a091-b494234953ea
+      environment: dev
+      inject: true
+      include: [VOLPUTAS_DATABASE_URL]
+    requires_secret:
+      - service: cernere
+        keys: [EXCUBITOR_CERNERE_CLIENT_ID, EXCUBITOR_CERNERE_CLIENT_SECRET]
+    cernere_launch_credentials:
+      target_project: volputas
+    health:
+      type: http
+      url: http://localhost:8892/health
+      interval_sec: 30
+    provides:
+      VOLPUTAS_URL: http://${host}:${port}

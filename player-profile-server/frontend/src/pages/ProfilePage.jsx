@@ -22,9 +22,11 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [steamTopGames, setSteamTopGames] = useState(null);
 
   useEffect(() => {
     loadProfile();
+    loadSteamTopGames();
   }, []);
 
   async function loadProfile() {
@@ -35,6 +37,13 @@ export default function ProfilePage() {
       setPersonalityData(
         res.data.personality_data ? JSON.stringify(res.data.personality_data, null, 2) : ''
       );
+    } catch { /* ignore */ }
+  }
+
+  async function loadSteamTopGames() {
+    try {
+      const res = await api('/api/v1/users/me/steam');
+      setSteamTopGames(res.data.linked ? res.data.topGames : null);
     } catch { /* ignore */ }
   }
 
@@ -99,6 +108,20 @@ export default function ProfilePage() {
             <div className="empty-state">Run analysis to generate your preference chart</div>
           )}
         </div>
+
+        {/* Steam Top Games */}
+        {steamTopGames?.length > 0 && (
+          <div className="card">
+            <h3>Steamでよく遊んでいるゲーム</h3>
+            <div className="tags-row">
+              {steamTopGames.slice(0, 5).map((g) => (
+                <span className="tag" key={g.app_id}>
+                  {g.name} ({Math.round(g.playtime_forever_minutes / 60)}h)
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Playstyle Tags */}
         <div className="card">

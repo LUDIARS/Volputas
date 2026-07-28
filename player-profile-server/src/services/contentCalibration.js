@@ -1,0 +1,214 @@
+// Content-item stats calibration (ludellus-tuning-log-design.md §7.1 / §7.2).
+// Aggregates trial_result outcomes into content_items.stats — measured accuracy,
+// response-time distribution and an observed difficulty — so per-item difficulty
+// self-calibrates from real play and per-player estimates become "performance
+// against a calibrated item" (the IRT-ish foundation §7.2 describes).
+//
+// Two paths share one pair of pure functions:
+//   - updateContentStatsForSession(): incremental running-average merge, cheap,
+//     wired to session end (the closed loop).
+//   - recomputeContentStats(): full recompute from raw events, the authoritative
+//     rebuild (design principle #4) intended for a periodic job.
+//
+// NOTE (see PR body): `difficulty_observed` is the classical test-theory
+// complement of accuracy (1 − p), a deliberately simple proxy. A proper IRT
+// (Rasch/2PL) calibration should replace it; the raw events are retained so it
+// can be recomputed without data loss.
+
+const db = require('../config/database');
+const { isTrialResultType, extractTrial } = require('./trialResult');
+
+const ALGO_VERSION = 1;
+const TRIAL_EVENT_TYPES = ['ludellus.trial_result', 'trial_result'];
+
+function round(n, dp) {
+  if (n === null || n === undefined || !Number.isFinite(n)) return null;
+  const f = 10 ** dp;
+  return Math.round(n * f) / f;
+}
+
+function clamp01(n) {
+  return Math.max(0, Math.min(1, n));
+}
+
+function median(values) {
+  if (!values.length) return null;
+  const s = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+// Running counters kept inside stats so the incremental merge is exact.
+function emptyCounters() {
+  return { attempts: 0, correct: 0, response_ms_sum: 0, response_ms_count: 0, timeout_count: 0 };
+}
+
+function countersFrom(stats) {
+  const s = stats && typeof stats === 'object' ? stats : {};
+  return {
+    attempts: Number(s.attempts) || 0,
+    correct: Number(s.correct) || 0,
+    response_ms_sum: Number(s.response_ms_sum) || 0,
+    response_ms_count: Number(s.response_ms_count) || 0,
+    timeout_count: Number(s.timeout_count) || 0,
+  };
+}
+
+function accumulate(counters, trials) {
+  for (const t of trials) {
+    counters.attempts += 1;
+    if (t.correct) counters.correct += 1;
+    if (t.isTimeout) counters.timeout_count += 1;
+    if (t.responseMs !== null && t.responseMs !== undefined && Number.isFinite(t.responseMs)) {
+      counters.response_ms_sum += t.responseMs;
+      counters.response_ms_count += 1;
+    }
+  }
+  return counters;
+}
+
+// Shape counters + optional p50 into the persisted stats object.
+function deriveStats(counters, { p50 = null, now = new Date() } = {}) {
+  const accuracy = counters.attempts ? counters.correct / counters.attempts : null;
+  return {
+    attempts: counters.attempts,
+    correct: counters.correct,
+    accuracy: round(accuracy, 4),
+    avg_response_ms: counters.response_ms_count
+      ? round(counters.response_ms_sum / counters.response_ms_count, 1) : null,
+    p50_response_ms: round(p50, 1),
+    timeout_rate: counters.attempts ? round(counters.timeout_count / counters.attempts, 4) : null,
+    difficulty_observed: accuracy === null ? null : round(clamp01(1 - accuracy), 4),
+    // retained running counters (enable exact incremental merge)
+    response_ms_sum: round(counters.response_ms_sum, 3),
+    response_ms_count: counters.response_ms_count,
+    timeout_count: counters.timeout_count,
+    algo_version: ALGO_VERSION,
+    calibrated_at: (now instanceof Date ? now : new Date(now)).toISOString(),
+  };
+}
+
+// Full recompute from all trials of one item (pure). Includes p50.
+function computeContentStats(trials, now = new Date()) {
+  const counters = accumulate(emptyCounters(), trials);
+  const responseTimes = trials
+    .map((t) => t.responseMs)
+    .filter((v) => v !== null && v !== undefined && Number.isFinite(v));
+  return deriveStats(counters, { p50: median(responseTimes), now });
+}
+
+// Incremental merge of new trials into existing stats (running average, pure).
+// p50 is carried forward (medians are not incrementally computable) and refreshed
+// by the periodic full recompute.
+function mergeContentStats(existingStats, trials, now = new Date()) {
+  const counters = accumulate(countersFrom(existingStats), trials);
+  const priorP50 = existingStats && Number.isFinite(Number(existingStats.p50_response_ms))
+    ? Number(existingStats.p50_response_ms) : null;
+  return deriveStats(counters, { p50: priorP50, now });
+}
+
+// Group extracted trials by their master key (id + version). Trials lacking an
+// item_id or item_version cannot target a content_items row and are skipped.
+function groupTrialsByItem(trials) {
+  const groups = new Map();
+  for (const t of trials) {
+    if (!t.itemId || t.itemVersion === null || t.itemVersion === undefined) continue;
+    const key = `${t.itemId} ${t.itemVersion}`;
+    const g = groups.get(key) || { itemId: t.itemId, itemVersion: t.itemVersion, trials: [] };
+    g.trials.push(t);
+    groups.set(key, g);
+  }
+  return groups;
+}
+
+// ---------------------------------------------------------------------------
+// DB orchestration
+// ---------------------------------------------------------------------------
+
+async function readSessionTrials(sessionId, database) {
+  const { rows } = await database.query(
+    `SELECT event_type, event_data FROM play_events
+      WHERE session_id = $1 AND event_type = ANY($2)`,
+    [sessionId, TRIAL_EVENT_TYPES],
+  );
+  return rows.filter((r) => isTrialResultType(r.event_type)).map((r) => extractTrial(r.event_data));
+}
+
+// Incremental calibration for exactly the items a finished session touched.
+// Only updates content_items rows that already exist (the master is authored
+// separately; logs never fabricate master entries — design principle #3).
+async function updateContentStatsForSession(sessionId, options = {}) {
+  const database = options.database || db;
+  const now = options.now ? new Date(options.now) : new Date();
+  const trials = await readSessionTrials(sessionId, database);
+  const groups = groupTrialsByItem(trials);
+
+  let updated = 0;
+  let skipped = 0;
+  for (const g of groups.values()) {
+    const { rows } = await database.query(
+      'SELECT stats FROM content_items WHERE id = $1 AND version = $2',
+      [g.itemId, g.itemVersion],
+    );
+    if (!rows[0]) { skipped += 1; continue; }
+    const merged = mergeContentStats(rows[0].stats, g.trials, now);
+    await database.query(
+      'UPDATE content_items SET stats = $3 WHERE id = $1 AND version = $2',
+      [g.itemId, g.itemVersion, JSON.stringify(merged)],
+    );
+    updated += 1;
+  }
+  return { items: groups.size, updated, skipped };
+}
+
+// Authoritative full recompute from raw events (periodic job). `sinceIso` bounds
+// the scan (raw events are retained ~90 days); `gameId` optionally narrows it.
+async function recomputeContentStats(options = {}) {
+  const database = options.database || db;
+  const now = options.now ? new Date(options.now) : new Date();
+
+  const params = [TRIAL_EVENT_TYPES];
+  const clauses = ['pe.event_type = ANY($1)'];
+  if (options.gameId) {
+    params.push(options.gameId);
+    clauses.push(`ps.game_id = $${params.length}`);
+  }
+  if (options.sinceIso) {
+    params.push(options.sinceIso);
+    clauses.push(`pe.occurred_at >= $${params.length}`);
+  }
+
+  const { rows } = await database.query(
+    `SELECT pe.event_data FROM play_events pe
+       JOIN play_sessions ps ON pe.session_id = ps.id
+      WHERE ${clauses.join(' AND ')}`,
+    params,
+  );
+  const groups = groupTrialsByItem(rows.map((r) => extractTrial(r.event_data)));
+
+  let updated = 0;
+  let skipped = 0;
+  for (const g of groups.values()) {
+    const stats = computeContentStats(g.trials, now);
+    const { rowCount } = await database.query(
+      'UPDATE content_items SET stats = $3 WHERE id = $1 AND version = $2',
+      [g.itemId, g.itemVersion, JSON.stringify(stats)],
+    );
+    if (rowCount > 0) updated += 1; else skipped += 1;
+  }
+  return { items: groups.size, updated, skipped };
+}
+
+module.exports = {
+  ALGO_VERSION,
+  // pure
+  emptyCounters,
+  accumulate,
+  deriveStats,
+  computeContentStats,
+  mergeContentStats,
+  groupTrialsByItem,
+  // db
+  updateContentStatsForSession,
+  recomputeContentStats,
+};
