@@ -21,6 +21,7 @@ function createLocalApp({
   gitCli = new GitCli(),
   gitAuthorReader = new GitAuthorReader(),
   emotionCurveEvaluator,
+  annotationStore = new ProfileRecordStore('annotations'),
   comparisonStore = new ProfileRecordStore('comparisons'),
   emotionCurveStore = new ProfileRecordStore('emotion-curves'),
   gameplayStore = new ProfileRecordStore('gameplay'),
@@ -37,6 +38,7 @@ function createLocalApp({
 
   const app = express();
   const resolvedPersonaService = personaService || new PersonaService({
+    annotationStore,
     emotionCurveStore,
     gameplayStore,
     voiceStore,
@@ -54,6 +56,7 @@ function createLocalApp({
     res.json({ ok: true, data: { mode: 'local', authentication: 'none' } });
   });
   app.use('/api/local', createLocalRoutes({
+    annotationStore,
     configStore,
     gitCli,
     gitAuthorReader,

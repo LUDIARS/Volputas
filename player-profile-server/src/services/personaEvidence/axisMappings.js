@@ -50,6 +50,17 @@ const STEAM_GENRE_AXIS_MAP = Object.freeze({
   puzzle: [['style.mastery', 1]],
 });
 
+// Screenshot/clip annotation moment type → axes (design §4.3). The visual
+// bytes are not interpreted; the user's explicit reason for preserving the
+// moment is the deterministic evidence.
+const MOMENT_TYPE_AXIS_MAP = Object.freeze({
+  achievement: [['style.achiever', 1]],
+  discovery: [['style.explorer', 1]],
+  story: [['style.narrative', 1]],
+  social: [['style.socializer', 1]],
+  aesthetic: [['style.narrative', 0.5], ['style.explorer', 0.5]],
+});
+
 // sentiment-core aspect key → axes. Only aspects with an unambiguous axis
 // reading are mapped; fun/content/performance/graphics carry no stable
 // preference-axis meaning on their own.
@@ -75,6 +86,7 @@ module.exports = {
   ASPECT_AXIS_MAP,
   EXPERIENCE_AXIS_MAP,
   GENRE_AXIS_MAP,
+  MOMENT_TYPE_AXIS_MAP,
   STEAM_GENRE_AXIS_MAP,
   SURVEY_CHOICE_AXIS_QUESTIONS,
   mapChoiceToContributions,

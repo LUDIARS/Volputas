@@ -1,6 +1,7 @@
 const { randomUUID } = require('node:crypto');
 
 const COLUMN_BY_KIND = {
+  annotations: 'annotation_records',
   gameplay: 'gameplay_records',
   voices: 'voice_records',
   'emotion-curves': 'emotion_curve_records',
