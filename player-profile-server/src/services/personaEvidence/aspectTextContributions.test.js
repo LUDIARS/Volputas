@@ -72,3 +72,19 @@ test('descriptive genre / experience choices map through the §3.7 tables', () =
     ].sort()
   );
 });
+
+const { emotionCurveContributions } = require('./sourceContributions');
+
+test('memory-mode emotion curves are discounted by 0.75 for recall bias', () => {
+  const base = {
+    id: 'ec-1',
+    narrativeArc: '転換点',
+    entries: [{ valence: 2, arousal: 5, comment: 'よい' }],
+  };
+  const video = emotionCurveContributions({ ...base, mode: 'video' });
+  const memory = emotionCurveContributions({ ...base, mode: 'memory' });
+  const weightOf = (result, axis) => result.contributions
+    .filter((item) => item.axis === axis)
+    .reduce((sum, item) => sum + item.weight, 0);
+  assert.ok(Math.abs(weightOf(memory, 'style.narrative') - weightOf(video, 'style.narrative') * 0.75) < 1e-9);
+});

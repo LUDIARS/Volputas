@@ -512,3 +512,43 @@
   color: var(--color-danger);
   font-size: 0.8rem;
 }
+
+.mode-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.7rem;
+}
+
+.mode-toggle button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: none;
+  font-size: 0.82rem;
+}
+
+.mode-toggle .mode-active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(108, 99, 255, 0.08);
+}
+
+.position-editor {
+  align-items: center;
+}
+
+.position-editor input[type='range'] {
+  flex: 1;
+}
+
+.position-value {
+  min-width: 3rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-label-input {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+}

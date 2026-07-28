@@ -107,7 +107,7 @@ const EMOTION_STAMPS = {
   stress: { label: 'ストレス', valence: -2, arousal: 5 },
 };
 
-function validateEmotionEntry(entry = {}) {
+function validateEmotionEntry(entry = {}, mode = 'video') {
   const stamp = entry.stamp === undefined || entry.stamp === null || entry.stamp === ''
     ? null
     : String(entry.stamp);
@@ -123,25 +123,46 @@ function validateEmotionEntry(entry = {}) {
     });
   }
   const defaults = stamp ? EMOTION_STAMPS[stamp] : null;
-  return {
-    timeSeconds: optionalNumber(entry.timeSeconds, 0, 864000) ?? 0,
+  const shared = {
     stamp,
     valence: optionalNumber(entry.valence, -2, 2) ?? (defaults ? defaults.valence : 0),
     arousal: optionalNumber(entry.arousal, 1, 5) ?? (defaults ? defaults.arousal : 3),
     comment,
+    // 進行アンカー (design §3.4): free-form label like 「3章ボス」; developer
+    // aggregation joins on exact string match.
+    progressLabel: optionalText(entry.progressLabel, 80),
+  };
+  if (mode === 'memory') {
+    const position = optionalNumber(entry.position, 0, 100);
+    if (position === null) {
+      throw Object.assign(new Error('Memory-mode reactions need a position (0-100%)'), {
+        code: 'INVALID_PROFILE_INPUT',
+      });
+    }
+    return { position, ...shared };
+  }
+  return {
+    timeSeconds: optionalNumber(entry.timeSeconds, 0, 864000) ?? 0,
+    ...shared,
   };
 }
 
 function validateEmotionCurveInput(body = {}) {
+  const mode = body.mode === 'memory' ? 'memory' : 'video';
   const entries = Array.isArray(body.entries) ? body.entries : [];
   if (entries.length === 0) {
     throw Object.assign(new Error('Add at least one timed reaction'), {
       code: 'INVALID_PROFILE_INPUT',
     });
   }
+  const orderKey = mode === 'memory' ? 'position' : 'timeSeconds';
   return {
     gameTitle: requiredText(body.gameTitle, 'Game title'),
-    videoFileName: requiredText(body.videoFileName, 'Video file name', 255),
+    mode,
+    // memory mode is the video-less recollection sketch (design §3.4).
+    videoFileName: mode === 'video'
+      ? requiredText(body.videoFileName, 'Video file name', 255)
+      : optionalText(body.videoFileName, 255),
     gameLogFileName: optionalText(body.gameLogFileName, 255),
     daysAfterPlay: optionalNumber(body.daysAfterPlay, 0, 36500),
     totalPlaytimeHours: optionalNumber(body.totalPlaytimeHours, 0, 100000),
@@ -151,8 +172,8 @@ function validateEmotionCurveInput(body = {}) {
     narrativeArc: optionalText(body.narrativeArc, 120),
     journeyStage: optionalText(body.journeyStage, 120),
     entries: entries.slice(0, 500)
-      .map(validateEmotionEntry)
-      .sort((left, right) => left.timeSeconds - right.timeSeconds),
+      .map((entry) => validateEmotionEntry(entry, mode))
+      .sort((left, right) => left[orderKey] - right[orderKey]),
   };
 }
 

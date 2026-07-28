@@ -21,7 +21,13 @@ function formatTime(seconds) {
 function formatEntry(entry) {
   const stampLabel = entry.stamp ? EMOTION_STAMPS[entry.stamp]?.label ?? entry.stamp : 'なし';
   const comment = entry.comment ? ` メモ: ${entry.comment}` : '';
-  return `- ${formatTime(entry.timeSeconds)} スタンプ: ${stampLabel} / 感情価 ${entry.valence} / 強さ ${entry.arousal}.${comment}`;
+  const anchor = entry.progressLabel ? ` 進行: ${entry.progressLabel}` : '';
+  // memory-mode entries carry a relative position (0-100%) instead of a video
+  // timestamp.
+  const at = entry.position !== undefined && entry.position !== null
+    ? `${entry.position}%地点`
+    : formatTime(entry.timeSeconds);
+  return `- ${at} スタンプ: ${stampLabel} / 感情価 ${entry.valence} / 強さ ${entry.arousal}.${anchor}${comment}`;
 }
 
 function formatPlaytime(record) {
@@ -66,7 +72,9 @@ function buildEvaluationPrompt({ record, persona, gameLogText }) {
     '## プレイ時間',
     formatPlaytime(record),
     '',
-    '## タイムライン (動画時刻順)',
+    record.mode === 'memory'
+      ? '## タイムライン (体験全体の相対位置順・記憶スケッチ。記憶バイアスを考慮すること)'
+      : '## タイムライン (動画時刻順)',
     ...(record.entries || []).map(formatEntry),
     '',
     '## ペルソナ分析',

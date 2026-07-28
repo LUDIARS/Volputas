@@ -102,6 +102,9 @@ function voiceContributions(record) {
 
 function emotionCurveContributions(record) {
   const source = (field) => ({ kind: 'emotionCurve', id: record.id || null, field });
+  // Memory sketches (video-less recollection, design §3.4) are discounted for
+  // recall bias; the scoring itself is mode-agnostic.
+  const modeWeight = record.mode === 'memory' ? 0.75 : 1;
   const contributions = [];
   const entries = record.entries || [];
   if (entries.length > 0) {
@@ -113,18 +116,23 @@ function emotionCurveContributions(record) {
       (sum, item) => sum + ((Number(item.arousal) || 1) - 1) / 4,
       0
     ) / entries.length;
-    contributions.push(entry('emotionalEngagement', (averageEmotion + averageArousal) / 2, 2, source('entries')));
+    contributions.push(entry(
+      'emotionalEngagement',
+      (averageEmotion + averageArousal) / 2,
+      2 * modeWeight,
+      source('entries')
+    ));
     // Timed comments stay on the shorter 240 scale — they are per-moment notes,
     // not long-form reflection.
     contributions.push(entry(
       'reflection',
       entries.reduce((sum, item) => sum + textStrength(item.comment, 240), 0) / entries.length,
-      1.5,
+      1.5 * modeWeight,
       source('entries')
     ));
   }
-  if (record.narrativeArc) contributions.push(entry('narrative', 0.9, 2, source('narrativeArc')));
-  if (record.journeyStage) contributions.push(entry('exploration', 0.6, 0.75, source('journeyStage')));
+  if (record.narrativeArc) contributions.push(entry('narrative', 0.9, 2 * modeWeight, source('narrativeArc')));
+  if (record.journeyStage) contributions.push(entry('exploration', 0.6, 0.75 * modeWeight, source('journeyStage')));
   return { contributions: contributions.flatMap(mapV1Contribution), aversionEvidence: [] };
 }
 
