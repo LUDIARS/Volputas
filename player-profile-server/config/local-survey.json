@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "dataRepository": {
+    "path": "private/survey-data",
+    "remote": "origin",
+    "githubRepository": "LUDIARS/VolputasData",
+    "expectedRemoteUrl": "https://github.com/LUDIARS/VolputasData.git",
+    "baseBranch": "main",
+    "responseBranchPrefix": "responses/github-",
+    "allowRemotePublish": true
+  },
+  "commands": {
+    "git": "git",
+    "github": "gh"
+  }
+}

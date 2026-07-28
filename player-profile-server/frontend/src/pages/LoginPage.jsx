@@ -49,63 +49,26 @@ export default function LoginPage() {
     }
   }
 
-  // Demo login (for development without IdP)
-  async function handleDemoLogin() {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await api('/auth/token', {
-        method: 'POST',
-        body: { code: 'demo', code_verifier: 'demo', provider: 'google' },
-      });
-      await login(res.data.access_token, res.data.refresh_token);
-      navigate('/');
-    } catch (err) {
-      setError('Demo login unavailable — configure an OAuth provider');
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="login-page">
       <div className="login-card card">
         <div className="login-header">
-          <h1>Player Profile</h1>
-          <p>Sign in to manage your gaming identity</p>
+          <h1>Volputas</h1>
+          <p>Cernereアカウントでオンラインモードへログイン</p>
         </div>
 
         {error && <div className="error-message">{error}</div>}
 
         <div className="login-buttons">
           <button
-            className="provider-btn google"
-            onClick={() => handleProviderLogin('google')}
+            className="provider-btn cernere"
+            onClick={() => handleProviderLogin('cernere')}
             disabled={loading}
           >
-            <span className="provider-icon">G</span>
-            Sign in with Google
+            <span className="provider-icon">C</span>
+            Cernereでログイン
           </button>
-
-          <button
-            className="provider-btn discord"
-            onClick={() => handleProviderLogin('discord')}
-            disabled={loading}
-          >
-            <span className="provider-icon">D</span>
-            Sign in with Discord
-          </button>
-
         </div>
-
-        <div className="login-divider"><span>or</span></div>
-
-        <button
-          className="btn-outline demo-btn"
-          onClick={handleDemoLogin}
-          disabled={loading}
-        >
-          Demo Login (Development)
-        </button>
       </div>
     </div>
   );
