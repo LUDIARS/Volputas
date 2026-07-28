@@ -6,6 +6,7 @@ const {
   aggregatePlaySession,
   getTimeline,
   listTimelines,
+  resolveSessionMonoMs,
   saveTimeline,
 } = require('../services/affectTimeline');
 const {
@@ -102,7 +103,7 @@ router.post('/sessions/:id/timeline', async (req, res, next) => {
   try {
     const binMs = req.body?.binMs === undefined ? 30_000 : positiveInteger(req.body.binMs, 'binMs');
     const { rows } = await db.query(
-      `SELECT ps.game_id, ps.started_at, pe.event_type, pe.event_data, pe.occurred_at
+      `SELECT ps.game_id, ps.started_at, ps.metadata, pe.event_type, pe.event_data, pe.occurred_at
        FROM play_sessions ps
        LEFT JOIN play_events pe ON pe.session_id = ps.id
        WHERE ps.id = $1 AND ps.user_id = $2
@@ -110,11 +111,20 @@ router.post('/sessions/:id/timeline', async (req, res, next) => {
       [req.params.id, req.user.id]
     );
     if (!rows[0]) throw new AppError(404, 'NOT_FOUND', 'Session not found');
+    // Align the timeline origin to recording start when the client stamped its
+    // monotonic origin at session creation (§5 metadata). Absent it, behaviour is
+    // unchanged (app-relative mono_ms, then wall-clock delta).
+    const sessionEpochMonoMs = rows[0].metadata?.session_epoch_mono_ms;
+    const sessionRelative = Number.isFinite(Number(sessionEpochMonoMs));
     const events = rows
       .filter((row) => row.event_type)
       .map((row) => ({
-        monoMs: Number(row.event_data?.mono_ms)
-          || new Date(row.occurred_at).getTime() - new Date(row.started_at).getTime(),
+        monoMs: resolveSessionMonoMs({
+          eventMonoMs: row.event_data?.mono_ms,
+          occurredAt: row.occurred_at,
+          startedAt: row.started_at,
+          sessionEpochMonoMs,
+        }),
         eventType: row.event_type,
         eventData: row.event_data,
       }));
@@ -125,7 +135,7 @@ router.post('/sessions/:id/timeline', async (req, res, next) => {
       sourceRef: req.params.id,
       binMs,
       series,
-      meta: { events: events.length },
+      meta: { events: events.length, sessionRelative },
     });
     res.status(201).json({ ok: true, data: timeline });
   } catch (error) {

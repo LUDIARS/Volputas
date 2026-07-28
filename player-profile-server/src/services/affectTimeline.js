@@ -78,6 +78,23 @@ function aggregatePlaySession(events, binMs = 30_000) {
     }));
 }
 
+// Resolve an event's play-session timeline position in monotonic ms.
+// §6.1 defines event_data.mono_ms as the client monotonic clock measured from
+// *app start*, not session start, so a raw mono_ms carries an arbitrary
+// app-uptime offset (the "recording_started_at alignment" gap). When the client
+// stamped its recording-start origin at session creation
+// (play_sessions.metadata.session_epoch_mono_ms), subtract it so the timeline's
+// t axis begins at recording start. Otherwise fall back to the original
+// behavior: app-relative mono_ms, then wall-clock (occurred_at - started_at).
+// Pure and backward-compatible: no epoch -> identical output to the legacy route.
+// See ludellus-tuning-log-design.md §6.1, §5.
+function resolveSessionMonoMs({ eventMonoMs, occurredAt, startedAt, sessionEpochMonoMs } = {}) {
+  const mono = Number(eventMonoMs);
+  const epoch = Number(sessionEpochMonoMs);
+  if (Number.isFinite(mono) && Number.isFinite(epoch)) return mono - epoch;
+  return mono || (new Date(occurredAt).getTime() - new Date(startedAt).getTime());
+}
+
 async function saveTimeline({
   gameId,
   sourceKind,
@@ -133,5 +150,6 @@ module.exports = {
   aggregateTimeline,
   getTimeline,
   listTimelines,
+  resolveSessionMonoMs,
   saveTimeline,
 };
