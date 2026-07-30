@@ -14,6 +14,7 @@ import LocalSettingsPage from './pages/LocalSettingsPage';
 import LocalSurveysPage from './pages/LocalSurveysPage';
 import LoginPage from './pages/LoginPage';
 import PersonaPage from './pages/PersonaPage';
+import PitchPage from './pages/PitchPage';
 import ProfilePage from './pages/ProfilePage';
 import SessionsPage from './pages/SessionsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -47,6 +48,7 @@ function EvidenceRoutes() {
       <Route path="comparisons" element={<ComparisonPage />} />
       <Route path="annotations" element={<AnnotationPage />} />
       <Route path="card-sort" element={<CardSortPage />} />
+      <Route path="pitches" element={<PitchPage />} />
       <Route path="persona" element={<PersonaPage />} />
     </>
   );

@@ -11,6 +11,7 @@ const { cardSortContributions } = require('./cardSortContributions');
 const { combineMechanicReactions } = require('./combineMechanicReactions');
 const { collectMechanicReactions, mechanicAversionEvidence } = require('./mechanicReactions');
 const { comparisonContributions } = require('./comparisonContributions');
+const { pitchContributions } = require('./pitchContributions');
 const { collectSourceContributions } = require('./sourceContributions');
 const { steamContributions } = require('./steamContributions');
 const { surveyAxisContributions } = require('./surveyAxisContributions');
@@ -65,6 +66,7 @@ function analyzePersonaV2(sources, analyzedAt) {
   const comparisons = comparisonContributions(sources.comparisons || []);
   const annotations = annotationContributions(sources.annotations || []);
   const cardSort = cardSortContributions(sources.cardSorts || []);
+  const pitches = pitchContributions(sources.pitches || []);
   const contributions = [
     ...fromRecords.contributions,
     ...survey.contributions,
@@ -72,6 +74,7 @@ function analyzePersonaV2(sources, analyzedAt) {
     ...comparisons.contributions,
     ...annotations.contributions,
     ...cardSort.contributions,
+    ...pitches.contributions,
   ];
   const aggregated = aggregateContributions(contributions);
 
@@ -104,6 +107,7 @@ function analyzePersonaV2(sources, analyzedAt) {
   const affect = computeAffectProfile([
     ...collectFreeTextSamples(joinedRecords),
     ...annotations.affectSamples,
+    ...pitches.affectSamples,
   ]);
 
   // 12-classification (MTG psychographics + Caillois + story dynamics) via the
@@ -137,7 +141,8 @@ function analyzePersonaV2(sources, analyzedAt) {
     classification,
     mechanicReactions: combineMechanicReactions(
       collectMechanicReactions(sources.voices),
-      cardSort.mechanicReactions
+      cardSort.mechanicReactions,
+      pitches.mechanicReactions
     ),
     population: null,
     steam: steam.meta,
@@ -148,6 +153,7 @@ function analyzePersonaV2(sources, analyzedAt) {
       comparisons: (sources.comparisons || []).length,
       annotations: (sources.annotations || []).length,
       cardSorts: (sources.cardSorts || []).length,
+      pitches: (sources.pitches || []).length,
     },
     axes: legacy.axes,
     leadingAxes: legacy.leadingAxes,

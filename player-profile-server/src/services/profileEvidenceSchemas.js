@@ -259,6 +259,14 @@ function validateCardSortInput(body = {}) {
   return { mechanicId, bucket: body.bucket };
 }
 
+function validatePitchInput(body = {}) {
+  return {
+    title: requiredText(body.title, 'Pitch title', 200),
+    body: requiredText(body.body, 'Pitch body', 12000),
+    referenceGames: optionalText(body.referenceGames, 1000),
+  };
+}
+
 module.exports = {
   ANNOTATION_MOMENT_TYPES,
   EMOTION_STAMPS,
@@ -268,5 +276,6 @@ module.exports = {
   validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
+  validatePitchInput,
   validateVoiceInput,
 };

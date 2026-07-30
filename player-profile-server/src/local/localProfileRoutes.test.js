@@ -77,6 +77,16 @@ test('local profile routes persist evidence, stream media, and cache persona ana
       tags: 'story',
     }),
   });
+  const pitch = await json('/api/local/pitches', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Endless Citadel',
+      body: 'ローグライクの塔を自由な発想で攻略する。',
+      referenceGames: 'Hades',
+    }),
+  });
+  assert.equal(pitch.record.title, 'Endless Citadel');
   const annotation = await json('/api/local/annotations', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -125,7 +135,8 @@ test('local profile routes persist evidence, stream media, and cache persona ana
   });
 
   const before = await json('/api/local/persona');
-  assert.equal(before.evidenceCount, 4);
+  // gameplay + voice + emotion curve + card sort + annotation + pitch
+  assert.equal(before.evidenceCount, 6);
   assert.equal(before.stale, true);
 
   const firstAnalysis = await json('/api/local/persona/analyze', { method: 'POST' });
@@ -137,11 +148,13 @@ test('local profile routes persist evidence, stream media, and cache persona ana
     comparisons: 0,
     annotations: 1,
     cardSorts: 1,
+    pitches: 1,
     gameplay: 1,
     voices: 1,
     emotionCurves: 1,
   });
-  assert.equal(firstAnalysis.analysis.affect.sampleTexts, 1);
+  // The annotation caption and the pitch body are both free-text affect samples.
+  assert.equal(firstAnalysis.analysis.affect.sampleTexts, 2);
   assert.ok(
     firstAnalysis.analysis.preferenceAxes['style.explorer'].contributions
       .some((item) => item.source.kind === 'annotation')
@@ -154,6 +167,18 @@ test('local profile routes persist evidence, stream media, and cache persona ana
   assert.equal(cardSortReaction.samples, 1);
   assert.equal(cardSortReaction.sources.length, 1);
   assert.match(cardSortReaction.sources[0], /^cardsort:/);
+  const pitchReaction = firstAnalysis.analysis.mechanicReactions.find((item) =>
+    item.mechanicId === 'runner/procedural-track');
+  assert.deepEqual(pitchReaction, {
+    mechanicId: 'runner/procedural-track',
+    sentiment: 1,
+    samples: 1,
+    sources: [`pitch:${pitch.record.id}`],
+  });
+  assert.ok(firstAnalysis.analysis.preferenceAxes['mtg.johnny'].contributions.some((item) =>
+    item.source.kind === 'pitch' && item.value === 0.6));
+  assert.ok(firstAnalysis.analysis.preferenceAxes['style.autonomy'].contributions.some((item) =>
+    item.source.kind === 'pitch' && item.value === 0.6));
 
   const unchangedAnalysis = await json('/api/local/persona/analyze', { method: 'POST' });
   assert.equal(unchangedAnalysis.recomputed, false);

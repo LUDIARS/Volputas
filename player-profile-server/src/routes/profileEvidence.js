@@ -11,6 +11,7 @@ const {
   validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
+  validatePitchInput,
   validateVoiceInput,
 } = require('../services/profileEvidenceSchemas');
 const { ProfileMediaStore } = require('../services/profileMediaStore');
@@ -111,6 +112,7 @@ function createProfileEvidenceRouter({
   collectionRoutes('/comparisons', 'comparisons', validateComparisonInput);
   collectionRoutes('/annotations', 'annotations', validateAnnotationInput);
   collectionRoutes('/card-sorts', 'card-sorts', validateCardSortInput);
+  collectionRoutes('/pitches', 'pitches', validatePitchInput);
 
   router.get('/comparisons/deck', (_req, res) => {
     res.json({ ok: true, data: EXPERIENCE_CARDS.map(({ id, text }) => ({ id, text })) });

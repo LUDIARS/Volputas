@@ -9,6 +9,7 @@ const USER_EVIDENCE_KEYS = [
   'comparisons',
   'cardSorts',
   'annotations',
+  'pitches',
 ];
 
 function countUserEvidence(sources) {
