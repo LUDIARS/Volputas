@@ -26,6 +26,7 @@ updated: 2026-07-28
 | データ名 | 種類 | 権威ソース | 保存先 | 保護要否 | 保護方法 |
 |---|---|---|---|---|---|
 | `users` / `federated_identities` | user | Voluptas認証境界 | PostgreSQL | 必要 | 認証済み本人のみ。raw profile allowlist、token非ログ化 |
+| `users.research_export_consent` | user | 同意した本人 | PostgreSQL | 必要 | 既定 false。本人設定 API だけが更新し、online persona export は true のユーザだけを選択 |
 | `player_profiles` | user | 本人承認済みVoluptas profile | PostgreSQL | 必要 | 本人更新。代理claimはaccept後のみ反映 |
 | 公開アンケート定義 | master | `LUDIARS/VolputasData` (public template) → 運用者のprivateコピー main | `private/survey-data/surveys/*.json` | 不要 | public review、version固定、filenameとsurvey ID一致 |
 | ローカルアンケート回答 | user | 利用者のlocal filesystem | 独立clone内のignored local-data path | 必要 | 親/子双方のgitignore、remote publish禁止、回答非ログ化 |
@@ -36,6 +37,7 @@ updated: 2026-07-28
 | `profile_claims` | user | 提案者。正本化権限は本人 | PostgreSQL | 必要 | 正本と分離、構造化allowlist、本人個別承認、処分済み生値は日次purgeで30日後削除 |
 | `delegation_audit_events` | user | Voluptas | PostgreSQL | 必要 | 本人・代理人のみ参照。claim値やtokenを記録しない |
 | `player_affect_profiles` | user-derived | Voluptas分析 | PostgreSQL | 必要 | 20D派生値。仮名化exportのみ |
+| persona export v2 | user-derived | Voluptas分析 + 本人同意 | local: `exports/personas.jsonl` / online: project-credential 保護 JSONL | 必要 | HMAC `pseudoId` と派生値だけ。実名・email・Name・回答本文・provenance ID を除外 |
 | `game_beat_scripts` | master | Voluptas運用者 | PostgreSQL | 不要 | versioned controlled vocabulary |
 | `steam_profiles` | user | 本人が連携したSteam公開プロフィール | PostgreSQL | 必要 | 本人単位アクセス。公開プロフィール(communityvisibilitystate=3)のみ連携許可 |
 | `steam_owned_games` | user-derived | Steam Web API (GetOwnedGames) スナップショット | PostgreSQL | 必要 | 本人単位アクセス。同期のたびに全置換、ジャンル等の追加取得は行わない |

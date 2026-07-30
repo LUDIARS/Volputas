@@ -15,6 +15,7 @@ test('validates absolute repository paths and portable Git Author folder names',
   });
   assert.equal(result.name, 'k.mitarai');
   assert.equal(result.schemaVersion, 2);
+  assert.equal(result.researchExportConsent, false);
 
   assert.throws(
     () => validateLocalConfig({ dataRepositoryPath: 'relative', name: 'neco' }),
@@ -47,6 +48,7 @@ test('writes and reads local configuration atomically', async (t) => {
   const expected = {
     dataRepositoryPath: path.join(directory, 'Volputas-Data'),
     name: 'neco',
+    researchExportConsent: true,
   };
 
   assert.equal(await store.read(), null);
@@ -54,4 +56,5 @@ test('writes and reads local configuration atomically', async (t) => {
   const actual = await store.read();
   assert.equal(actual.name, expected.name);
   assert.equal(actual.dataRepositoryPath, path.resolve(expected.dataRepositoryPath));
+  assert.equal(actual.researchExportConsent, true);
 });

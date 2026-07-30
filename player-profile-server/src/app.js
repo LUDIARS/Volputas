@@ -39,6 +39,7 @@ const impressionRoutes = require('./routes/impressions');
 const impressionReactionRoutes = require('./routes/impressionReactions');
 const memoriaRoutes = require('./routes/memoria');
 const corpusManifestRoutes = require('./routes/corpusManifest');
+const { router: personaExportRoutes } = require('./routes/personaExport');
 const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
 
 const app = express();
@@ -127,6 +128,7 @@ app.use('/api/v1/delegations', delegationRoutes);
 app.use('/api/v1', impressionRoutes);
 app.use('/api/v1', impressionReactionRoutes);
 app.use('/api/v1/profile-data', profileEvidenceRoutes);
+app.use('/api/personas', personaExportRoutes);
 
 if (fs.existsSync(path.join(frontendDirectory, 'index.html'))) {
   mountFrontend(app, frontendDirectory);

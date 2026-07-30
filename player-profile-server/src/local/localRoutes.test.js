@@ -56,11 +56,16 @@ test('reports Git PATH status and derives the answer folder Name from Git Author
   const configured = await fetch(`${origin}/api/local/config`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ dataRepositoryPath: repositoryRoot, name: 'ignored-input' }),
+    body: JSON.stringify({
+      dataRepositoryPath: repositoryRoot,
+      name: 'ignored-input',
+      researchExportConsent: true,
+    }),
   }).then((response) => response.json());
 
   assert.equal(configured.ok, true);
   assert.equal(savedConfig.name, gitAuthor.name);
+  assert.equal(savedConfig.researchExportConsent, true);
   assert.equal(configured.data.config.name, gitAuthor.name);
   assert.deepEqual(configured.data.surveys, {
     count: 2,

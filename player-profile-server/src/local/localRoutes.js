@@ -151,6 +151,7 @@ function createLocalRoutes({
       const candidate = validateLocalConfig({
         dataRepositoryPath,
         name: gitAuthor.name,
+        researchExportConsent: req.body?.researchExportConsent === true,
       });
       // アンケート定義の正本はデータリポジトリ (VolputasData) 側にある。設定を保存する前に
       // 実際に読めることを確認し、定義が1本も無いディレクトリを「設定済み」として
