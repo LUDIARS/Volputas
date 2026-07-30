@@ -28,3 +28,19 @@ that value as the `cursor` query parameter.
 The endpoint uses `application/x-ndjson`, `Cache-Control: private, no-store`,
 and selects only non-deleted users with explicit research-export consent.
 It does not accept ordinary user access tokens as batch-export authority.
+
+## Discutere から母集団レポートを取り込む
+
+Discutere の `npm run persona:populations -- --report <path>` が出力した
+`population-report.json` を、同じ project credential でオンライン API に送る。
+
+```text
+POST /api/personas/population-report
+Authorization: Bearer <VOLUPTAS_PERSONA_EXPORT_TOKEN>
+Content-Type: application/json
+```
+
+1 リクエストは最大 5,000 行。大きなレポートは `generatedAt` と
+`realPopulation` を維持して `entries` だけを分割する。Voluptas は研究提供に
+同意したユーザーだけを仮名 ID で照合し、v2 分析の `population` を更新する。
+ローカルモードではペルソナ画面の「母集団レポートを取込」から同じ JSON を選べる。

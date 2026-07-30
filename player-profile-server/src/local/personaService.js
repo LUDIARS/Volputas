@@ -134,6 +134,20 @@ class PersonaService {
     }
   }
 
+  async writeAnalysis(repositoryRoot, name, analysis) {
+    const filePath = this.analysisPath(repositoryRoot, name);
+    const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    try {
+      await fs.writeFile(temporaryPath, `${JSON.stringify(analysis, null, 2)}\n`, 'utf8');
+      await fs.rename(temporaryPath, filePath);
+    } catch (error) {
+      await fs.unlink(temporaryPath).catch(() => {});
+      throw error;
+    }
+    return filePath;
+  }
+
   async historySeries(context) {
     return readAnalysisHistorySeries({
       repositoryRoot: context.repositoryRoot,
@@ -171,16 +185,7 @@ class PersonaService {
       ...analyzePersonaV2(sources, this.now().toISOString()),
       sourceFingerprint,
     };
-    const filePath = this.analysisPath(context.repositoryRoot, context.name);
-    const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-    try {
-      await fs.writeFile(temporaryPath, `${JSON.stringify(analysis, null, 2)}\n`, 'utf8');
-      await fs.rename(temporaryPath, filePath);
-    } catch (error) {
-      await fs.unlink(temporaryPath).catch(() => {});
-      throw error;
-    }
+    const filePath = await this.writeAnalysis(context.repositoryRoot, context.name, analysis);
     await appendAnalysisHistory({
       repositoryRoot: context.repositoryRoot,
       name: context.name,

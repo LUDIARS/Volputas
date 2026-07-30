@@ -39,6 +39,7 @@ function createLocalRoutes({
   mediaStore,
   pitchStore,
   personaService,
+  populationReportService,
   responseStore,
   surveyPublisher,
   surveyDefinitionStore,
@@ -343,6 +344,21 @@ function createLocalRoutes({
           repositoryRoot: gitAuthor.repositoryRoot,
           name: config.name,
         }),
+      });
+    } catch (error) {
+      return next(asAppError(error));
+    }
+  });
+
+  router.post('/persona/population-report', async (req, res, next) => {
+    try {
+      const { config, gitAuthor } = await configuredContext();
+      return res.json({
+        ok: true,
+        data: await populationReportService.import({
+          repositoryRoot: gitAuthor.repositoryRoot,
+          name: config.name,
+        }, req.body),
       });
     } catch (error) {
       return next(asAppError(error));

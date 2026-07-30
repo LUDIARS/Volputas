@@ -1,8 +1,11 @@
 const { Router } = require('express');
 const config = require('../config');
+const db = require('../config/database');
+const { getProfileEvidenceStore } = require('../integrations/cernere/createProfileEvidenceStore');
 const { createPersonaExportAuth } = require('../middleware/personaExportAuth');
 const { toJsonLines } = require('../services/personaExport');
 const { PersonaExportService } = require('../services/personaExportService');
+const { OnlinePopulationReportService } = require('../services/populationReport');
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -21,6 +24,11 @@ function parseCursor(value) {
 function createPersonaExportRouter({
   authenticateMiddleware = createPersonaExportAuth(),
   service = new PersonaExportService({ secret: config.pseudoIdSecret }),
+  populationService = new OnlinePopulationReportService({
+    database: db,
+    evidenceStore: getProfileEvidenceStore(),
+    secret: config.pseudoIdSecret,
+  }),
 } = {}) {
   const router = Router();
   router.use(authenticateMiddleware);
@@ -37,6 +45,15 @@ function createPersonaExportRouter({
       });
       if (result.nextCursor) res.set('X-Next-Cursor', result.nextCursor);
       return res.status(200).send(toJsonLines(result.personas));
+    } catch (error) {
+      return next(error);
+    }
+  });
+  router.post('/population-report', async (req, res, next) => {
+    try {
+      const result = await populationService.import(req.body);
+      res.set('Cache-Control', 'private, no-store');
+      return res.status(200).json({ ok: true, data: result });
     } catch (error) {
       return next(error);
     }
