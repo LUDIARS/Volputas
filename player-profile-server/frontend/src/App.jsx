@@ -23,6 +23,7 @@ import VideoReviewUploadPage from './pages/VideoReviewUploadPage';
 import GameReviewPage from './pages/GameReviewPage';
 import SurveysPage from './pages/SurveysPage';
 import VoicePage from './pages/VoicePage';
+import VoiceMemoPage from './pages/VoiceMemoPage';
 import './styles/localProfile.css';
 
 function ProtectedRoute({ children }) {
@@ -44,6 +45,7 @@ function EvidenceRoutes() {
     <>
       <Route path="gameplay" element={<GameplayPage />} />
       <Route path="voices" element={<VoicePage />} />
+      <Route path="voice-memos" element={<VoiceMemoPage />} />
       <Route path="emotion-curves" element={<EmotionCurvePage />} />
       <Route path="comparisons" element={<ComparisonPage />} />
       <Route path="annotations" element={<AnnotationPage />} />

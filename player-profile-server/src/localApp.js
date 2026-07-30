@@ -33,6 +33,7 @@ function createLocalApp({
   responseStore = new LocalResponseStore(),
   surveyPublisher,
   surveyDefinitionStore = new SurveyDefinitionStore(),
+  voiceMemoStore = new ProfileRecordStore('voicememos'),
   voiceStore = new ProfileRecordStore('voices'),
   personaService,
   populationReportService,
@@ -49,6 +50,7 @@ function createLocalApp({
     emotionCurveStore,
     gameplayStore,
     pitchStore,
+    voiceMemoStore,
     voiceStore,
     surveyDefinitionStore,
   });
@@ -85,6 +87,7 @@ function createLocalApp({
     responseStore,
     surveyPublisher: resolvedSurveyPublisher,
     surveyDefinitionStore,
+    voiceMemoStore,
     voiceStore,
   }));
 

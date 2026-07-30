@@ -77,6 +77,41 @@ test('local profile routes persist evidence, stream media, and cache persona ana
       tags: 'story',
     }),
   });
+  await json('/api/local/voice-memos', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      gameTitle: 'Route Test',
+      audioFileName: 'pending.webm',
+      durationSeconds: 4,
+      transcript: '',
+    }),
+  });
+  const voiceMemo = await json('/api/local/voice-memos', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      gameTitle: 'Route Test',
+      audioFileName: 'memo.webm',
+      durationSeconds: 8,
+      transcript: 'ガチャが苦手だった。',
+      sentiment: -2,
+      polarity: 'dislike',
+      mechanicIds: ['core/gacha'],
+    }),
+  });
+  const audioBytes = Buffer.from('test-audio');
+  await json(`/api/local/media/voicememos/${voiceMemo.record.id}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'audio/webm' },
+    body: audioBytes,
+  });
+  const downloadedAudio = await fetch(
+    `${origin}/api/local/media/voicememos/${voiceMemo.record.id}`
+  );
+  assert.equal(downloadedAudio.status, 200);
+  assert.deepEqual(Buffer.from(await downloadedAudio.arrayBuffer()), audioBytes);
+
   const pitch = await json('/api/local/pitches', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -135,8 +170,9 @@ test('local profile routes persist evidence, stream media, and cache persona ana
   });
 
   const before = await json('/api/local/persona');
-  // gameplay + voice + emotion curve + card sort + annotation + pitch
-  assert.equal(before.evidenceCount, 6);
+  // gameplay + voice + emotion curve + card sort + annotation + pitch + the one
+  // transcribed voice memo (the untranscribed memo does not count as evidence).
+  assert.equal(before.evidenceCount, 7);
   assert.equal(before.stale, true);
 
   const firstAnalysis = await json('/api/local/persona/analyze', { method: 'POST' });
@@ -151,7 +187,15 @@ test('local profile routes persist evidence, stream media, and cache persona ana
     pitches: 1,
     gameplay: 1,
     voices: 1,
+    voiceMemos: 1,
     emotionCurves: 1,
+  });
+  assert.deepEqual(firstAnalysis.analysis.mechanicReactions.find((item) =>
+    item.mechanicId === 'core/gacha'), {
+    mechanicId: 'core/gacha',
+    sentiment: -2,
+    samples: 1,
+    sources: [`voicememo:${voiceMemo.record.id}`],
   });
   // The annotation caption and the pitch body are both free-text affect samples.
   assert.equal(firstAnalysis.analysis.affect.sampleTexts, 2);

@@ -134,13 +134,13 @@ function analyzePersonaV2(sources, analyzedAt) {
     aversions: collectAversions([
       ...fromRecords.aversionEvidence,
       ...survey.aversionEvidence,
-      ...mechanicAversionEvidence(sources.voices),
+      ...mechanicAversionEvidence(sources.voices, sources.voiceMemos),
       ...cardSort.aversionEvidence,
     ]),
     affect,
     classification,
     mechanicReactions: combineMechanicReactions(
-      collectMechanicReactions(sources.voices),
+      collectMechanicReactions(sources.voices, sources.voiceMemos),
       cardSort.mechanicReactions,
       pitches.mechanicReactions
     ),
@@ -154,6 +154,8 @@ function analyzePersonaV2(sources, analyzedAt) {
       annotations: (sources.annotations || []).length,
       cardSorts: (sources.cardSorts || []).length,
       pitches: (sources.pitches || []).length,
+      voiceMemos: (sources.voiceMemos || [])
+        .filter((record) => String(record.transcript || '').trim()).length,
     },
     axes: legacy.axes,
     leadingAxes: legacy.leadingAxes,

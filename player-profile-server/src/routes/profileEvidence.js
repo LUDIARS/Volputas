@@ -12,6 +12,7 @@ const {
   validateEmotionCurveInput,
   validateGameplayInput,
   validatePitchInput,
+  validateVoiceMemoInput,
   validateVoiceInput,
 } = require('../services/profileEvidenceSchemas');
 const { ProfileMediaStore } = require('../services/profileMediaStore');
@@ -22,6 +23,7 @@ const { EmotionCurveEvaluationService } = require('../services/emotionCurveEvalu
 
 const MEDIA_RECORD_KINDS = {
   screenshots: new Set(['gameplay', 'annotations']),
+  voicememos: new Set(['voice-memos']),
   videos: new Set(['emotion-curves']),
   gamelogs: new Set(['emotion-curves']),
 };
@@ -108,6 +110,7 @@ function createProfileEvidenceRouter({
 
   collectionRoutes('/gameplay', 'gameplay', validateGameplayInput);
   collectionRoutes('/voices', 'voices', validateVoiceInput);
+  collectionRoutes('/voice-memos', 'voice-memos', validateVoiceMemoInput);
   collectionRoutes('/emotion-curves', 'emotion-curves', validateEmotionCurveInput);
   collectionRoutes('/comparisons', 'comparisons', validateComparisonInput);
   collectionRoutes('/annotations', 'annotations', validateAnnotationInput);

@@ -10,6 +10,7 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
     pitch_records: null,
     gameplay_records: null,
     voice_records: null,
+    voicememo_records: null,
     emotion_curve_records: null,
     persona_analysis: null,
     profile_media: null,
@@ -51,6 +52,15 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   });
   assert.equal((await store.list('local-user', 'gameplay'))[0].id, gameplay.id);
 
+  const voiceMemo = await store.create('local-user', 'voice-memos', {
+    gameTitle: 'Cernere Game',
+    audioFileName: 'memo.webm',
+    transcript: 'ガチャは苦手',
+    sentiment: -2,
+    polarity: 'dislike',
+    mechanicIds: ['core/gacha'],
+  });
+  assert.equal((await store.list('local-user', 'voice-memos'))[0].id, voiceMemo.id);
   const annotation = await store.create('local-user', 'annotations', {
     screenshotFileName: 'story.png',
     momentType: 'story',
@@ -89,6 +99,14 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   const first = await persona.analyze('local-user');
   assert.equal(first.recomputed, true);
   assert.equal(first.analysis.evidence.gameplay, 1);
+  assert.equal(first.analysis.evidence.voiceMemos, 1);
+  assert.deepEqual(first.analysis.mechanicReactions.find((item) =>
+    item.mechanicId === 'core/gacha'), {
+    mechanicId: 'core/gacha',
+    sentiment: -2,
+    samples: 1,
+    sources: [`voicememo:${voiceMemo.id}`],
+  });
   assert.equal(first.analysis.evidence.annotations, 1);
   assert.equal(first.analysis.evidence.cardSorts, 1);
   assert.equal(first.analysis.evidence.pitches, 1);
@@ -119,6 +137,7 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   assert.ok(calls.every((call) =>
     ['managed_project', 'volputas_survey'].includes(call.module)));
   assert.equal(columns.gameplay_records.length, 1);
+  assert.equal(columns.voicememo_records.length, 1);
   assert.equal(columns.annotation_records.length, 1);
   assert.equal(columns.card_sort_records.length, 1);
   assert.equal(columns.pitch_records.length, 1);

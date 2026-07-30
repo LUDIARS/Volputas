@@ -17,7 +17,9 @@ function countUserEvidence(sources) {
     (sum, key) => sum + (sources[key]?.length || 0),
     0
   );
-  return records + (sources.steam?.games?.length ? 1 : 0);
+  const transcribedVoiceMemos = (sources.voiceMemos || [])
+    .filter((record) => String(record.transcript || '').trim()).length;
+  return records + transcribedVoiceMemos + (sources.steam?.games?.length ? 1 : 0);
 }
 
 module.exports = { USER_EVIDENCE_KEYS, countUserEvidence };

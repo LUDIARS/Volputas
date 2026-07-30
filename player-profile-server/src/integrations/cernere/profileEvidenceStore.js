@@ -5,6 +5,7 @@ const COLUMN_BY_KIND = {
   'card-sorts': 'card_sort_records',
   gameplay: 'gameplay_records',
   voices: 'voice_records',
+  'voice-memos': 'voicememo_records',
   'emotion-curves': 'emotion_curve_records',
   comparisons: 'comparison_records',
   pitches: 'pitch_records',

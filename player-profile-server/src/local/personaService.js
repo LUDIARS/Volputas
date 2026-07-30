@@ -41,6 +41,7 @@ class PersonaService {
     comparisonStore = null,
     pitchStore = null,
     gameplayStore,
+    voiceMemoStore = null,
     voiceStore,
     emotionCurveStore,
     surveyDefinitionStore = null,
@@ -51,6 +52,7 @@ class PersonaService {
     this.comparisonStore = comparisonStore;
     this.pitchStore = pitchStore;
     this.gameplayStore = gameplayStore;
+    this.voiceMemoStore = voiceMemoStore;
     this.voiceStore = voiceStore;
     this.emotionCurveStore = emotionCurveStore;
     this.surveyDefinitionStore = surveyDefinitionStore;
@@ -81,6 +83,7 @@ class PersonaService {
       annotations,
       cardSorts,
       pitches,
+      voiceMemos,
     ] = await Promise.all([
       readJsonFiles(collectionDirectory(repositoryRoot, 'answers', name)),
       this.gameplayStore.list({ repositoryRoot, name }),
@@ -99,6 +102,9 @@ class PersonaService {
       this.pitchStore
         ? this.pitchStore.list({ repositoryRoot, name })
         : Promise.resolve([]),
+      this.voiceMemoStore
+        ? this.voiceMemoStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
     ]);
     return {
       surveys,
@@ -110,6 +116,7 @@ class PersonaService {
       annotations,
       cardSorts,
       pitches,
+      voiceMemos,
     };
   }
 

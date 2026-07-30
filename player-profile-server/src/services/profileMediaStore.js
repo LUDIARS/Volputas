@@ -20,6 +20,15 @@ const MEDIA_RULES = {
     },
     maximumBytes: 20 * 1024 * 1024,
   },
+  voicememos: {
+    contentTypes: {
+      'audio/webm': '.webm',
+      'audio/ogg': '.ogg',
+      'audio/mp4': '.m4a',
+      'audio/mpeg': '.mp3',
+    },
+    maximumBytes: 50 * 1024 * 1024,
+  },
   videos: {
     contentTypes: {
       'video/mp4': '.mp4',

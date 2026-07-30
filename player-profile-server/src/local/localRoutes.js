@@ -14,6 +14,7 @@ const {
   validateEmotionCurveInput,
   validateGameplayInput,
   validatePitchInput,
+  validateVoiceMemoInput,
   validateVoiceInput,
 } = require('../services/profileEvidenceSchemas');
 
@@ -43,6 +44,7 @@ function createLocalRoutes({
   responseStore,
   surveyPublisher,
   surveyDefinitionStore,
+  voiceMemoStore,
   voiceStore,
 }) {
   const router = Router();
@@ -243,6 +245,7 @@ function createLocalRoutes({
 
   collectionRoutes('/gameplay', gameplayStore, validateGameplayInput);
   collectionRoutes('/voices', voiceStore, validateVoiceInput);
+  collectionRoutes('/voice-memos', voiceMemoStore, validateVoiceMemoInput);
   collectionRoutes('/emotion-curves', emotionCurveStore, validateEmotionCurveInput);
   collectionRoutes('/comparisons', comparisonStore, validateComparisonInput);
   collectionRoutes('/annotations', annotationStore, validateAnnotationInput);
