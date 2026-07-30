@@ -77,6 +77,26 @@ test('local profile routes persist evidence, stream media, and cache persona ana
       tags: 'story',
     }),
   });
+  const annotation = await json('/api/local/annotations', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      screenshotFileName: 'discovery.png',
+      momentType: 'discovery',
+      caption: 'A hidden route opened behind the waterfall.',
+    }),
+  });
+  await json(`/api/local/media/screenshots/${annotation.record.id}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'image/png' },
+    body: imageBytes,
+  });
+  const downloadedAnnotation = await fetch(
+    `${origin}/api/local/media/screenshots/${annotation.record.id}`
+  );
+  assert.equal(downloadedAnnotation.status, 200);
+  assert.deepEqual(Buffer.from(await downloadedAnnotation.arrayBuffer()), imageBytes);
+
   await json('/api/local/card-sorts', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -115,11 +135,17 @@ test('local profile routes persist evidence, stream media, and cache persona ana
     surveyDefinitions: 0,
     steam: 0,
     comparisons: 0,
+    annotations: 1,
     cardSorts: 1,
     gameplay: 1,
     voices: 1,
     emotionCurves: 1,
   });
+  assert.equal(firstAnalysis.analysis.affect.sampleTexts, 1);
+  assert.ok(
+    firstAnalysis.analysis.preferenceAxes['style.explorer'].contributions
+      .some((item) => item.source.kind === 'annotation')
+  );
   assert.ok(firstAnalysis.analysis.aversions.some((item) =>
     item.target === 'mechanic:action/dodge-roll' && item.strength === 0.7));
   const cardSortReaction = firstAnalysis.analysis.mechanicReactions.find((item) =>

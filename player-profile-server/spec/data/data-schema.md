@@ -41,6 +41,7 @@ updated: 2026-07-28
 | `game_beat_scripts` | master | Voluptas運用者 | PostgreSQL | 不要 | versioned controlled vocabulary |
 | `steam_profiles` | user | 本人が連携したSteam公開プロフィール | PostgreSQL | 必要 | 本人単位アクセス。公開プロフィール(communityvisibilitystate=3)のみ連携許可 |
 | `steam_owned_games` | user-derived | Steam Web API (GetOwnedGames) スナップショット | PostgreSQL | 必要 | 本人単位アクセス。同期のたびに全置換、ジャンル等の追加取得は行わない |
+| スクリーンショット注釈 (`annotations`) | user | 注釈した本人 | local: データリポジトリ `annotations/<Name>/<id>.json` + リポジトリ外保護media / online: Cernere managed project `annotation_records` + private media storage | 必要 | 本人単位アクセス。画像は既存media制限で保護し、分析対象は明示 `momentType` とcaptionのみ。Vision解析は行わない。online列の提供はCernere migration follow-up |
 | カードソート判定 (`cardsorts`) | user | 分類した本人 | local: データリポジトリ `cardsorts/<Name>/<id>.json` / online: Cernere managed project `card_sort_records` | 必要 | 本人単位アクセス。1メカニクス1判定レコードを追記し、`updatedAt` が最新の判定だけを分析に採用。online列の提供はCernere migration follow-up |
 | `play_impressions` / `impression_assets` | user | 投稿した本人 | PostgreSQL + private object storage | 必要 | 所有者認証、署名付きPUT/GET、media検査・変換、期限付き原本削除 |
 | `impression_reactions` | user | 動画を見た本人 | PostgreSQL | 必要 | 所有者認証。動画内時刻、`comment/positive/negative`、本人入力本文を保持 |
