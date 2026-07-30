@@ -22,6 +22,8 @@ const {
   createGlabSurveyService,
 } = require('./services/glabSurveyService');
 const { createGlabReviewService } = require('./services/glabReviewService');
+const { createReviewRelayService } = require('./services/reviewRelayService');
+const { createGlabRelayClient } = require('./integrations/glab/glabRelayClient');
 const { pseudoId } = require('./services/pseudoId');
 const { getProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
 const { createGlabReviewRouter } = require('./routes/glabReviews');
@@ -56,11 +58,20 @@ let server = null;
 let stopPromise = null;
 let glabSurveyService = null;
 let glabReviewService = null;
+let reviewRelayService = null;
 let stopSessionMaintenance = null;
 
 function getGlabSurveyService() {
   if (!glabSurveyService) glabSurveyService = createGlabSurveyService();
   return glabSurveyService;
+}
+
+// Shared by the public review feed and the Discord relay so both attribute a
+// review the same way.
+async function resolveGlabReviewAuthor(cernereUserId, record) {
+  if (record.displayName) return record.displayName;
+  const user = await userModel.findByCernereSubject(cernereUserId);
+  return user?.display_name || 'Player';
 }
 
 function getGlabReviewService() {
@@ -71,15 +82,39 @@ function getGlabReviewService() {
         listVoices: (query) => store.listPublicVoices(query),
         saveVoice: (voice) => store.createForOwner(voice.userId, 'voices', voice),
       },
-      resolveDisplayName: async (cernereUserId, record) => {
-        if (record.displayName) return record.displayName;
-        const user = await userModel.findByCernereSubject(cernereUserId);
-        return user?.display_name || 'Player';
-      },
+      resolveDisplayName: resolveGlabReviewAuthor,
       pseudoId: (userId) => pseudoId(userId, config.pseudoIdSecret),
     });
   }
   return glabReviewService;
+}
+
+function getReviewRelayService() {
+  if (!reviewRelayService) {
+    const store = getProfileEvidenceStore();
+    // Every piece of the relay path is optional config; without all of it the
+    // service stays wired but degrades to "not relayed" instead of failing.
+    const glabRelayClient = createGlabRelayClient({
+      baseUrl: config.glab.baseUrl,
+      serviceToken: config.glab.serviceToken,
+    });
+    reviewRelayService = createReviewRelayService({
+      glabRelayClient,
+      voiceStore: {
+        // record.userId is the Cernere owner id stamped by createForOwner, not a
+        // local user id, so it must not go through the local-id resolution path.
+        markRelayed: (id, relayedAt, record) => store.updateForOwner(
+          record.userId,
+          'voices',
+          id,
+          { relayedAt },
+        ),
+      },
+      logger: console,
+      reviewBaseUrl: config.frontendUrl,
+    });
+  }
+  return reviewRelayService;
 }
 
 // Security middleware
@@ -114,6 +149,8 @@ app.use(
   glabReviewPath,
   createGlabReviewRouter({
     serviceProvider: getGlabReviewService,
+    reviewRelayServiceProvider: getReviewRelayService,
+    authorNameProvider: resolveGlabReviewAuthor,
     recentGamesProvider: async (cernereUserId) => {
       const user = await userModel.findByCernereSubject(cernereUserId);
       return user ? steamModel.getRecentlyPlayedGames(user.id, 20) : [];
@@ -225,6 +262,7 @@ function stop() {
     const activeIntegration = glabSurveyService;
     glabSurveyService = null;
     glabReviewService = null;
+    reviewRelayService = null;
     await activeIntegration?.close();
     if (serverCloseError) throw serverCloseError;
   })().finally(() => {

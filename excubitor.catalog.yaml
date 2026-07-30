@@ -29,7 +29,7 @@ services:
       project_id: 19c9e77d-646c-4a0e-a091-b494234953ea
       environment: dev
       inject: true
-      include: [VOLPUTAS_DATABASE_URL]
+      include: [VOLPUTAS_DATABASE_URL, GLAB_URL, GLAB_SERVICE_TOKEN]
     requires_secret:
       - service: cernere
         keys: [EXCUBITOR_CERNERE_CLIENT_ID, EXCUBITOR_CERNERE_CLIENT_SECRET]

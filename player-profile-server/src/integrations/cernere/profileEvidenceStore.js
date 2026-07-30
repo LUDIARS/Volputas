@@ -87,12 +87,18 @@ class CernereProfileEvidenceStore {
   }
 
   async updateOwned(localUserId, kind, recordId, patch) {
-    const column = COLUMN_BY_KIND[kind];
-    if (!column) throw new Error(`Unsupported profile evidence kind: ${kind}`);
     // Serialize on the Cernere owner id, not the local user id: createForOwner
     // is reachable with an owner id only, so a local-id lock would let the two
     // read-modify-write paths interleave on the same column.
     const ownerId = await this.resolveOwnerId(localUserId);
+    return this.updateForOwner(ownerId, kind, recordId, patch);
+  }
+
+  // Counterpart of createForOwner: callers that already hold a stamped
+  // record.userId hold an owner id, which must not be resolved a second time.
+  async updateForOwner(ownerId, kind, recordId, patch) {
+    const column = COLUMN_BY_KIND[kind];
+    if (!column) throw new Error(`Unsupported profile evidence kind: ${kind}`);
     return this.withWriteLock(ownerId, async () => {
       const data = await this.readColumns(ownerId, [column]);
       const records = requireArray(data[column], column);
