@@ -43,11 +43,6 @@ const VALIDATOR_BY_KIND = assertCoversEveryMedium({
   pitches: validatePitchInput,
 }, 'online evidence validator map');
 
-function asInputError(error) {
-  if (error instanceof AppError) return error;
-  return new AppError(400, error.code || 'INVALID_PROFILE_INPUT', error.message);
-}
-
 function createProfileEvidenceRouter({
   model = getProfileEvidenceStore(),
   mediaStore = new ProfileMediaStore(),
