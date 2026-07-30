@@ -4,8 +4,10 @@ const config = require('../config');
 const { authenticate } = require('../middleware/auth');
 const { AppError } = require('../middleware/errorHandler');
 const { getProfileEvidenceStore } = require('../integrations/cernere/createProfileEvidenceStore');
+const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
 const {
   validateAnnotationInput,
+  validateCardSortInput,
   validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
@@ -108,6 +110,7 @@ function createProfileEvidenceRouter({
   collectionRoutes('/emotion-curves', 'emotion-curves', validateEmotionCurveInput);
   collectionRoutes('/comparisons', 'comparisons', validateComparisonInput);
   collectionRoutes('/annotations', 'annotations', validateAnnotationInput);
+  collectionRoutes('/card-sorts', 'card-sorts', validateCardSortInput);
 
   router.get('/comparisons/deck', (_req, res) => {
     res.json({ ok: true, data: EXPERIENCE_CARDS.map(({ id, text }) => ({ id, text })) });

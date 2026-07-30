@@ -7,6 +7,7 @@ const USER_EVIDENCE_KEYS = [
   'voices',
   'emotionCurves',
   'comparisons',
+  'cardSorts',
   'annotations',
 ];
 

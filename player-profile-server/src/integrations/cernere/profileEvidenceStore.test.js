@@ -6,6 +6,7 @@ const { OnlinePersonaService } = require('../../services/onlinePersonaService');
 test('Cernere store keeps evidence, media metadata, and persona in managed-project columns', async () => {
   const columns = {
     annotation_records: null,
+    card_sort_records: null,
     gameplay_records: null,
     voice_records: null,
     emotion_curve_records: null,
@@ -55,6 +56,11 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
     caption: 'The final reunion made the whole journey meaningful.',
   });
   assert.equal((await store.list('local-user', 'annotations'))[0].id, annotation.id);
+  const cardSort = await store.create('local-user', 'card-sorts', {
+    mechanicId: 'open-world/fast-travel',
+    bucket: 'love',
+  });
+  assert.equal((await store.list('local-user', 'card-sorts'))[0].id, cardSort.id);
 
   const owned = await store.findOwned('local-user', gameplay.id);
   assert.equal(owned.kind, 'gameplay');
@@ -82,6 +88,14 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
     first.analysis.preferenceAxes['style.narrative'].contributions
       .some((item) => item.source.kind === 'annotation')
   );
+  assert.equal(first.analysis.evidence.cardSorts, 1);
+  assert.equal(first.analysis.preferenceAxes['style.explorer'].score, 1);
+  assert.deepEqual(first.analysis.mechanicReactions[0], {
+    mechanicId: 'open-world/fast-travel',
+    sentiment: 1,
+    samples: 1,
+    sources: [`cardsort:${cardSort.id}`],
+  });
   const unchanged = await persona.analyze('local-user');
   assert.equal(unchanged.recomputed, false);
 
@@ -89,6 +103,7 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
     ['managed_project', 'volputas_survey'].includes(call.module)));
   assert.equal(columns.gameplay_records.length, 1);
   assert.equal(columns.annotation_records.length, 1);
+  assert.equal(columns.card_sort_records.length, 1);
   assert.equal(columns.profile_media.length, 1);
   assert.equal(columns.persona_analysis.sourceFingerprint.length, 64);
 });

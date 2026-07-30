@@ -37,6 +37,7 @@ async function readJsonFiles(directory) {
 class PersonaService {
   constructor({
     annotationStore = null,
+    cardSortStore = null,
     comparisonStore = null,
     gameplayStore,
     voiceStore,
@@ -45,6 +46,7 @@ class PersonaService {
     now = () => new Date(),
   }) {
     this.annotationStore = annotationStore;
+    this.cardSortStore = cardSortStore;
     this.comparisonStore = comparisonStore;
     this.gameplayStore = gameplayStore;
     this.voiceStore = voiceStore;
@@ -75,6 +77,7 @@ class PersonaService {
       surveyDefinitions,
       comparisons,
       annotations,
+      cardSorts,
     ] = await Promise.all([
       readJsonFiles(collectionDirectory(repositoryRoot, 'answers', name)),
       this.gameplayStore.list({ repositoryRoot, name }),
@@ -87,6 +90,9 @@ class PersonaService {
       this.annotationStore
         ? this.annotationStore.list({ repositoryRoot, name })
         : Promise.resolve([]),
+      this.cardSortStore
+        ? this.cardSortStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
     ]);
     return {
       surveys,
@@ -96,6 +102,7 @@ class PersonaService {
       surveyDefinitions,
       comparisons,
       annotations,
+      cardSorts,
     };
   }
 

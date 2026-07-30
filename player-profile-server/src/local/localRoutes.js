@@ -9,6 +9,7 @@ const { listSurveysWithResponseStatus } = require('./surveyResponseStatus');
 const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
 const {
   validateAnnotationInput,
+  validateCardSortInput,
   validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
@@ -26,6 +27,7 @@ function asAppError(error, statusCode = 400) {
 
 function createLocalRoutes({
   annotationStore,
+  cardSortStore,
   comparisonStore,
   configStore,
   gitCli,
@@ -240,6 +242,7 @@ function createLocalRoutes({
   collectionRoutes('/emotion-curves', emotionCurveStore, validateEmotionCurveInput);
   collectionRoutes('/comparisons', comparisonStore, validateComparisonInput);
   collectionRoutes('/annotations', annotationStore, validateAnnotationInput);
+  collectionRoutes('/card-sorts', cardSortStore, validateCardSortInput);
 
   router.get('/comparisons/deck', (_req, res) => {
     res.json({ ok: true, data: EXPERIENCE_CARDS.map(({ id, text }) => ({ id, text })) });

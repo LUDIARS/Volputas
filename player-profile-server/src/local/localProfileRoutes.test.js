@@ -97,6 +97,14 @@ test('local profile routes persist evidence, stream media, and cache persona ana
   assert.equal(downloadedAnnotation.status, 200);
   assert.deepEqual(Buffer.from(await downloadedAnnotation.arrayBuffer()), imageBytes);
 
+  await json('/api/local/card-sorts', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      mechanicId: 'action/dodge-roll',
+      bucket: 'avoid',
+    }),
+  });
   const emotionCurve = await json('/api/local/emotion-curves', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -128,6 +136,7 @@ test('local profile routes persist evidence, stream media, and cache persona ana
     steam: 0,
     comparisons: 0,
     annotations: 1,
+    cardSorts: 1,
     gameplay: 1,
     voices: 1,
     emotionCurves: 1,
@@ -137,6 +146,14 @@ test('local profile routes persist evidence, stream media, and cache persona ana
     firstAnalysis.analysis.preferenceAxes['style.explorer'].contributions
       .some((item) => item.source.kind === 'annotation')
   );
+  assert.ok(firstAnalysis.analysis.aversions.some((item) =>
+    item.target === 'mechanic:action/dodge-roll' && item.strength === 0.7));
+  const cardSortReaction = firstAnalysis.analysis.mechanicReactions.find((item) =>
+    item.mechanicId === 'action/dodge-roll');
+  assert.equal(cardSortReaction.sentiment, -1);
+  assert.equal(cardSortReaction.samples, 1);
+  assert.equal(cardSortReaction.sources.length, 1);
+  assert.match(cardSortReaction.sources[0], /^cardsort:/);
 
   const unchangedAnalysis = await json('/api/local/persona/analyze', { method: 'POST' });
   assert.equal(unchangedAnalysis.recomputed, false);

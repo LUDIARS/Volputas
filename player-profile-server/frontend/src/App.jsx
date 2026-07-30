@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import LocalLayout from './components/LocalLayout';
 import AnalysisPage from './pages/AnalysisPage';
 import AnnotationPage from './pages/AnnotationPage';
+import CardSortPage from './pages/CardSortPage';
 import ComparisonPage from './pages/ComparisonPage';
 import DashboardPage from './pages/DashboardPage';
 import EmotionCurvePage from './pages/EmotionCurvePage';
@@ -45,6 +46,7 @@ function EvidenceRoutes() {
       <Route path="emotion-curves" element={<EmotionCurvePage />} />
       <Route path="comparisons" element={<ComparisonPage />} />
       <Route path="annotations" element={<AnnotationPage />} />
+      <Route path="card-sort" element={<CardSortPage />} />
       <Route path="persona" element={<PersonaPage />} />
     </>
   );
