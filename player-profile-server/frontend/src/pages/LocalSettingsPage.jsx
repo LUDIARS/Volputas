@@ -6,6 +6,7 @@ import '../styles/local.css';
 
 const EMPTY_FORM = {
   dataRepositoryPath: '',
+  researchExportConsent: false,
 };
 
 export default function LocalSettingsPage() {
@@ -26,7 +27,10 @@ export default function LocalSettingsPage() {
     ])
       .then(([configData, environmentData]) => {
         if (configData.config) {
-          setForm({ dataRepositoryPath: configData.config.dataRepositoryPath });
+          setForm({
+            dataRepositoryPath: configData.config.dataRepositoryPath,
+            researchExportConsent: configData.config.researchExportConsent === true,
+          });
         }
         setGitAuthor(configData.gitAuthor);
         setConfigurationError(configData.configurationError || '');
@@ -48,7 +52,10 @@ export default function LocalSettingsPage() {
     setConfigurationError('');
     try {
       const data = await localApi('/api/local/config', { method: 'PUT', body: form });
-      setForm({ dataRepositoryPath: data.config.dataRepositoryPath });
+      setForm({
+        dataRepositoryPath: data.config.dataRepositoryPath,
+        researchExportConsent: data.config.researchExportConsent === true,
+      });
       setGitAuthor(data.gitAuthor);
       await reloadSurveys();
       setSuccess(`設定を保存しました。回答フォルダ名: ${data.config.name}`);
@@ -115,6 +122,20 @@ export default function LocalSettingsPage() {
                 </button>
               )}
             </div>
+          </div>
+          <div className="form-group consent-setting">
+            <label>
+              <input
+                type="checkbox"
+                checked={form.researchExportConsent}
+                onChange={(event) =>
+                  updateField('researchExportConsent', event.target.checked)}
+              />
+              ペルソナの研究提供（仮名化）に同意する
+            </label>
+            <p className="muted">
+              既定は off です。同意時も実名・メール・Name・回答本文は出力されません。
+            </p>
           </div>
           <button
             type="submit"

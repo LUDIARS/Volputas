@@ -52,6 +52,7 @@ function validateLocalConfig(value) {
     schemaVersion: 2,
     dataRepositoryPath,
     name,
+    researchExportConsent: value.researchExportConsent === true,
   };
 }
 

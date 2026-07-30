@@ -28,6 +28,12 @@ function createProfileClient(mode) {
     analyzePersona() {
       return request(`${base}/persona/analyze`, { method: 'POST' });
     },
+    importPopulationReport(report) {
+      if (!isLocal) {
+        return Promise.reject(new Error('母集団レポートの取込はローカルモード専用です。'));
+      }
+      return request(`${base}/persona/population-report`, { method: 'POST', body: report });
+    },
     personaHistory() {
       // Analysis history is Git-backed and local-only for now; the online
       // history table is a follow-up task.

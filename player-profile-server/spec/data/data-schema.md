@@ -26,6 +26,7 @@ updated: 2026-07-28
 | データ名 | 種類 | 権威ソース | 保存先 | 保護要否 | 保護方法 |
 |---|---|---|---|---|---|
 | `users` / `federated_identities` | user | Voluptas認証境界 | PostgreSQL | 必要 | 認証済み本人のみ。raw profile allowlist、token非ログ化 |
+| `users.research_export_consent` | user | 同意した本人 | PostgreSQL | 必要 | 既定 false。本人設定 API だけが更新し、online persona export は true のユーザだけを選択 |
 | `player_profiles` | user | 本人承認済みVoluptas profile | PostgreSQL | 必要 | 本人更新。代理claimはaccept後のみ反映 |
 | 公開アンケート定義 | master | `LUDIARS/VolputasData` (public template) → 運用者のprivateコピー main | `private/survey-data/surveys/*.json` | 不要 | public review、version固定、filenameとsurvey ID一致 |
 | ローカルアンケート回答 | user | 利用者のlocal filesystem | 独立clone内のignored local-data path | 必要 | 親/子双方のgitignore、remote publish禁止、回答非ログ化 |
@@ -36,9 +37,13 @@ updated: 2026-07-28
 | `profile_claims` | user | 提案者。正本化権限は本人 | PostgreSQL | 必要 | 正本と分離、構造化allowlist、本人個別承認、処分済み生値は日次purgeで30日後削除 |
 | `delegation_audit_events` | user | Voluptas | PostgreSQL | 必要 | 本人・代理人のみ参照。claim値やtokenを記録しない |
 | `player_affect_profiles` | user-derived | Voluptas分析 | PostgreSQL | 必要 | 20D派生値。仮名化exportのみ |
+| persona export v2 | user-derived | Voluptas分析 + 本人同意 | local: `exports/personas.jsonl` / online: project-credential 保護 JSONL | 必要 | HMAC `pseudoId` と派生値だけ。実名・email・Name・回答本文・provenance ID を除外 |
 | `game_beat_scripts` | master | Voluptas運用者 | PostgreSQL | 不要 | versioned controlled vocabulary |
 | `steam_profiles` | user | 本人が連携したSteam公開プロフィール | PostgreSQL | 必要 | 本人単位アクセス。公開プロフィール(communityvisibilitystate=3)のみ連携許可 |
 | `steam_owned_games` | user-derived | Steam Web API (GetOwnedGames) スナップショット | PostgreSQL | 必要 | 本人単位アクセス。同期のたびに全置換、ジャンル等の追加取得は行わない |
+| スクリーンショット注釈 (`annotations`) | user | 注釈した本人 | local: データリポジトリ `annotations/<Name>/<id>.json` + リポジトリ外保護media / online: Cernere managed project `annotation_records` + private media storage | 必要 | 本人単位アクセス。画像は既存media制限で保護し、分析対象は明示 `momentType` とcaptionのみ。Vision解析は行わない。online列の提供はCernere migration follow-up |
+| カードソート判定 (`cardsorts`) | user | 分類した本人 | local: データリポジトリ `cardsorts/<Name>/<id>.json` / online: Cernere managed project `card_sort_records` | 必要 | 本人単位アクセス。1メカニクス1判定レコードを追記し、`updatedAt` が最新の判定だけを分析に採用。online列の提供はCernere migration follow-up |
+| 理想のゲーム企画 (`pitches`) | user | 作成した本人 | local: データリポジトリ `pitches/<Name>/<id>.json` / online: Cernere managed project `pitch_records` | 必要 | 本人単位アクセス。タイトル・本文・任意の参考ゲームを保存。本文だけを affect と決定的 Ludus 語彙照合へ使用し、LLM 推論は行わない。online列の提供は Cernere migration follow-up |
 | `play_impressions` / `impression_assets` | user | 投稿した本人 | PostgreSQL + private object storage | 必要 | 所有者認証、署名付きPUT/GET、media検査・変換、期限付き原本削除 |
 | `impression_reactions` | user | 動画を見た本人 | PostgreSQL | 必要 | 所有者認証。動画内時刻、`comment/positive/negative`、本人入力本文を保持 |
 | `memoria_links` | user | 本人が発行したMemoria共有token | PostgreSQL | 必要 | tokenはAES-256-GCM暗号化して保存 (Steamの平文保存とは異なる — 本人の作業データへの読み取り権限そのものであるため) |
