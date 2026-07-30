@@ -36,6 +36,7 @@ async function readJsonFiles(directory) {
 
 class PersonaService {
   constructor({
+    cardSortStore = null,
     comparisonStore = null,
     gameplayStore,
     voiceStore,
@@ -43,6 +44,7 @@ class PersonaService {
     surveyDefinitionStore = null,
     now = () => new Date(),
   }) {
+    this.cardSortStore = cardSortStore;
     this.comparisonStore = comparisonStore;
     this.gameplayStore = gameplayStore;
     this.voiceStore = voiceStore;
@@ -65,7 +67,15 @@ class PersonaService {
   }
 
   async readSources({ repositoryRoot, name }) {
-    const [surveys, gameplay, voices, emotionCurves, surveyDefinitions, comparisons] = await Promise.all([
+    const [
+      surveys,
+      gameplay,
+      voices,
+      emotionCurves,
+      surveyDefinitions,
+      comparisons,
+      cardSorts,
+    ] = await Promise.all([
       readJsonFiles(collectionDirectory(repositoryRoot, 'answers', name)),
       this.gameplayStore.list({ repositoryRoot, name }),
       this.voiceStore.list({ repositoryRoot, name }),
@@ -74,8 +84,19 @@ class PersonaService {
       this.comparisonStore
         ? this.comparisonStore.list({ repositoryRoot, name })
         : Promise.resolve([]),
+      this.cardSortStore
+        ? this.cardSortStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
     ]);
-    return { surveys, gameplay, voices, emotionCurves, surveyDefinitions, comparisons };
+    return {
+      surveys,
+      gameplay,
+      voices,
+      emotionCurves,
+      surveyDefinitions,
+      comparisons,
+      cardSorts,
+    };
   }
 
   analysisPath(repositoryRoot, name) {
