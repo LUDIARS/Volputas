@@ -30,14 +30,21 @@ router.patch('/me', validate({
     display_name: { type: 'string', maxLength: 100 },
     avatar_url: { type: 'string' },
     locale: { type: 'string', maxLength: 10 },
+    research_export_consent: { type: 'boolean' },
   },
 }), async (req, res, next) => {
   try {
-    const { display_name, avatar_url, locale } = req.body;
+    const {
+      display_name,
+      avatar_url,
+      locale,
+      research_export_consent,
+    } = req.body;
     const user = await userModel.update(req.user.id, {
       displayName: display_name,
       avatarUrl: avatar_url,
       locale,
+      researchExportConsent: research_export_consent,
     });
     if (!user) {
       throw new AppError(404, 'NOT_FOUND', 'User not found');

@@ -3,7 +3,9 @@ const db = require('../config/database');
 const userModel = {
   async findById(id) {
     const { rows } = await db.query(
-      'SELECT id, display_name, avatar_url, locale, created_at, updated_at FROM users WHERE id = $1 AND is_deleted = false',
+      `SELECT id, display_name, avatar_url, locale, research_export_consent,
+              created_at, updated_at
+         FROM users WHERE id = $1 AND is_deleted = false`,
       [id]
     );
     return rows[0] || null;
@@ -36,13 +38,18 @@ const userModel = {
       sets.push(`locale = $${idx++}`);
       values.push(fields.locale);
     }
+    if (fields.researchExportConsent !== undefined) {
+      sets.push(`research_export_consent = $${idx++}`);
+      values.push(fields.researchExportConsent);
+    }
 
     if (sets.length === 0) return this.findById(id);
 
     values.push(id);
     const { rows } = await db.query(
       `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx} AND is_deleted = false
-       RETURNING id, display_name, avatar_url, locale, created_at, updated_at`,
+       RETURNING id, display_name, avatar_url, locale, research_export_consent,
+                 created_at, updated_at`,
       values
     );
     return rows[0] || null;

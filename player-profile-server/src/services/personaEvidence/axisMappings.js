@@ -50,6 +50,17 @@ const STEAM_GENRE_AXIS_MAP = Object.freeze({
   puzzle: [['style.mastery', 1]],
 });
 
+// Screenshot/clip annotation moment type → axes (design §4.3). The visual
+// bytes are not interpreted; the user's explicit reason for preserving the
+// moment is the deterministic evidence.
+const MOMENT_TYPE_AXIS_MAP = Object.freeze({
+  achievement: [['style.achiever', 1]],
+  discovery: [['style.explorer', 1]],
+  story: [['style.narrative', 1]],
+  social: [['style.socializer', 1]],
+  aesthetic: [['style.narrative', 0.5], ['style.explorer', 0.5]],
+});
+
 // Ludus feature-directory category → axes. Card-sort records carry stable
 // mechanic ids (for example "open-world/fast-travel"), so the directory
 // prefix provides the deterministic category projection required by design
@@ -94,6 +105,7 @@ module.exports = {
   EXPERIENCE_AXIS_MAP,
   GENRE_AXIS_MAP,
   MECHANIC_CATEGORY_AXIS_MAP,
+  MOMENT_TYPE_AXIS_MAP,
   STEAM_GENRE_AXIS_MAP,
   SURVEY_CHOICE_AXIS_QUESTIONS,
   mapChoiceToContributions,

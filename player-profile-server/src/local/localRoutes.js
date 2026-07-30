@@ -8,6 +8,7 @@ const {
 const { listSurveysWithResponseStatus } = require('./surveyResponseStatus');
 const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
 const {
+  validateAnnotationInput,
   validateCardSortInput,
   validateComparisonInput,
   validateEmotionCurveInput,
@@ -26,6 +27,7 @@ function asAppError(error, statusCode = 400) {
 }
 
 function createLocalRoutes({
+  annotationStore,
   cardSortStore,
   comparisonStore,
   configStore,
@@ -153,6 +155,7 @@ function createLocalRoutes({
       const candidate = validateLocalConfig({
         dataRepositoryPath,
         name: gitAuthor.name,
+        researchExportConsent: req.body?.researchExportConsent === true,
       });
       // アンケート定義の正本はデータリポジトリ (VolputasData) 側にある。設定を保存する前に
       // 実際に読めることを確認し、定義が1本も無いディレクトリを「設定済み」として
@@ -241,6 +244,7 @@ function createLocalRoutes({
   collectionRoutes('/voices', voiceStore, validateVoiceInput);
   collectionRoutes('/emotion-curves', emotionCurveStore, validateEmotionCurveInput);
   collectionRoutes('/comparisons', comparisonStore, validateComparisonInput);
+  collectionRoutes('/annotations', annotationStore, validateAnnotationInput);
   collectionRoutes('/card-sorts', cardSortStore, validateCardSortInput);
   collectionRoutes('/pitches', pitchStore, validatePitchInput);
 

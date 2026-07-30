@@ -6,6 +6,7 @@ const { analyzePersona } = require('../personaEvidenceAnalysis');
 const { classifyFromSurveyRecords } = require('../classificationEngine');
 const { collectFreeTextSamples, computeAffectProfile } = require('../affectProfile');
 const { aggregateContributions } = require('./aggregateContributions');
+const { annotationContributions } = require('./annotationContributions');
 const { cardSortContributions } = require('./cardSortContributions');
 const { combineMechanicReactions } = require('./combineMechanicReactions');
 const { collectMechanicReactions, mechanicAversionEvidence } = require('./mechanicReactions');
@@ -63,6 +64,7 @@ function analyzePersonaV2(sources, analyzedAt) {
   const fromRecords = collectSourceContributions(sources);
   const steam = steamContributions(sources.steam || null, analyzedAt, sources.steamAppMeta || null);
   const comparisons = comparisonContributions(sources.comparisons || []);
+  const annotations = annotationContributions(sources.annotations || []);
   const cardSort = cardSortContributions(sources.cardSorts || []);
   const pitches = pitchContributions(sources.pitches || []);
   const contributions = [
@@ -70,6 +72,7 @@ function analyzePersonaV2(sources, analyzedAt) {
     ...survey.contributions,
     ...steam.contributions,
     ...comparisons.contributions,
+    ...annotations.contributions,
     ...cardSort.contributions,
     ...pitches.contributions,
   ];
@@ -103,6 +106,7 @@ function analyzePersonaV2(sources, analyzedAt) {
   // former standalone affect recompute into this pipeline).
   const affect = computeAffectProfile([
     ...collectFreeTextSamples(joinedRecords),
+    ...annotations.affectSamples,
     ...pitches.affectSamples,
   ]);
 
@@ -147,6 +151,7 @@ function analyzePersonaV2(sources, analyzedAt) {
       surveyDefinitions: definitions.length,
       steam: steam.meta ? 1 : 0,
       comparisons: (sources.comparisons || []).length,
+      annotations: (sources.annotations || []).length,
       cardSorts: (sources.cardSorts || []).length,
       pitches: (sources.pitches || []).length,
     },
