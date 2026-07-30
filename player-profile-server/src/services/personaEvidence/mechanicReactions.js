@@ -15,6 +15,16 @@ function voiceGroups(voices, voiceMemos) {
   ];
 }
 
+function sourceIdentity(group, record) {
+  const sourceKind = record.sourceKind === 'discussion'
+    ? 'discussion'
+    : group.sourceKind;
+  const sourceId = sourceKind === 'discussion'
+    ? record.sourceRef || record.id || 'unknown'
+    : record.id || 'unknown';
+  return { sourceKind, sourceId };
+}
+
 function collectMechanicReactions(voices, voiceMemos = []) {
   const byMechanic = new Map();
   for (const group of voiceGroups(voices, voiceMemos)) {
@@ -31,6 +41,8 @@ function collectMechanicReactions(voices, voiceMemos = []) {
         bucket.total += sentiment;
         bucket.count += 1;
         bucket.sources.push(`${group.sourceKind}:${record.id || 'unknown'}`);
+        const source = sourceIdentity(group, record);
+        bucket.sources.push(`${source.sourceKind}:${source.sourceId}`);
       }
     }
   }
@@ -53,6 +65,7 @@ function mechanicAversionEvidence(voices, voiceMemos = []) {
       if (record.polarity !== 'dislike') continue;
       const sentiment = Number(record.sentiment) || 0;
       const strength = Number(Math.max(0.5, Math.abs(sentiment) / 2).toFixed(4));
+      const source = sourceIdentity(group, record);
       for (const mechanicId of record.mechanicIds || []) {
         evidence.push({
           target: `mechanic:${mechanicId}`,
@@ -60,6 +73,8 @@ function mechanicAversionEvidence(voices, voiceMemos = []) {
           source: {
             kind: group.sourceKind,
             id: record.id || null,
+            kind: source.sourceKind,
+            id: source.sourceId,
             field: 'mechanicIds',
           },
         });

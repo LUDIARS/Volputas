@@ -4,7 +4,7 @@ const userModel = {
   async findById(id) {
     const { rows } = await db.query(
       `SELECT id, display_name, avatar_url, locale, research_export_consent,
-              created_at, updated_at
+              discussion_import_consent, created_at, updated_at
          FROM users WHERE id = $1 AND is_deleted = false`,
       [id]
     );
@@ -42,6 +42,10 @@ const userModel = {
       sets.push(`research_export_consent = $${idx++}`);
       values.push(fields.researchExportConsent);
     }
+    if (fields.discussionImportConsent !== undefined) {
+      sets.push(`discussion_import_consent = $${idx++}`);
+      values.push(fields.discussionImportConsent);
+    }
 
     if (sets.length === 0) return this.findById(id);
 
@@ -49,7 +53,7 @@ const userModel = {
     const { rows } = await db.query(
       `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx} AND is_deleted = false
        RETURNING id, display_name, avatar_url, locale, research_export_consent,
-                 created_at, updated_at`,
+                 discussion_import_consent, created_at, updated_at`,
       values
     );
     return rows[0] || null;

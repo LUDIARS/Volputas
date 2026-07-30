@@ -23,9 +23,10 @@ function confidenceBadge(confidence) {
 function contributionLabel(item) {
   const kinds = {
     survey: 'アンケート',
-    gameplay: 'ゲームプレイ',
-    voice: 'ユーザの声',
-    emotionCurve: '感情曲線',
+      gameplay: 'ゲームプレイ',
+      voice: 'ユーザの声',
+      discussion: 'Di 議論ログ',
+      emotionCurve: '感情曲線',
     steam: 'Steam',
   };
   return `${kinds[item.source?.kind] || item.source?.kind || '?'}${item.source?.field ? ` / ${item.source.field}` : ''}`;

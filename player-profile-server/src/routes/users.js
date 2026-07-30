@@ -31,6 +31,7 @@ router.patch('/me', validate({
     avatar_url: { type: 'string' },
     locale: { type: 'string', maxLength: 10 },
     research_export_consent: { type: 'boolean' },
+    discussion_import_consent: { type: 'boolean' },
   },
 }), async (req, res, next) => {
   try {
@@ -39,12 +40,24 @@ router.patch('/me', validate({
       avatar_url,
       locale,
       research_export_consent,
+      discussion_import_consent,
     } = req.body;
+    if (discussion_import_consent === true) {
+      const discordIdentity = await identityModel.findVerifiedByProvider(req.user.id, 'discord');
+      if (!discordIdentity) {
+        throw new AppError(
+          409,
+          'VERIFIED_DISCORD_IDENTITY_REQUIRED',
+          'Sign in with Discord before enabling discussion return'
+        );
+      }
+    }
     const user = await userModel.update(req.user.id, {
       displayName: display_name,
       avatarUrl: avatar_url,
       locale,
       researchExportConsent: research_export_consent,
+      discussionImportConsent: discussion_import_consent,
     });
     if (!user) {
       throw new AppError(404, 'NOT_FOUND', 'User not found');
@@ -83,38 +96,6 @@ router.get('/me/identities', async (req, res, next) => {
   }
 });
 
-// POST /api/v1/users/me/identities
-router.post('/me/identities', validate({
-  body: {
-    provider: { required: true, type: 'string', enum: ['google', 'discord'] },
-    provider_sub: { required: true, type: 'string' },
-    email: { type: 'string' },
-    raw_profile: { type: 'object' },
-  },
-}), async (req, res, next) => {
-  try {
-    const { provider, provider_sub, email, raw_profile } = req.body;
-
-    // Check if this provider_sub is already linked to another user
-    const existing = await identityModel.findByProviderSub(provider, provider_sub);
-    if (existing) {
-      throw new AppError(409, 'ALREADY_LINKED', 'This identity is already linked to an account');
-    }
-
-    const identity = await identityModel.create({
-      userId: req.user.id,
-      provider,
-      providerSub: provider_sub,
-      email,
-      rawProfile: raw_profile,
-    });
-
-    res.status(201).json({ ok: true, data: identity });
-  } catch (err) {
-    next(err);
-  }
-});
-
 // DELETE /api/v1/users/me/identities/:provider
 router.delete('/me/identities/:provider', async (req, res, next) => {
   try {
@@ -127,6 +108,9 @@ router.delete('/me/identities/:provider', async (req, res, next) => {
     const deleted = await identityModel.deleteByProvider(req.user.id, req.params.provider);
     if (!deleted) {
       throw new AppError(404, 'NOT_FOUND', 'Identity not found');
+    }
+    if (req.params.provider === 'discord') {
+      await userModel.update(req.user.id, { discussionImportConsent: false });
     }
 
     res.json({ ok: true, data: { message: 'Identity unlinked' } });

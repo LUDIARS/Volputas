@@ -3,6 +3,21 @@ const assert = require('node:assert/strict');
 const db = require('../config/database');
 const userModel = require('./userModel');
 
+test('user settings persist explicit discussion return consent', async (t) => {
+  const originalQuery = db.query;
+  let captured;
+  db.query = async (sql, params) => {
+    captured = { sql, params };
+    return { rows: [{ id: 'user-1', discussion_import_consent: true }] };
+  };
+  t.after(() => { db.query = originalQuery; });
+
+  const user = await userModel.update('user-1', { discussionImportConsent: true });
+  assert.equal(user.discussion_import_consent, true);
+  assert.match(captured.sql, /discussion_import_consent = \$1/);
+  assert.deepEqual(captured.params, [true, 'user-1']);
+});
+
 test('user settings persist explicit research export consent', async (t) => {
   const originalQuery = db.query;
   const queries = [];
