@@ -2,7 +2,7 @@ const fs = require('node:fs/promises');
 const { Router } = require('express');
 const config = require('../config');
 const { authenticate } = require('../middleware/auth');
-const { AppError } = require('../middleware/errorHandler');
+const { AppError, asInputError } = require('../middleware/errorHandler');
 const { getProfileEvidenceStore } = require('../integrations/cernere/createProfileEvidenceStore');
 const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
 const {

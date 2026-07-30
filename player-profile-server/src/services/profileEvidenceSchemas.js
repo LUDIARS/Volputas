@@ -102,6 +102,27 @@ function validateMechanicIds(value) {
 
 function validateVoiceInput(body = {}) {
   const scopeType = body.scopeType === 'content' ? 'content' : 'game';
+  const recommend = body.recommend === undefined ? null : body.recommend;
+  if (recommend !== null && typeof recommend !== 'boolean') {
+    throw Object.assign(new Error('recommend must be a boolean or null'), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  const glabProjectId = body.glabProjectId === undefined || body.glabProjectId === null
+    ? null
+    : requiredText(body.glabProjectId, 'GLAB project id', 100);
+  const visibility = body.visibility === undefined ? 'private' : body.visibility;
+  if (visibility !== 'private' && visibility !== 'community') {
+    throw Object.assign(new Error('visibility must be private or community'), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  const anonymous = body.anonymous === undefined ? false : body.anonymous;
+  if (typeof anonymous !== 'boolean') {
+    throw Object.assign(new Error('anonymous must be a boolean'), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
   return {
     gameTitle: requiredText(body.gameTitle, 'Game title'),
     scopeType,
@@ -121,6 +142,10 @@ function validateVoiceInput(body = {}) {
       .map((tag) => tag.trim())
       .filter(Boolean)
       .slice(0, 20),
+    recommend,
+    glabProjectId,
+    visibility,
+    anonymous,
   };
 }
 

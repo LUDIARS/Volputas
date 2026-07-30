@@ -60,16 +60,23 @@ class CernereProfileEvidenceStore {
   }
 
   async create(localUserId, kind, payload) {
+    const ownerId = await this.resolveOwnerId(localUserId);
+    return this.createForOwner(ownerId, kind, payload);
+  }
+
+  async createForOwner(ownerId, kind, payload) {
     const column = COLUMN_BY_KIND[kind];
     if (!column) throw new Error(`Unsupported profile evidence kind: ${kind}`);
-    return this.withWriteLock(localUserId, async () => {
-      const ownerId = await this.resolveOwnerId(localUserId);
+    return this.withWriteLock(ownerId, async () => {
       const data = await this.readColumns(ownerId, [column]);
       const records = requireArray(data[column], column);
       const timestamp = this.now().toISOString();
       const record = {
         schemaVersion: 1,
         ...payload,
+        // The owner is stamped server-side so every record is self-attributing
+        // regardless of which route created it, and a payload cannot spoof it.
+        userId: ownerId,
         id: randomUUID(),
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -79,11 +86,24 @@ class CernereProfileEvidenceStore {
     });
   }
 
+  async listPublicVoices({ glabProjectId, limit, offset }) {
+    const result = await this.projectClient.request('managed_project', 'list_user_data', {
+      column: COLUMN_BY_KIND.voices,
+      filters: { visibility: 'community', glabProjectId },
+      limit,
+      offset,
+    });
+    return requireArray(result.records, 'voice records');
+  }
+
   async updateOwned(localUserId, kind, recordId, patch) {
     const column = COLUMN_BY_KIND[kind];
     if (!column) throw new Error(`Unsupported profile evidence kind: ${kind}`);
-    return this.withWriteLock(localUserId, async () => {
-      const ownerId = await this.resolveOwnerId(localUserId);
+    // Serialize on the Cernere owner id, not the local user id: createForOwner
+    // is reachable with an owner id only, so a local-id lock would let the two
+    // read-modify-write paths interleave on the same column.
+    const ownerId = await this.resolveOwnerId(localUserId);
+    return this.withWriteLock(ownerId, async () => {
       const data = await this.readColumns(ownerId, [column]);
       const records = requireArray(data[column], column);
       const index = records.findIndex((item) => item?.id === recordId);
@@ -181,8 +201,8 @@ class CernereProfileEvidenceStore {
   }
 
   async saveMedia(localUserId, metadata) {
-    return this.withWriteLock(localUserId, async () => {
-      const ownerId = await this.resolveOwnerId(localUserId);
+    const ownerId = await this.resolveOwnerId(localUserId);
+    return this.withWriteLock(ownerId, async () => {
       const data = await this.readColumns(ownerId, ['profile_media']);
       const current = requireArray(data.profile_media, 'profile_media')
         .filter((item) => item?.recordId !== metadata.recordId || item?.kind !== metadata.kind);

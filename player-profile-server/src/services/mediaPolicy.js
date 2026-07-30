@@ -102,7 +102,8 @@ function validateImpressionInput(body) {
   const clientMetadata = body.client && typeof body.client === 'object' && !Array.isArray(body.client)
     ? body.client
     : {};
-  const maximumVideoDurationMs = clientMetadata.source === 'volputas_web_review'
+  const webReviewSources = ['volputas_web_review', 'volputas_web_game_review'];
+  const maximumVideoDurationMs = webReviewSources.includes(clientMetadata.source)
     ? WEB_REVIEW_MAXIMUM_VIDEO_DURATION_MS
     : SPECTATOR_MAXIMUM_VIDEO_DURATION_MS;
 

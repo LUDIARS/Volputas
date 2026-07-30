@@ -11,6 +11,20 @@ const userModel = {
     return rows[0] || null;
   },
 
+  async findByCernereSubject(subject) {
+    const { rows } = await db.query(
+      `SELECT users.id, users.display_name
+       FROM users
+       INNER JOIN federated_identities ON federated_identities.user_id = users.id
+       WHERE federated_identities.provider = 'cernere'
+         AND federated_identities.provider_sub = $1
+         AND users.is_deleted = false
+       LIMIT 1`,
+      [subject]
+    );
+    return rows[0] || null;
+  },
+
   async create({ id, displayName, avatarUrl, locale }) {
     const { rows } = await db.query(
       `INSERT INTO users (id, display_name, avatar_url, locale)

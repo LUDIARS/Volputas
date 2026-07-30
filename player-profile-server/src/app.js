@@ -21,6 +21,12 @@ const {
 const {
   createGlabSurveyService,
 } = require('./services/glabSurveyService');
+const { createGlabReviewService } = require('./services/glabReviewService');
+const { pseudoId } = require('./services/pseudoId');
+const { getProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
+const { createGlabReviewRouter } = require('./routes/glabReviews');
+const steamModel = require('./models/steamModel');
+const userModel = require('./models/userModel');
 
 // Route imports
 const authRoutes = require('./routes/auth');
@@ -45,14 +51,35 @@ const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
 const app = express();
 const frontendDirectory = path.resolve(__dirname, '../frontend/dist');
 const glabSurveyPath = '/api/v1/integrations/glab/surveys';
+const glabReviewPath = '/api/v1/integrations/glab/reviews';
 let server = null;
 let stopPromise = null;
 let glabSurveyService = null;
+let glabReviewService = null;
 let stopSessionMaintenance = null;
 
 function getGlabSurveyService() {
   if (!glabSurveyService) glabSurveyService = createGlabSurveyService();
   return glabSurveyService;
+}
+
+function getGlabReviewService() {
+  if (!glabReviewService) {
+    const store = getProfileEvidenceStore();
+    glabReviewService = createGlabReviewService({
+      voiceStore: {
+        listVoices: (query) => store.listPublicVoices(query),
+        saveVoice: (voice) => store.createForOwner(voice.userId, 'voices', voice),
+      },
+      resolveDisplayName: async (cernereUserId, record) => {
+        if (record.displayName) return record.displayName;
+        const user = await userModel.findByCernereSubject(cernereUserId);
+        return user?.display_name || 'Player';
+      },
+      pseudoId: (userId) => pseudoId(userId, config.pseudoIdSecret),
+    });
+  }
+  return glabReviewService;
 }
 
 // Security middleware
@@ -66,6 +93,7 @@ app.use(glabSurveyPath, (_req, res, next) => {
   next();
 });
 app.use(glabSurveyPath, createCorpusTransportRateLimiter());
+app.use(glabReviewPath, createCorpusTransportRateLimiter());
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
@@ -79,6 +107,17 @@ app.use(
   glabSurveyPath,
   createGlabSurveyRouter({
     serviceProvider: getGlabSurveyService,
+    transportRateLimiter: null,
+  }),
+);
+app.use(
+  glabReviewPath,
+  createGlabReviewRouter({
+    serviceProvider: getGlabReviewService,
+    recentGamesProvider: async (cernereUserId) => {
+      const user = await userModel.findByCernereSubject(cernereUserId);
+      return user ? steamModel.getRecentlyPlayedGames(user.id, 20) : [];
+    },
     transportRateLimiter: null,
   }),
 );
@@ -151,6 +190,7 @@ async function start() {
   assertOnlineConfiguration(config);
   assertFrontendBuild(frontendDirectory);
   getGlabSurveyService();
+  getGlabReviewService();
   await initKeyStore();
   console.log('JWKS key store initialized');
   stopSessionMaintenance = startSessionMaintenance();
@@ -184,6 +224,7 @@ function stop() {
     closeProfileEvidenceStore();
     const activeIntegration = glabSurveyService;
     glabSurveyService = null;
+    glabReviewService = null;
     await activeIntegration?.close();
     if (serverCloseError) throw serverCloseError;
   })().finally(() => {

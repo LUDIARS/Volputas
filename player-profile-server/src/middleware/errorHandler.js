@@ -9,6 +9,15 @@ class AppError extends Error {
   }
 }
 
+// Schema validators throw plain errors carrying only `code`, which the handler
+// below would report as 500. Callers wrap them so they surface as 400.
+function asInputError(error) {
+  // Anything that already states its own status (AppError, Cernere upstream
+  // failures) keeps it; only unclassified validator errors become 400.
+  if (Number.isInteger(error?.statusCode)) return error;
+  return new AppError(400, error?.code || 'INVALID_PROFILE_INPUT', error?.message);
+}
+
 function isMalformedJsonError(error) {
   return error?.type === 'entity.parse.failed'
     && (error?.statusCode === 400 || error?.status === 400);
@@ -48,6 +57,7 @@ function errorHandler(rawError, _req, res, _next) {
 
 module.exports = {
   AppError,
+  asInputError,
   errorHandler,
   normalizeJsonBodyError,
 };
