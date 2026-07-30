@@ -10,7 +10,7 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
     pitch_records: null,
     gameplay_records: null,
     voice_records: null,
-    voicememo_records: null,
+    voice_memo_records: null,
     emotion_curve_records: null,
     persona_analysis: null,
     profile_media: null,
@@ -137,7 +137,7 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   assert.ok(calls.every((call) =>
     ['managed_project', 'volputas_survey'].includes(call.module)));
   assert.equal(columns.gameplay_records.length, 1);
-  assert.equal(columns.voicememo_records.length, 1);
+  assert.equal(columns.voice_memo_records.length, 1);
   assert.equal(columns.annotation_records.length, 1);
   assert.equal(columns.card_sort_records.length, 1);
   assert.equal(columns.pitch_records.length, 1);

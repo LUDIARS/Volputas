@@ -136,7 +136,7 @@ export default function EmotionCurvePage() {
           await client.upload('videos', result.record.id, file);
         }
         if (gameLogFile) {
-          await client.upload('gamelogs', result.record.id, gameLogUploadFile(gameLogFile));
+          await client.upload('game-logs', result.record.id, gameLogUploadFile(gameLogFile));
         }
       } catch (uploadError) {
         throw new Error(`記録は保存しましたがメディアを保存できませんでした: ${uploadError.message}`);

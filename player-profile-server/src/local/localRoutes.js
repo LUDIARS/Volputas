@@ -7,6 +7,7 @@ const {
 } = require('./localConfigStore');
 const { listSurveysWithResponseStatus } = require('./surveyResponseStatus');
 const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
+const { EVIDENCE_MEDIA, assertCoversEveryMedium } = require('../services/evidenceMedia');
 const {
   validateAnnotationInput,
   validateCardSortInput,
@@ -18,6 +19,19 @@ const {
   validateVoiceInput,
 } = require('../services/profileEvidenceSchemas');
 
+// Keyed by the canonical medium kind; assertCoversEveryMedium turns a forgotten
+// entry into a startup failure instead of a 500 on the first POST.
+const VALIDATOR_BY_KIND = assertCoversEveryMedium({
+  gameplay: validateGameplayInput,
+  voices: validateVoiceInput,
+  'voice-memos': validateVoiceMemoInput,
+  'emotion-curves': validateEmotionCurveInput,
+  comparisons: validateComparisonInput,
+  'card-sorts': validateCardSortInput,
+  annotations: validateAnnotationInput,
+  pitches: validatePitchInput,
+}, 'local evidence validator map');
+
 function asAppError(error, statusCode = 400) {
   if (error instanceof AppError) return error;
   return new AppError(
@@ -28,25 +42,20 @@ function asAppError(error, statusCode = 400) {
 }
 
 function createLocalRoutes({
-  annotationStore,
-  cardSortStore,
-  comparisonStore,
   configStore,
   gitCli,
   gitAuthorReader,
   emotionCurveEvaluator,
-  emotionCurveStore,
-  gameplayStore,
+  evidenceStores,
   mediaStore,
-  pitchStore,
   personaService,
   populationReportService,
   responseStore,
   surveyPublisher,
   surveyDefinitionStore,
-  voiceMemoStore,
-  voiceStore,
 }) {
+  assertCoversEveryMedium(evidenceStores, 'local evidence store map');
+  const emotionCurveStore = evidenceStores['emotion-curves'];
   const router = Router();
 
   router.get('/environment', async (_req, res, next) => {
@@ -243,21 +252,16 @@ function createLocalRoutes({
     }
   });
 
-  collectionRoutes('/gameplay', gameplayStore, validateGameplayInput);
-  collectionRoutes('/voices', voiceStore, validateVoiceInput);
-  collectionRoutes('/voice-memos', voiceMemoStore, validateVoiceMemoInput);
-  collectionRoutes('/emotion-curves', emotionCurveStore, validateEmotionCurveInput);
-  collectionRoutes('/comparisons', comparisonStore, validateComparisonInput);
-  collectionRoutes('/annotations', annotationStore, validateAnnotationInput);
-  collectionRoutes('/card-sorts', cardSortStore, validateCardSortInput);
-  collectionRoutes('/pitches', pitchStore, validatePitchInput);
+  for (const { kind } of EVIDENCE_MEDIA) {
+    collectionRoutes(`/${kind}`, evidenceStores[kind], VALIDATOR_BY_KIND[kind]);
+  }
 
   router.get('/comparisons/deck', (_req, res) => {
     res.json({ ok: true, data: EXPERIENCE_CARDS.map(({ id, text }) => ({ id, text })) });
   });
 
   async function readGameLogText(context, recordId) {
-    const media = await mediaStore.resolve({ ...context, kind: 'gamelogs', recordId });
+    const media = await mediaStore.resolve({ ...context, kind: 'game-logs', recordId });
     if (!media) return null;
     return fs.readFile(media.filePath, 'utf8');
   }

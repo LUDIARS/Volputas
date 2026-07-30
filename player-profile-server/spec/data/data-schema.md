@@ -43,12 +43,40 @@ updated: 2026-07-28
 | `steam_profiles` | user | 本人が連携したSteam公開プロフィール | PostgreSQL | 必要 | 本人単位アクセス。公開プロフィール(communityvisibilitystate=3)のみ連携許可 |
 | `steam_owned_games` | user-derived | Steam Web API (GetOwnedGames) スナップショット | PostgreSQL | 必要 | 本人単位アクセス。同期のたびに全置換、ジャンル等の追加取得は行わない |
 | スクリーンショット注釈 (`annotations`) | user | 注釈した本人 | local: データリポジトリ `annotations/<Name>/<id>.json` + リポジトリ外保護media / online: Cernere managed project `annotation_records` + private media storage | 必要 | 本人単位アクセス。画像は既存media制限で保護し、分析対象は明示 `momentType` とcaptionのみ。Vision解析は行わない。online列の提供はCernere migration follow-up |
-| カードソート判定 (`cardsorts`) | user | 分類した本人 | local: データリポジトリ `cardsorts/<Name>/<id>.json` / online: Cernere managed project `card_sort_records` | 必要 | 本人単位アクセス。1メカニクス1判定レコードを追記し、`updatedAt` が最新の判定だけを分析に採用。online列の提供はCernere migration follow-up |
+| カードソート判定 (`card-sorts`) | user | 分類した本人 | local: データリポジトリ `card-sorts/<Name>/<id>.json` / online: Cernere managed project `card_sort_records` | 必要 | 本人単位アクセス。1メカニクス1判定レコードを追記し、`updatedAt` が最新の判定だけを分析に採用。online列の提供はCernere migration follow-up |
 | 理想のゲーム企画 (`pitches`) | user | 作成した本人 | local: データリポジトリ `pitches/<Name>/<id>.json` / online: Cernere managed project `pitch_records` | 必要 | 本人単位アクセス。タイトル・本文・任意の参考ゲームを保存。本文だけを affect と決定的 Ludus 語彙照合へ使用し、LLM 推論は行わない。online列の提供は Cernere migration follow-up |
+| ボイスメモ (`voice-memos`) | user | 録音した本人 | local: データリポジトリ `voice-memos/<Name>/<id>.json` + リポジトリ外保護media / online: Cernere managed project `voice_memo_records` + private media storage | 必要 | 本人単位アクセス。音声は既存media制限で保護し、分析対象は本人が確定した transcript・polarity・mechanicIds のみ。transcript が空のメモは証拠として数えない。online列 (`voice_memo_records`) の提供は Cernere migration follow-up |
 | `play_impressions` / `impression_assets` | user | 投稿した本人 | PostgreSQL + private object storage | 必要 | 所有者認証、署名付きPUT/GET、media検査・変換、期限付き原本削除 |
 | `impression_reactions` | user | 動画を見た本人 | PostgreSQL | 必要 | 所有者認証。動画内時刻、`comment/positive/negative`、本人入力本文を保持 |
 | `memoria_links` | user | 本人が発行したMemoria共有token | PostgreSQL | 必要 | tokenはAES-256-GCM暗号化して保存 (Steamの平文保存とは異なる — 本人の作業データへの読み取り権限そのものであるため) |
 | `personality_drafts` | user-derived | Memoria性格傾向exportの計算結果 | PostgreSQL | 必要 | 承認(approve)されるまで`player_profiles`には反映されない。生テキストは含まない(集計済み数値のみ) |
+
+## 体験データ媒体の命名
+
+体験データの媒体名は `src/services/evidenceMedia.js` の `EVIDENCE_MEDIA` を単一の正本とする。
+1 媒体につき次の 5 つの名前が要るが、**すべて `kind` から決まる**。
+
+| 名前空間 | 規則 | 例 |
+|---|---|---|
+| `kind` (正準ID) | 小文字 kebab-case の複数形 | `voice-memos` |
+| HTTP パス | `/<kind>` をそのまま使う | `/api/local/voice-memos` |
+| local ディレクトリ | `<kind>/<Name>/<id>.json` | `voice-memos/<Name>/<id>.json` |
+| Cernere カラム | `kind` の単数形を snake_case にして `_records` | `voice_memo_records` |
+| 分析キー (`sources` / `evidence`) | `kind` の camelCase | `voiceMemos` |
+
+保護 media の kind (`screenshots` / `voice-memos` / `videos` / `game-logs`) も同じ kebab-case
+規則に従い、`MEDIA_KINDS` が「どの媒体がその種類のファイルを所有できるか」を持つ。
+
+媒体を追加するときは `EVIDENCE_MEDIA` に 1 エントリ足す。local アプリの store 生成、
+local/online のルート登録、両 persona service の `readSources`、Cernere のカラム対応表、
+証拠カウントはすべてこのリストから導出されるため、登録漏れや名前のずれは起きない。
+validator や store の map は `assertCoversEveryMedium` で起動時に検査され、
+取り残しは初回リクエストの 500 ではなく起動失敗になる。
+
+Cernere 側のカラム宣言 (`037_volputas_profile_evidence_schema.sql`) と `column` は一致して
+いなければならない。`managed_project.set_user_data` は宣言外のカラムを黙って捨て、
+1 つも一致しなければ `No valid columns to update` を返すため、**宣言漏れはその媒体を
+online モードで静かに全滅させる**。
 
 ## アンケート回答の権威
 

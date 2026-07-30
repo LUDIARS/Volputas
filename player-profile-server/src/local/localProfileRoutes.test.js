@@ -101,13 +101,13 @@ test('local profile routes persist evidence, stream media, and cache persona ana
     }),
   });
   const audioBytes = Buffer.from('test-audio');
-  await json(`/api/local/media/voicememos/${voiceMemo.record.id}`, {
+  await json(`/api/local/media/voice-memos/${voiceMemo.record.id}`, {
     method: 'PUT',
     headers: { 'content-type': 'audio/webm' },
     body: audioBytes,
   });
   const downloadedAudio = await fetch(
-    `${origin}/api/local/media/voicememos/${voiceMemo.record.id}`
+    `${origin}/api/local/media/voice-memos/${voiceMemo.record.id}`
   );
   assert.equal(downloadedAudio.status, 200);
   assert.deepEqual(Buffer.from(await downloadedAudio.arrayBuffer()), audioBytes);

@@ -9,6 +9,7 @@ const {
 const { collectionDirectory, insideRepository } = require('../services/profileDataPaths');
 const { canonicalize, fingerprintSources } = require('../services/personaFingerprint');
 const { countUserEvidence } = require('../services/personaEvidence/evidenceCount');
+const { EVIDENCE_MEDIA, assertCoversEveryMedium } = require('../services/evidenceMedia');
 
 async function readJsonFiles(directory) {
   let entries;
@@ -36,25 +37,11 @@ async function readJsonFiles(directory) {
 
 class PersonaService {
   constructor({
-    annotationStore = null,
-    cardSortStore = null,
-    comparisonStore = null,
-    pitchStore = null,
-    gameplayStore,
-    voiceMemoStore = null,
-    voiceStore,
-    emotionCurveStore,
+    evidenceStores,
     surveyDefinitionStore = null,
     now = () => new Date(),
   }) {
-    this.annotationStore = annotationStore;
-    this.cardSortStore = cardSortStore;
-    this.comparisonStore = comparisonStore;
-    this.pitchStore = pitchStore;
-    this.gameplayStore = gameplayStore;
-    this.voiceMemoStore = voiceMemoStore;
-    this.voiceStore = voiceStore;
-    this.emotionCurveStore = emotionCurveStore;
+    this.evidenceStores = assertCoversEveryMedium(evidenceStores || {}, 'persona evidence store map');
     this.surveyDefinitionStore = surveyDefinitionStore;
     this.now = now;
   }
@@ -73,50 +60,21 @@ class PersonaService {
   }
 
   async readSources({ repositoryRoot, name }) {
-    const [
-      surveys,
-      gameplay,
-      voices,
-      emotionCurves,
-      surveyDefinitions,
-      comparisons,
-      annotations,
-      cardSorts,
-      pitches,
-      voiceMemos,
-    ] = await Promise.all([
+    // Reading is driven by the registry so the result keys and the reads they
+    // came from cannot fall out of step (a hand-maintained destructuring list
+    // and Promise.all pairing silently mismatched during earlier merges).
+    const [surveys, surveyDefinitions, ...records] = await Promise.all([
       readJsonFiles(collectionDirectory(repositoryRoot, 'answers', name)),
-      this.gameplayStore.list({ repositoryRoot, name }),
-      this.voiceStore.list({ repositoryRoot, name }),
-      this.emotionCurveStore.list({ repositoryRoot, name }),
       this.readSurveyDefinitions(repositoryRoot),
-      this.comparisonStore
-        ? this.comparisonStore.list({ repositoryRoot, name })
-        : Promise.resolve([]),
-      this.annotationStore
-        ? this.annotationStore.list({ repositoryRoot, name })
-        : Promise.resolve([]),
-      this.cardSortStore
-        ? this.cardSortStore.list({ repositoryRoot, name })
-        : Promise.resolve([]),
-      this.pitchStore
-        ? this.pitchStore.list({ repositoryRoot, name })
-        : Promise.resolve([]),
-      this.voiceMemoStore
-        ? this.voiceMemoStore.list({ repositoryRoot, name })
-        : Promise.resolve([]),
+      ...EVIDENCE_MEDIA.map(({ kind }) => this.evidenceStores[kind].list({ repositoryRoot, name })),
     ]);
     return {
       surveys,
-      gameplay,
-      voices,
-      emotionCurves,
       surveyDefinitions,
-      comparisons,
-      annotations,
-      cardSorts,
-      pitches,
-      voiceMemos,
+      ...Object.fromEntries(EVIDENCE_MEDIA.map((medium, index) => [
+        medium.sourceKey,
+        records[index],
+      ])),
     };
   }
 

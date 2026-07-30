@@ -68,8 +68,8 @@ analyzePersonaV2 合流 → evidence カウント → UI ページ → nav → �
 
 - Ludus 辞書 (`frontend/src/data/ludus-lexicon.json` の 43 メカニクス) を
   「刺さる / どちらでも / 苦手」の 3 山に分ける UI (`CardSortPage`)。
-- 保存: 新コレクション `cardsorts` (T9 の `comparisons` と同配線:
-  local `ProfileRecordStore('cardsorts')` / online `card_sort_records` カラム)。
+- 保存: 新コレクション `card-sorts` (T9 の `comparisons` と同配線:
+  local `ProfileRecordStore('card-sorts')` / online `card_sort_records` カラム)。
   レコード形: `{ mechanicId, bucket: 'love'|'neutral'|'avoid' }` を 1 判定 1 レコード
   (上書きは同 mechanicId の最新を有効とする — 集計側で `updatedAt` 最新を採用)。
 - 集計 `personaEvidence/cardSortContributions.js`:
@@ -79,7 +79,7 @@ analyzePersonaV2 合流 → evidence カウント → UI ページ → nav → �
     `rhythm`→mastery, `open-world`→explorer/autonomy 等) を新設して
     カテゴリ経由で軸へ weight 1.0。
   - `avoid` → aversion `mechanic:<id>` strength 0.7 (§4.2) + mechanicReactions へ -1。
-- 機械判定: `npm test` green / cardsorts 保存→analyze で aversions に
+- 機械判定: `npm test` green / card-sorts 保存→analyze で aversions に
   `mechanic:` エントリが出るテストがある / UI から 3 山操作可能。
 
 ### T11 スクリーンショット・クリップ注釈 (§4.3)
@@ -129,7 +129,7 @@ analyzePersonaV2 合流 → evidence カウント → UI ページ → nav → �
 
 ### T15 ボイスメモ (§4.5)
 
-- 録音 (MediaRecorder) → media kind `voicememos` (audio/webm 等、上限 50MB) +
+- 録音 (MediaRecorder) → media kind `voice-memos` (audio/webm 等、上限 50MB) +
   手動文字起こしテキスト。文字起こし後は voice と同じ evidence 経路
   (`voiceContributions`) に流す (kind は 'voicememo' として provenance 区別)。
 - 自動 STT はスコープ外 (transcriber インタフェースだけ切る)。
@@ -141,7 +141,7 @@ analyzePersonaV2 合流 → evidence カウント → UI ページ → nav → �
 
 | 項目 | 内容 |
 |---|---|
-| Cernere `comparison_records` カラム | T9 の online 比較が動くために Cernere 側 managed project スキーマへカラム追加 (Cernere リポの migration。`volputas_profile_evidence_schema` 系列)。T10/T11/T12/T15 のカラムも同時に (`card_sort_records`, `annotation_records`, `pitch_records`, `voicememo_records`) |
+| Cernere `comparison_records` カラム | T9 の online 比較が動くために Cernere 側 managed project スキーマへカラム追加 (Cernere リポの migration。`volputas_profile_evidence_schema` 系列)。T10/T11/T12/T15 のカラムも同時に (`card_sort_records`, `annotation_records`, `pitch_records`, `voice_memo_records`) |
 | steam_app_meta lazy fetch (§3.2.1) | Steam 取込時に storefront `appdetails` を lazy fetch し appid→genres をキャッシュ (local: データリポ `steam/app-meta.json` / online: 新テーブル)。取得失敗はスキップ。`steamContributions` は `appMeta` 引数を既に受ける |
 | online 履歴テーブル (§2) | `persona_analysis_history` (追記 only) + OnlinePersonaService.analyze で insert + 履歴 API。フロントの personaHistory() の online 分岐を外す |
 | ludus-lexicon overlay | `frontend/src/data/ludus-lexicon.local.json` を読んでマージするローダ (§3.5 利用側オーバーレイ) |

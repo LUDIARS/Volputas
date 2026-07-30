@@ -1,6 +1,7 @@
 const { analyzePersonaV2 } = require('./personaEvidence/analyzePersonaV2');
 const { fingerprintSources } = require('./personaFingerprint');
 const { countUserEvidence } = require('./personaEvidence/evidenceCount');
+const { EVIDENCE_MEDIA } = require('./evidenceMedia');
 const defaultSteamModel = require('../models/steamModel');
 
 class OnlinePersonaService {
@@ -25,43 +26,22 @@ class OnlinePersonaService {
   }
 
   async readSources(userId) {
-    const [
-      surveys,
-      gameplay,
-      voices,
-      emotionCurves,
-      comparisons,
-      annotations,
-      cardSorts,
-      pitches,
-      voiceMemos,
-      surveyDefinitions,
-      steam,
-    ] = await Promise.all([
+    // Registry-driven for the same reason as the local service: the result keys
+    // and the reads are generated from one list instead of two parallel ones.
+    const [surveys, surveyDefinitions, steam, ...records] = await Promise.all([
       this.model.listSurveyResponses(userId),
-      this.model.list(userId, 'gameplay'),
-      this.model.list(userId, 'voices'),
-      this.model.list(userId, 'emotion-curves'),
-      this.model.list(userId, 'comparisons'),
-      this.model.list(userId, 'annotations'),
-      this.model.list(userId, 'card-sorts'),
-      this.model.list(userId, 'pitches'),
-      this.model.list(userId, 'voice-memos'),
       this.model.listSurveyDefinitions(),
       this.readSteamSnapshot(userId),
+      ...EVIDENCE_MEDIA.map(({ kind }) => this.model.list(userId, kind)),
     ]);
     return {
       surveys,
-      gameplay,
-      voices,
-      emotionCurves,
-      comparisons,
-      annotations,
-      cardSorts,
-      pitches,
-      voiceMemos,
       surveyDefinitions,
       steam,
+      ...Object.fromEntries(EVIDENCE_MEDIA.map((medium, index) => [
+        medium.sourceKey,
+        records[index],
+      ])),
     };
   }
 

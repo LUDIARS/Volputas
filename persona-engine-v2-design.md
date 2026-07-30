@@ -215,7 +215,7 @@ genre→軸、emotionSeeks→軸、Steam genre→軸、Ludus feature カテゴ�
 
 - Ludus lexicon のメカニクスカードを「刺さる / どちらでも / 苦手」の 3 山に分ける UI。
   「苦手」山は aversion の第一級の入力経路 (P1 ネガティブ証拠)。
-- 保存: `cardsorts/<name>/<id>.json`。集計: 刺さる=+1 / 苦手=aversion 0.7、
+- 保存: `card-sorts/<name>/<id>.json`。集計: 刺さる=+1 / 苦手=aversion 0.7、
   mechanicReactions にも反映。
 
 ### 4.3 スクリーンショット・クリップ注釈 (annotations)
@@ -237,7 +237,7 @@ genre→軸、emotionSeeks→軸、Steam genre→軸、Ludus feature カテゴ�
 - 任意 opt-in (`analysis.llmAssist=true` 設定時のみ) で LLM がメカニクス抽出を補完する。
   既定 off。LLM 結果も contribution として provenance に `extractor: 'llm'` を残す。
 
-### 4.5 ボイスメモ (voicememos) — 実装フェーズ後段
+### 4.5 ボイスメモ (voice-memos) — 実装フェーズ後段
 
 - プレイ直後 30 秒〜の口頭感想を録音 → 文字起こし → 以降は voice と同じ処理。
 - 音声バイトはメディアストア、文字起こしテキストのみ evidence。

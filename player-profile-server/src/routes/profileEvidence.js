@@ -6,6 +6,11 @@ const { AppError, asInputError } = require('../middleware/errorHandler');
 const { getProfileEvidenceStore } = require('../integrations/cernere/createProfileEvidenceStore');
 const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
 const {
+  EVIDENCE_MEDIA,
+  assertCoversEveryMedium,
+  mediaKindMatchesRecord,
+} = require('../services/evidenceMedia');
+const {
   validateAnnotationInput,
   validateCardSortInput,
   validateComparisonInput,
@@ -25,16 +30,18 @@ const userModel = require('../models/userModel');
 const { DiscussionBridgeClient } = require('../services/discussionBridgeClient');
 const { DiscussionImportService } = require('../services/discussionImportService');
 
-const MEDIA_RECORD_KINDS = {
-  screenshots: new Set(['gameplay', 'annotations']),
-  voicememos: new Set(['voice-memos']),
-  videos: new Set(['emotion-curves']),
-  gamelogs: new Set(['emotion-curves']),
-};
-
-function mediaKindMatchesRecord(mediaKind, recordKind) {
-  return MEDIA_RECORD_KINDS[mediaKind]?.has(recordKind) || false;
-}
+// Keyed by the canonical medium kind; assertCoversEveryMedium turns a forgotten
+// entry into a startup failure instead of a 500 on the first POST.
+const VALIDATOR_BY_KIND = assertCoversEveryMedium({
+  gameplay: validateGameplayInput,
+  voices: validateVoiceInput,
+  'voice-memos': validateVoiceMemoInput,
+  'emotion-curves': validateEmotionCurveInput,
+  comparisons: validateComparisonInput,
+  'card-sorts': validateCardSortInput,
+  annotations: validateAnnotationInput,
+  pitches: validatePitchInput,
+}, 'online evidence validator map');
 
 function asInputError(error) {
   if (error instanceof AppError) return error;
@@ -123,9 +130,9 @@ function createProfileEvidenceRouter({
     });
   }
 
-  collectionRoutes('/gameplay', 'gameplay', validateGameplayInput);
-  collectionRoutes('/voices', 'voices', validateVoiceInput);
-  collectionRoutes('/voice-memos', 'voice-memos', validateVoiceMemoInput);
+  for (const { kind } of EVIDENCE_MEDIA) {
+    collectionRoutes(`/${kind}`, kind, VALIDATOR_BY_KIND[kind]);
+  }
 
   router.post('/discussion-voices/sync', async (req, res, next) => {
     try {
@@ -142,12 +149,6 @@ function createProfileEvidenceRouter({
       ));
     }
   });
-  collectionRoutes('/emotion-curves', 'emotion-curves', validateEmotionCurveInput);
-  collectionRoutes('/comparisons', 'comparisons', validateComparisonInput);
-  collectionRoutes('/annotations', 'annotations', validateAnnotationInput);
-  collectionRoutes('/card-sorts', 'card-sorts', validateCardSortInput);
-  collectionRoutes('/pitches', 'pitches', validatePitchInput);
-
   router.get('/comparisons/deck', (_req, res) => {
     res.json({ ok: true, data: EXPERIENCE_CARDS.map(({ id, text }) => ({ id, text })) });
   });
@@ -162,7 +163,7 @@ function createProfileEvidenceRouter({
       const media = await mediaStore.resolve({
         repositoryRoot: mediaRoot,
         name: owned.ownerId,
-        kind: 'gamelogs',
+        kind: 'game-logs',
         recordId: req.params.recordId,
       });
       const gameLogText = media ? await fs.readFile(media.filePath, 'utf8') : null;
@@ -277,7 +278,9 @@ function createProfileEvidenceRouter({
 }
 
 module.exports = {
-  MEDIA_RECORD_KINDS,
+  // `mediaKindMatchesRecord` is re-exported so existing callers and tests keep
+  // reaching the media-ownership rule through the router module; the rule table
+  // itself is owned by the evidence registry (`services/evidenceMedia`).
   createProfileEvidenceRouter,
   mediaKindMatchesRecord,
   router: createProfileEvidenceRouter(),

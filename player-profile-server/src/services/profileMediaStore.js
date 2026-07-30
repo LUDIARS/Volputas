@@ -9,6 +9,17 @@ const {
   collectionDirectory,
   insideRepository,
 } = require('./profileDataPaths');
+const { MEDIA_KIND_NAMES } = require('./evidenceMedia');
+
+function assertMediaRulesCoverRegistry(rules) {
+  const ruleKinds = Object.keys(rules).sort();
+  const registryKinds = [...MEDIA_KIND_NAMES].sort();
+  if (ruleKinds.join(',') !== registryKinds.join(',')) {
+    throw new Error(
+      `Media rules do not match the media-kind registry: rules=[${ruleKinds}] registry=[${registryKinds}]`
+    );
+  }
+}
 
 // Media policy is identical in local and authenticated modes.
 const MEDIA_RULES = {
@@ -20,7 +31,7 @@ const MEDIA_RULES = {
     },
     maximumBytes: 20 * 1024 * 1024,
   },
-  voicememos: {
+  'voice-memos': {
     contentTypes: {
       'audio/webm': '.webm',
       'audio/ogg': '.ogg',
@@ -37,7 +48,7 @@ const MEDIA_RULES = {
     },
     maximumBytes: 2 * 1024 * 1024 * 1024,
   },
-  gamelogs: {
+  'game-logs': {
     contentTypes: {
       'text/plain': '.log',
       'application/json': '.json',
@@ -46,6 +57,11 @@ const MEDIA_RULES = {
     maximumBytes: 100 * 1024 * 1024,
   },
 };
+
+// The media policy above and the media-kind registry must describe the same set
+// of kinds; a rule without a registry entry would be unreachable, and a registry
+// entry without a rule would reject every upload as an unsupported media type.
+assertMediaRulesCoverRegistry(MEDIA_RULES);
 
 class ProfileMediaStore {
   async save({ repositoryRoot, name, kind, recordId, contentType, stream }) {

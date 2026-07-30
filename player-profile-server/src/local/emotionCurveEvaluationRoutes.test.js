@@ -92,7 +92,7 @@ test('emotion curve routes accept stamps, game logs, and produce LLM evaluations
   );
 
   const logBytes = Buffer.from('boss_defeated t=95\n');
-  const uploaded = await json(`/api/local/media/gamelogs/${record.id}`, {
+  const uploaded = await json(`/api/local/media/game-logs/${record.id}`, {
     method: 'PUT',
     headers: { 'content-type': 'text/plain' },
     body: logBytes,

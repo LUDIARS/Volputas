@@ -56,8 +56,8 @@ valence/arousal を読むため、スタンプのみの記録でも分析が成�
 
 ## メディア
 
-`ProfileMediaStore` に kind `gamelogs` を追加。text/plain (.log) / application/json / text/csv、
-最大 100MB。保存レイアウトは既存 media と同一 (`media/<name>/gamelogs/<recordId>.<ext>`、
+`ProfileMediaStore` に kind `game-logs` を追加。text/plain (.log) / application/json / text/csv、
+最大 100MB。保存レイアウトは既存 media と同一 (`media/<name>/game-logs/<recordId>.<ext>`、
 online は保護ストレージ + Cernere 側メタデータ経由)。ブラウザは `.log` を空 MIME で報告するため、
 フロントは拡張子から MIME を補完して送る。
 
@@ -65,7 +65,7 @@ online は保護ストレージ + Cernere 側メタデータ経由)。ブラウ�
 
 | Method | Path (local / online) | 動作 |
 |---|---|---|
-| PUT | `/media/gamelogs/:recordId` | ゲームログ保存 (既存 media 経路) |
+| PUT | `/media/game-logs/:recordId` | ゲームログ保存 (既存 media 経路) |
 | POST | `/emotion-curves/:recordId/evaluate` | LLM 評価を実行し、レコードに `evaluation` を保存して返す |
 
 evaluate は都度実行 (再実行で上書き)。ペルソナは保存済み `analysis/persona.json`

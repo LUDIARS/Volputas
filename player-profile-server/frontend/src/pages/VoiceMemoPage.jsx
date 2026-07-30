@@ -126,7 +126,7 @@ export default function VoiceMemoPage() {
         audioFileName: recorded.fileName,
         durationSeconds: recorded.durationSeconds,
       });
-      await client.upload('voicememos', result.record.id, recorded.blob);
+      await client.upload('voice-memos', result.record.id, recorded.blob);
       setRecords((current) => [result.record, ...current]);
       URL.revokeObjectURL(recorded.previewUrl);
       setRecorded(null);
@@ -210,7 +210,7 @@ export default function VoiceMemoPage() {
             as="audio"
             controls
             className="voice-memo-audio"
-            kind="voicememos"
+            kind="voice-memos"
             recordId={record.id}
           />
           {record.transcript

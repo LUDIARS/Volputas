@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { PersonaService, fingerprintSources } = require('./personaService');
-const { ProfileRecordStore } = require('./profileRecordStore');
+const { createEvidenceStores } = require('./createEvidenceStores');
 
 test('source fingerprint is stable across object key order', () => {
   assert.equal(
@@ -22,15 +22,10 @@ test('persona analysis is reused until a source record changes', async (t) => {
     new Date('2026-07-26T00:02:00.000Z'),
   ];
   const now = () => timestamps.shift() || new Date('2026-07-26T00:03:00.000Z');
-  const gameplayStore = new ProfileRecordStore('gameplay', now);
-  const voiceStore = new ProfileRecordStore('voices', now);
-  const emotionCurveStore = new ProfileRecordStore('emotion-curves', now);
-  const service = new PersonaService({
-    gameplayStore,
-    voiceStore,
-    emotionCurveStore,
-    now,
-  });
+  const evidenceStores = createEvidenceStores(now);
+  const gameplayStore = evidenceStores.gameplay;
+  const voiceStore = evidenceStores.voices;
+  const service = new PersonaService({ evidenceStores, now });
   const context = { repositoryRoot, name: 'tester' };
 
   await gameplayStore.write({

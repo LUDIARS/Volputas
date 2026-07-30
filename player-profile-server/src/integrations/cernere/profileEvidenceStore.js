@@ -1,15 +1,5 @@
 const { randomUUID } = require('node:crypto');
-
-const COLUMN_BY_KIND = {
-  annotations: 'annotation_records',
-  'card-sorts': 'card_sort_records',
-  gameplay: 'gameplay_records',
-  voices: 'voice_records',
-  'voice-memos': 'voicememo_records',
-  'emotion-curves': 'emotion_curve_records',
-  comparisons: 'comparison_records',
-  pitches: 'pitch_records',
-};
+const { COLUMN_BY_KIND } = require('../../services/evidenceMedia');
 
 function requireArray(value, column) {
   if (value === null || value === undefined) return [];

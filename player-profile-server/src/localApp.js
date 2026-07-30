@@ -13,7 +13,7 @@ const { createLlmTextClient } = require('./services/llm/createLlmTextClient');
 const { EmotionCurveEvaluationService } = require('./services/emotionCurveEvaluationService');
 const { ProfileMediaStore } = require('./services/profileMediaStore');
 const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
-const { ProfileRecordStore } = require('./local/profileRecordStore');
+const { createEvidenceStores } = require('./local/createEvidenceStores');
 const config = require('./config');
 const { LocalPopulationReportService } = require('./services/populationReport');
 const { errorHandler } = require('./middleware/errorHandler');
@@ -23,18 +23,11 @@ function createLocalApp({
   gitCli = new GitCli(),
   gitAuthorReader = new GitAuthorReader(),
   emotionCurveEvaluator,
-  annotationStore = new ProfileRecordStore('annotations'),
-  cardSortStore = new ProfileRecordStore('cardsorts'),
-  comparisonStore = new ProfileRecordStore('comparisons'),
-  emotionCurveStore = new ProfileRecordStore('emotion-curves'),
-  gameplayStore = new ProfileRecordStore('gameplay'),
+  evidenceStores = createEvidenceStores(),
   mediaStore = new ProfileMediaStore(),
-  pitchStore = new ProfileRecordStore('pitches'),
   responseStore = new LocalResponseStore(),
   surveyPublisher,
   surveyDefinitionStore = new SurveyDefinitionStore(),
-  voiceMemoStore = new ProfileRecordStore('voicememos'),
-  voiceStore = new ProfileRecordStore('voices'),
   personaService,
   populationReportService,
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
@@ -44,14 +37,7 @@ function createLocalApp({
 
   const app = express();
   const resolvedPersonaService = personaService || new PersonaService({
-    annotationStore,
-    cardSortStore,
-    comparisonStore,
-    emotionCurveStore,
-    gameplayStore,
-    pitchStore,
-    voiceMemoStore,
-    voiceStore,
+    evidenceStores,
     surveyDefinitionStore,
   });
   const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
@@ -71,24 +57,17 @@ function createLocalApp({
     res.json({ ok: true, data: { mode: 'local', authentication: 'none' } });
   });
   app.use('/api/local', createLocalRoutes({
-    annotationStore,
-    cardSortStore,
-    comparisonStore,
     configStore,
     gitCli,
     gitAuthorReader,
     emotionCurveEvaluator: resolvedEmotionCurveEvaluator,
-    emotionCurveStore,
-    gameplayStore,
+    evidenceStores,
     mediaStore,
-    pitchStore,
     personaService: resolvedPersonaService,
     populationReportService: resolvedPopulationReportService,
     responseStore,
     surveyPublisher: resolvedSurveyPublisher,
     surveyDefinitionStore,
-    voiceMemoStore,
-    voiceStore,
   }));
 
   if (serveFrontend) {

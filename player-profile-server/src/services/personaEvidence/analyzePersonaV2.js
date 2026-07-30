@@ -144,7 +144,6 @@ function analyzePersonaV2(sources, analyzedAt) {
       cardSort.mechanicReactions,
       pitches.mechanicReactions
     ),
-    mechanicReactions: collectMechanicReactions(sources.voices, sources.voiceMemos),
     population: null,
     steam: steam.meta,
     evidence: {
