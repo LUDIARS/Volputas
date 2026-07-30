@@ -23,10 +23,13 @@ function createLocalApp({
   gitCli = new GitCli(),
   gitAuthorReader = new GitAuthorReader(),
   emotionCurveEvaluator,
+  annotationStore = new ProfileRecordStore('annotations'),
+  cardSortStore = new ProfileRecordStore('cardsorts'),
   comparisonStore = new ProfileRecordStore('comparisons'),
   emotionCurveStore = new ProfileRecordStore('emotion-curves'),
   gameplayStore = new ProfileRecordStore('gameplay'),
   mediaStore = new ProfileMediaStore(),
+  pitchStore = new ProfileRecordStore('pitches'),
   responseStore = new LocalResponseStore(),
   surveyPublisher,
   surveyDefinitionStore = new SurveyDefinitionStore(),
@@ -40,8 +43,12 @@ function createLocalApp({
 
   const app = express();
   const resolvedPersonaService = personaService || new PersonaService({
+    annotationStore,
+    cardSortStore,
+    comparisonStore,
     emotionCurveStore,
     gameplayStore,
+    pitchStore,
     voiceStore,
     surveyDefinitionStore,
   });
@@ -62,6 +69,9 @@ function createLocalApp({
     res.json({ ok: true, data: { mode: 'local', authentication: 'none' } });
   });
   app.use('/api/local', createLocalRoutes({
+    annotationStore,
+    cardSortStore,
+    comparisonStore,
     configStore,
     gitCli,
     gitAuthorReader,
@@ -69,6 +79,7 @@ function createLocalApp({
     emotionCurveStore,
     gameplayStore,
     mediaStore,
+    pitchStore,
     personaService: resolvedPersonaService,
     populationReportService: resolvedPopulationReportService,
     responseStore,

@@ -6,8 +6,12 @@ const { analyzePersona } = require('../personaEvidenceAnalysis');
 const { classifyFromSurveyRecords } = require('../classificationEngine');
 const { collectFreeTextSamples, computeAffectProfile } = require('../affectProfile');
 const { aggregateContributions } = require('./aggregateContributions');
+const { annotationContributions } = require('./annotationContributions');
+const { cardSortContributions } = require('./cardSortContributions');
+const { combineMechanicReactions } = require('./combineMechanicReactions');
 const { collectMechanicReactions, mechanicAversionEvidence } = require('./mechanicReactions');
 const { comparisonContributions } = require('./comparisonContributions');
+const { pitchContributions } = require('./pitchContributions');
 const { collectSourceContributions } = require('./sourceContributions');
 const { steamContributions } = require('./steamContributions');
 const { surveyAxisContributions } = require('./surveyAxisContributions');
@@ -60,11 +64,17 @@ function analyzePersonaV2(sources, analyzedAt) {
   const fromRecords = collectSourceContributions(sources);
   const steam = steamContributions(sources.steam || null, analyzedAt, sources.steamAppMeta || null);
   const comparisons = comparisonContributions(sources.comparisons || []);
+  const annotations = annotationContributions(sources.annotations || []);
+  const cardSort = cardSortContributions(sources.cardSorts || []);
+  const pitches = pitchContributions(sources.pitches || []);
   const contributions = [
     ...fromRecords.contributions,
     ...survey.contributions,
     ...steam.contributions,
     ...comparisons.contributions,
+    ...annotations.contributions,
+    ...cardSort.contributions,
+    ...pitches.contributions,
   ];
   const aggregated = aggregateContributions(contributions);
 
@@ -94,7 +104,11 @@ function analyzePersonaV2(sources, analyzedAt) {
 
   // Freetext answers feed the shared 20D affect vector (design §3.1 merges the
   // former standalone affect recompute into this pipeline).
-  const affect = computeAffectProfile(collectFreeTextSamples(joinedRecords));
+  const affect = computeAffectProfile([
+    ...collectFreeTextSamples(joinedRecords),
+    ...annotations.affectSamples,
+    ...pitches.affectSamples,
+  ]);
 
   // 12-classification (MTG psychographics + Caillois + story dynamics) via the
   // shared pure engine (design §3.6). Null when no dimension-tagged question
@@ -121,10 +135,15 @@ function analyzePersonaV2(sources, analyzedAt) {
       ...fromRecords.aversionEvidence,
       ...survey.aversionEvidence,
       ...mechanicAversionEvidence(sources.voices),
+      ...cardSort.aversionEvidence,
     ]),
     affect,
     classification,
-    mechanicReactions: collectMechanicReactions(sources.voices),
+    mechanicReactions: combineMechanicReactions(
+      collectMechanicReactions(sources.voices),
+      cardSort.mechanicReactions,
+      pitches.mechanicReactions
+    ),
     population: null,
     steam: steam.meta,
     evidence: {
@@ -132,6 +151,9 @@ function analyzePersonaV2(sources, analyzedAt) {
       surveyDefinitions: definitions.length,
       steam: steam.meta ? 1 : 0,
       comparisons: (sources.comparisons || []).length,
+      annotations: (sources.annotations || []).length,
+      cardSorts: (sources.cardSorts || []).length,
+      pitches: (sources.pitches || []).length,
     },
     axes: legacy.axes,
     leadingAxes: legacy.leadingAxes,

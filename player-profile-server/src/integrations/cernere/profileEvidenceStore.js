@@ -1,10 +1,13 @@
 const { randomUUID } = require('node:crypto');
 
 const COLUMN_BY_KIND = {
+  annotations: 'annotation_records',
+  'card-sorts': 'card_sort_records',
   gameplay: 'gameplay_records',
   voices: 'voice_records',
   'emotion-curves': 'emotion_curve_records',
   comparisons: 'comparison_records',
+  pitches: 'pitch_records',
 };
 
 function requireArray(value, column) {

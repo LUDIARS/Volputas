@@ -36,14 +36,20 @@ async function readJsonFiles(directory) {
 
 class PersonaService {
   constructor({
+    annotationStore = null,
+    cardSortStore = null,
     comparisonStore = null,
+    pitchStore = null,
     gameplayStore,
     voiceStore,
     emotionCurveStore,
     surveyDefinitionStore = null,
     now = () => new Date(),
   }) {
+    this.annotationStore = annotationStore;
+    this.cardSortStore = cardSortStore;
     this.comparisonStore = comparisonStore;
+    this.pitchStore = pitchStore;
     this.gameplayStore = gameplayStore;
     this.voiceStore = voiceStore;
     this.emotionCurveStore = emotionCurveStore;
@@ -65,7 +71,17 @@ class PersonaService {
   }
 
   async readSources({ repositoryRoot, name }) {
-    const [surveys, gameplay, voices, emotionCurves, surveyDefinitions, comparisons] = await Promise.all([
+    const [
+      surveys,
+      gameplay,
+      voices,
+      emotionCurves,
+      surveyDefinitions,
+      comparisons,
+      annotations,
+      cardSorts,
+      pitches,
+    ] = await Promise.all([
       readJsonFiles(collectionDirectory(repositoryRoot, 'answers', name)),
       this.gameplayStore.list({ repositoryRoot, name }),
       this.voiceStore.list({ repositoryRoot, name }),
@@ -74,8 +90,27 @@ class PersonaService {
       this.comparisonStore
         ? this.comparisonStore.list({ repositoryRoot, name })
         : Promise.resolve([]),
+      this.annotationStore
+        ? this.annotationStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
+      this.cardSortStore
+        ? this.cardSortStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
+      this.pitchStore
+        ? this.pitchStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
     ]);
-    return { surveys, gameplay, voices, emotionCurves, surveyDefinitions, comparisons };
+    return {
+      surveys,
+      gameplay,
+      voices,
+      emotionCurves,
+      surveyDefinitions,
+      comparisons,
+      annotations,
+      cardSorts,
+      pitches,
+    };
   }
 
   analysisPath(repositoryRoot, name) {

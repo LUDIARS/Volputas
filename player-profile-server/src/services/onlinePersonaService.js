@@ -25,16 +25,41 @@ class OnlinePersonaService {
   }
 
   async readSources(userId) {
-    const [surveys, gameplay, voices, emotionCurves, comparisons, surveyDefinitions, steam] = await Promise.all([
+    const [
+      surveys,
+      gameplay,
+      voices,
+      emotionCurves,
+      comparisons,
+      annotations,
+      cardSorts,
+      pitches,
+      surveyDefinitions,
+      steam,
+    ] = await Promise.all([
       this.model.listSurveyResponses(userId),
       this.model.list(userId, 'gameplay'),
       this.model.list(userId, 'voices'),
       this.model.list(userId, 'emotion-curves'),
       this.model.list(userId, 'comparisons'),
+      this.model.list(userId, 'annotations'),
+      this.model.list(userId, 'card-sorts'),
+      this.model.list(userId, 'pitches'),
       this.model.listSurveyDefinitions(),
       this.readSteamSnapshot(userId),
     ]);
-    return { surveys, gameplay, voices, emotionCurves, comparisons, surveyDefinitions, steam };
+    return {
+      surveys,
+      gameplay,
+      voices,
+      emotionCurves,
+      comparisons,
+      annotations,
+      cardSorts,
+      pitches,
+      surveyDefinitions,
+      steam,
+    };
   }
 
   async status(userId) {
