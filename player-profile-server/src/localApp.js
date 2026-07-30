@@ -14,6 +14,8 @@ const { EmotionCurveEvaluationService } = require('./services/emotionCurveEvalua
 const { ProfileMediaStore } = require('./services/profileMediaStore');
 const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
 const { ProfileRecordStore } = require('./local/profileRecordStore');
+const config = require('./config');
+const { LocalPopulationReportService } = require('./services/populationReport');
 const { errorHandler } = require('./middleware/errorHandler');
 
 function createLocalApp({
@@ -21,16 +23,20 @@ function createLocalApp({
   gitCli = new GitCli(),
   gitAuthorReader = new GitAuthorReader(),
   emotionCurveEvaluator,
+  annotationStore = new ProfileRecordStore('annotations'),
+  cardSortStore = new ProfileRecordStore('cardsorts'),
   comparisonStore = new ProfileRecordStore('comparisons'),
   emotionCurveStore = new ProfileRecordStore('emotion-curves'),
   gameplayStore = new ProfileRecordStore('gameplay'),
   mediaStore = new ProfileMediaStore(),
+  pitchStore = new ProfileRecordStore('pitches'),
   responseStore = new LocalResponseStore(),
   surveyPublisher,
   surveyDefinitionStore = new SurveyDefinitionStore(),
   voiceMemoStore = new ProfileRecordStore('voicememos'),
   voiceStore = new ProfileRecordStore('voices'),
   personaService,
+  populationReportService,
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
   serveFrontend = true,
 } = {}) {
@@ -38,8 +44,12 @@ function createLocalApp({
 
   const app = express();
   const resolvedPersonaService = personaService || new PersonaService({
+    annotationStore,
+    cardSortStore,
+    comparisonStore,
     emotionCurveStore,
     gameplayStore,
+    pitchStore,
     voiceMemoStore,
     voiceStore,
     surveyDefinitionStore,
@@ -47,6 +57,11 @@ function createLocalApp({
   const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
     || new EmotionCurveEvaluationService({ llmClient: createLlmTextClient() });
   const resolvedSurveyPublisher = surveyPublisher || new GitSurveyPublisher(gitCli);
+  const resolvedPopulationReportService = populationReportService
+    || new LocalPopulationReportService({
+      personaService: resolvedPersonaService,
+      secret: config.pseudoIdSecret,
+    });
   app.use(helmet());
   app.use(express.json({ limit: '1mb' }));
   app.get('/health', (_req, res) => {
@@ -56,6 +71,9 @@ function createLocalApp({
     res.json({ ok: true, data: { mode: 'local', authentication: 'none' } });
   });
   app.use('/api/local', createLocalRoutes({
+    annotationStore,
+    cardSortStore,
+    comparisonStore,
     configStore,
     gitCli,
     gitAuthorReader,
@@ -63,7 +81,9 @@ function createLocalApp({
     emotionCurveStore,
     gameplayStore,
     mediaStore,
+    pitchStore,
     personaService: resolvedPersonaService,
+    populationReportService: resolvedPopulationReportService,
     responseStore,
     surveyPublisher: resolvedSurveyPublisher,
     surveyDefinitionStore,

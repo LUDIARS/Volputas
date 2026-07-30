@@ -4,10 +4,14 @@ const config = require('../config');
 const { authenticate } = require('../middleware/auth');
 const { AppError } = require('../middleware/errorHandler');
 const { getProfileEvidenceStore } = require('../integrations/cernere/createProfileEvidenceStore');
+const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
 const {
+  validateAnnotationInput,
+  validateCardSortInput,
   validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
+  validatePitchInput,
   validateVoiceMemoInput,
   validateVoiceInput,
 } = require('../services/profileEvidenceSchemas');
@@ -21,12 +25,16 @@ const userModel = require('../models/userModel');
 const { DiscussionBridgeClient } = require('../services/discussionBridgeClient');
 const { DiscussionImportService } = require('../services/discussionImportService');
 
-const MEDIA_RECORD_KIND = {
-  screenshots: 'gameplay',
-  voicememos: 'voice-memos',
-  videos: 'emotion-curves',
-  gamelogs: 'emotion-curves',
+const MEDIA_RECORD_KINDS = {
+  screenshots: new Set(['gameplay', 'annotations']),
+  voicememos: new Set(['voice-memos']),
+  videos: new Set(['emotion-curves']),
+  gamelogs: new Set(['emotion-curves']),
 };
+
+function mediaKindMatchesRecord(mediaKind, recordKind) {
+  return MEDIA_RECORD_KINDS[mediaKind]?.has(recordKind) || false;
+}
 
 function asInputError(error) {
   if (error instanceof AppError) return error;
@@ -71,7 +79,7 @@ function createProfileEvidenceRouter({
       const metadata = record
         ? await model.findMedia(ticket.sub, req.params.recordId, req.params.kind)
         : null;
-      if (!record || !metadata || MEDIA_RECORD_KIND[req.params.kind] !== record.kind) {
+      if (!record || !metadata || !mediaKindMatchesRecord(req.params.kind, record.kind)) {
         throw new AppError(404, 'MEDIA_NOT_FOUND', 'Media not found');
       }
       const media = await mediaStore.resolve({
@@ -136,6 +144,9 @@ function createProfileEvidenceRouter({
   });
   collectionRoutes('/emotion-curves', 'emotion-curves', validateEmotionCurveInput);
   collectionRoutes('/comparisons', 'comparisons', validateComparisonInput);
+  collectionRoutes('/annotations', 'annotations', validateAnnotationInput);
+  collectionRoutes('/card-sorts', 'card-sorts', validateCardSortInput);
+  collectionRoutes('/pitches', 'pitches', validatePitchInput);
 
   router.get('/comparisons/deck', (_req, res) => {
     res.json({ ok: true, data: EXPERIENCE_CARDS.map(({ id, text }) => ({ id, text })) });
@@ -183,7 +194,7 @@ function createProfileEvidenceRouter({
   router.put('/media/:kind/:recordId', async (req, res, next) => {
     try {
       const record = await model.findOwned(req.user.id, req.params.recordId);
-      if (!record || MEDIA_RECORD_KIND[req.params.kind] !== record.kind) {
+      if (!record || !mediaKindMatchesRecord(req.params.kind, record.kind)) {
         throw new AppError(404, 'PROFILE_RECORD_NOT_FOUND', 'Profile record not found');
       }
       const contentType = String(req.headers['content-type'] || '').split(';')[0].trim();
@@ -226,7 +237,7 @@ function createProfileEvidenceRouter({
       const metadata = record
         ? await model.findMedia(req.user.id, req.params.recordId, req.params.kind)
         : null;
-      if (!record || !metadata || MEDIA_RECORD_KIND[req.params.kind] !== record.kind) {
+      if (!record || !metadata || !mediaKindMatchesRecord(req.params.kind, record.kind)) {
         throw new AppError(404, 'MEDIA_NOT_FOUND', 'Media not found');
       }
       const ticket = await issueTicket({
@@ -266,7 +277,8 @@ function createProfileEvidenceRouter({
 }
 
 module.exports = {
-  MEDIA_RECORD_KIND,
+  MEDIA_RECORD_KINDS,
   createProfileEvidenceRouter,
+  mediaKindMatchesRecord,
   router: createProfileEvidenceRouter(),
 };

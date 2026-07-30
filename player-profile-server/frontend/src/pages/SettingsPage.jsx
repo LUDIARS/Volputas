@@ -8,6 +8,7 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [locale, setLocale] = useState('');
+  const [researchExportConsent, setResearchExportConsent] = useState(false);
   const [discussionImportConsent, setDiscussionImportConsent] = useState(false);
   const [identities, setIdentities] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -32,6 +33,7 @@ export default function SettingsPage() {
       setDisplayName(user.display_name || '');
       setAvatarUrl(user.avatar_url || '');
       setLocale(user.locale || 'ja');
+      setResearchExportConsent(user.research_export_consent === true);
       setDiscussionImportConsent(user.discussion_import_consent === true);
     }
     loadIdentities();
@@ -163,6 +165,7 @@ export default function SettingsPage() {
           display_name: displayName,
           avatar_url: avatarUrl || null,
           locale,
+          research_export_consent: researchExportConsent,
           discussion_import_consent: discussionImportConsent,
         },
       });
@@ -274,6 +277,17 @@ export default function SettingsPage() {
             </div>
 
             <div className="form-group consent-setting">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={researchExportConsent}
+                  onChange={(event) => setResearchExportConsent(event.target.checked)}
+                />
+                ペルソナの研究提供（仮名化）に同意する
+              </label>
+              <p className="muted">
+                既定は off です。同意時も実名・メール・アカウント ID・回答本文は出力されません。
+              </p>
               <label>
                 <input
                   type="checkbox"

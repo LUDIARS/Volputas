@@ -30,6 +30,7 @@ router.patch('/me', validate({
     display_name: { type: 'string', maxLength: 100 },
     avatar_url: { type: 'string' },
     locale: { type: 'string', maxLength: 10 },
+    research_export_consent: { type: 'boolean' },
     discussion_import_consent: { type: 'boolean' },
   },
 }), async (req, res, next) => {
@@ -38,6 +39,7 @@ router.patch('/me', validate({
       display_name,
       avatar_url,
       locale,
+      research_export_consent,
       discussion_import_consent,
     } = req.body;
     if (discussion_import_consent === true) {
@@ -54,6 +56,7 @@ router.patch('/me', validate({
       displayName: display_name,
       avatarUrl: avatar_url,
       locale,
+      researchExportConsent: research_export_consent,
       discussionImportConsent: discussion_import_consent,
     });
     if (!user) {

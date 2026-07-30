@@ -36,7 +36,10 @@ async function readJsonFiles(directory) {
 
 class PersonaService {
   constructor({
+    annotationStore = null,
+    cardSortStore = null,
     comparisonStore = null,
+    pitchStore = null,
     gameplayStore,
     voiceMemoStore = null,
     voiceStore,
@@ -44,7 +47,10 @@ class PersonaService {
     surveyDefinitionStore = null,
     now = () => new Date(),
   }) {
+    this.annotationStore = annotationStore;
+    this.cardSortStore = cardSortStore;
     this.comparisonStore = comparisonStore;
+    this.pitchStore = pitchStore;
     this.gameplayStore = gameplayStore;
     this.voiceMemoStore = voiceMemoStore;
     this.voiceStore = voiceStore;
@@ -71,31 +77,46 @@ class PersonaService {
       surveys,
       gameplay,
       voices,
-      voiceMemos,
       emotionCurves,
       surveyDefinitions,
       comparisons,
+      annotations,
+      cardSorts,
+      pitches,
+      voiceMemos,
     ] = await Promise.all([
       readJsonFiles(collectionDirectory(repositoryRoot, 'answers', name)),
       this.gameplayStore.list({ repositoryRoot, name }),
       this.voiceStore.list({ repositoryRoot, name }),
-      this.voiceMemoStore
-        ? this.voiceMemoStore.list({ repositoryRoot, name })
-        : Promise.resolve([]),
       this.emotionCurveStore.list({ repositoryRoot, name }),
       this.readSurveyDefinitions(repositoryRoot),
       this.comparisonStore
         ? this.comparisonStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
+      this.annotationStore
+        ? this.annotationStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
+      this.cardSortStore
+        ? this.cardSortStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
+      this.pitchStore
+        ? this.pitchStore.list({ repositoryRoot, name })
+        : Promise.resolve([]),
+      this.voiceMemoStore
+        ? this.voiceMemoStore.list({ repositoryRoot, name })
         : Promise.resolve([]),
     ]);
     return {
       surveys,
       gameplay,
       voices,
-      voiceMemos,
       emotionCurves,
       surveyDefinitions,
       comparisons,
+      annotations,
+      cardSorts,
+      pitches,
+      voiceMemos,
     };
   }
 
@@ -118,6 +139,20 @@ class PersonaService {
       }
       throw error;
     }
+  }
+
+  async writeAnalysis(repositoryRoot, name, analysis) {
+    const filePath = this.analysisPath(repositoryRoot, name);
+    const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    try {
+      await fs.writeFile(temporaryPath, `${JSON.stringify(analysis, null, 2)}\n`, 'utf8');
+      await fs.rename(temporaryPath, filePath);
+    } catch (error) {
+      await fs.unlink(temporaryPath).catch(() => {});
+      throw error;
+    }
+    return filePath;
   }
 
   async historySeries(context) {
@@ -157,16 +192,7 @@ class PersonaService {
       ...analyzePersonaV2(sources, this.now().toISOString()),
       sourceFingerprint,
     };
-    const filePath = this.analysisPath(context.repositoryRoot, context.name);
-    const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-    try {
-      await fs.writeFile(temporaryPath, `${JSON.stringify(analysis, null, 2)}\n`, 'utf8');
-      await fs.rename(temporaryPath, filePath);
-    } catch (error) {
-      await fs.unlink(temporaryPath).catch(() => {});
-      throw error;
-    }
+    const filePath = await this.writeAnalysis(context.repositoryRoot, context.name, analysis);
     await appendAnalysisHistory({
       repositoryRoot: context.repositoryRoot,
       name: context.name,

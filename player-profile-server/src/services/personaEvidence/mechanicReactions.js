@@ -40,6 +40,7 @@ function collectMechanicReactions(voices, voiceMemos = []) {
         const bucket = byMechanic.get(mechanicId);
         bucket.total += sentiment;
         bucket.count += 1;
+        bucket.sources.push(`${group.sourceKind}:${record.id || 'unknown'}`);
         const source = sourceIdentity(group, record);
         bucket.sources.push(`${source.sourceKind}:${source.sourceId}`);
       }
@@ -70,6 +71,8 @@ function mechanicAversionEvidence(voices, voiceMemos = []) {
           target: `mechanic:${mechanicId}`,
           strength,
           source: {
+            kind: group.sourceKind,
+            id: record.id || null,
             kind: source.sourceKind,
             id: source.sourceId,
             field: 'mechanicIds',

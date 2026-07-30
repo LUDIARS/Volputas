@@ -60,6 +60,12 @@ const config = {
 
   pseudoIdSecret: process.env.VOLUPTAS_PSEUDO_ID_SECRET || '',
 
+  personaExport: {
+    // Dedicated inbound project credential for Di. Do not reuse Cernere's
+    // outbound project client secret or a user access token.
+    token: process.env.VOLPUTAS_PERSONA_EXPORT_TOKEN || '',
+  },
+
   steam: {
     apiKey: process.env.STEAM_API_KEY || '',
   },

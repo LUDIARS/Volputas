@@ -18,6 +18,27 @@ test('user settings persist explicit discussion return consent', async (t) => {
   assert.deepEqual(captured.params, [true, 'user-1']);
 });
 
+test('user settings persist explicit research export consent', async (t) => {
+  const originalQuery = db.query;
+  const queries = [];
+  db.query = async (sql, params) => {
+    queries.push({ sql, params });
+    return {
+      rows: [{
+        id: 'user-1',
+        display_name: 'Researcher',
+        research_export_consent: true,
+      }],
+    };
+  };
+  t.after(() => { db.query = originalQuery; });
+
+  const user = await userModel.update('user-1', { researchExportConsent: true });
+  assert.equal(user.research_export_consent, true);
+  assert.match(queries[0].sql, /research_export_consent = \$1/);
+  assert.deepEqual(queries[0].params, [true, 'user-1']);
+});
+
 test('account soft deletion revokes delegations and cancels pending claims transactionally', async (t) => {
   const originalTransaction = db.transaction;
   const queries = [];

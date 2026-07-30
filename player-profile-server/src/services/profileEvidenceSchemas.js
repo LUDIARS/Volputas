@@ -241,12 +241,61 @@ function validateComparisonInput(body = {}) {
   return { kind, itemA, itemB, winner: body.winner };
 }
 
+const ANNOTATION_MOMENT_TYPES = new Set([
+  'achievement',
+  'discovery',
+  'story',
+  'social',
+  'aesthetic',
+]);
+
+function validateAnnotationInput(body = {}) {
+  const momentType = String(body.momentType || '');
+  if (!ANNOTATION_MOMENT_TYPES.has(momentType)) {
+    throw Object.assign(new Error('Unknown annotation moment type'), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  return {
+    screenshotFileName: requiredText(body.screenshotFileName, 'Screenshot file name', 255),
+    momentType,
+    caption: requiredText(body.caption, 'Caption', 4000),
+  };
+}
+
+function validateCardSortInput(body = {}) {
+  const mechanicId = requiredText(body.mechanicId, 'Mechanic id', 120).toLowerCase();
+  if (!MECHANIC_ID_PATTERN.test(mechanicId)) {
+    throw Object.assign(new Error(`Invalid mechanic id: ${body.mechanicId}`), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  if (!['love', 'neutral', 'avoid'].includes(body.bucket)) {
+    throw Object.assign(new Error('Bucket must be "love", "neutral", or "avoid"'), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  return { mechanicId, bucket: body.bucket };
+}
+
+function validatePitchInput(body = {}) {
+  return {
+    title: requiredText(body.title, 'Pitch title', 200),
+    body: requiredText(body.body, 'Pitch body', 12000),
+    referenceGames: optionalText(body.referenceGames, 1000),
+  };
+}
+
 module.exports = {
+  ANNOTATION_MOMENT_TYPES,
   EMOTION_STAMPS,
   calculateDedication,
+  validateAnnotationInput,
+  validateCardSortInput,
   validateComparisonInput,
   validateEmotionCurveInput,
   validateGameplayInput,
+  validatePitchInput,
   validateVoiceMemoInput,
   validateVoiceInput,
 };
