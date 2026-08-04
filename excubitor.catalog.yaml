@@ -21,10 +21,9 @@ services:
     env:
       PORT: "8892"
       JWT_ISSUER: http://localhost:8892
-      VOLPUTAS_AUDIENCE: http://${host}:${port}
       GOOGLE_CALLBACK_URL: http://localhost:8892/auth/callback
       DISCORD_CALLBACK_URL: http://localhost:8892/auth/callback
-    required_env: [CERNERE_BASE_URL, VOLPUTAS_AUDIENCE, VOLPUTAS_DATABASE_URL]
+    required_env: [CERNERE_BASE_URL, VOLPUTAS_URL, VOLPUTAS_DATABASE_URL]
     infisical:
       project_id: 19c9e77d-646c-4a0e-a091-b494234953ea
       environment: dev

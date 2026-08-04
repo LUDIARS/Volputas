@@ -47,7 +47,14 @@ const config = {
     baseUrl: normalizeOptionalBaseUrl(process.env.CERNERE_BASE_URL, 'CERNERE_BASE_URL'),
     projectClientId: process.env.CERNERE_PROJECT_CLIENT_ID?.trim() || '',
     projectClientSecret: process.env.CERNERE_PROJECT_CLIENT_SECRET || '',
-    audience: normalizeOptionalBaseUrl(process.env.VOLPUTAS_AUDIENCE, 'VOLPUTAS_AUDIENCE'),
+    // audience は「この Volputas 自身の URL」。Excubitor は catalog の provides から
+    // VOLPUTAS_URL を全サービスへ配っており、自分自身にも同じ値が届く。二重に持つと
+    // 片方だけ変えたときに aud 不一致で全 token が弾かれるので、既定はそこから導く。
+    // VOLPUTAS_AUDIENCE は Excubitor 管理外で動かす場合の明示上書きとして残す。
+    audience: normalizeOptionalBaseUrl(
+      process.env.VOLPUTAS_AUDIENCE?.trim() || process.env.VOLPUTAS_URL,
+      'VOLPUTAS_AUDIENCE',
+    ),
   },
 
   glab: {
