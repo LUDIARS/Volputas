@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const { getSigningKey } = require('../services/jwks');
+const { authenticateHasterPublicToken } = require('../haster/publicTestIdentity');
 
 function sendUnauthorized(res, message) {
   return res.status(401).json({
@@ -9,8 +10,14 @@ function sendUnauthorized(res, message) {
   });
 }
 
+// @implements SPEC-HASTER-PUBLIC-IDENTITY
 async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
+  const hasterUser = authenticateHasterPublicToken(authHeader, config.haster.enabled);
+  if (hasterUser) {
+    req.user = hasterUser;
+    return next();
+  }
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return sendUnauthorized(res, 'Missing or invalid Authorization header');
   }

@@ -1,0 +1,16 @@
+{
+  "name": "haster-test-environment",
+  "description": "公開fixture identityを使う、ローカル専用かつリリース禁止のVolputas統合テスト境界。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/src/haster/[^/]+\\.js$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-HASTER-ISOLATION",
+    "SPEC-HASTER-PUBLIC-IDENTITY"
+  ],
+  "source": "spec-review"
+}

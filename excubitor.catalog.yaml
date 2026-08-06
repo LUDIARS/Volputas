@@ -40,3 +40,57 @@ services:
       interval_sec: 30
     provides:
       VOLPUTAS_URL: http://${host}:${port}
+
+  - code: volputas-haster
+    name: Volputas HASTER
+    tier: local-app
+    project_code: volputas
+    component: backend
+    port: 18892
+    repo: LUDIARS/Volputas
+    runtime: node
+    cwd: ${ARS_ROOT}/Voluptas/player-profile-server
+    command: npm run dev
+    allow_hot_reload: true
+    depends_on: [infra-postgres, cernere, discutere]
+    autostart: false
+    env:
+      PORT: "18892"
+      VOLPUTAS_ENVIRONMENT: HASTER
+      JWT_ISSUER: http://localhost:18892
+      CERNERE_OIDC_CALLBACK_URL: http://localhost:18892/auth/callback
+      VOLPUTAS_PERSONA_EXPORT_TOKEN: haster-public-persona-export-token-v1
+      VOLPUTAS_PSEUDO_ID_SECRET: haster-public-pseudo-id-secret-v1
+    required_env:
+      - CERNERE_BASE_URL
+      - VOLPUTAS_URL
+      - VOLPUTAS_DATABASE_URL
+      - CERNERE_OIDC_CLIENT_ID
+      - CERNERE_OIDC_CLIENT_SECRET
+      - DISCUTERE_PERSONA_BRIDGE_URL
+      - DISCUTERE_PERSONA_BRIDGE_TOKEN
+      - DISCUTERE_PERSONA_BRIDGE_ASSERTION_PRIVATE_KEY
+    infisical:
+      project_id: 19c9e77d-646c-4a0e-a091-b494234953ea
+      environment: dev
+      inject: true
+      include:
+        - VOLPUTAS_DATABASE_URL
+        - GLAB_URL
+        - GLAB_SERVICE_TOKEN
+        - CERNERE_OIDC_CLIENT_ID
+        - CERNERE_OIDC_CLIENT_SECRET
+        - DISCUTERE_PERSONA_BRIDGE_URL
+        - DISCUTERE_PERSONA_BRIDGE_TOKEN
+        - DISCUTERE_PERSONA_BRIDGE_ASSERTION_PRIVATE_KEY
+    requires_secret:
+      - service: cernere
+        keys: [EXCUBITOR_CERNERE_CLIENT_ID, EXCUBITOR_CERNERE_CLIENT_SECRET]
+    cernere_launch_credentials:
+      target_project: volputas
+    health:
+      type: http
+      url: http://localhost:18892/health
+      interval_sec: 30
+    provides:
+      VOLPUTAS_URL: http://${host}:${port}

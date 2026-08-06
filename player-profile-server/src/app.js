@@ -14,6 +14,8 @@ const { startSessionMaintenance } = require('./services/sessionMaintenance');
 const { closeProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
 const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
 const { assertOnlineConfiguration } = require('./services/onlineConfiguration');
+const { assertHasterConfiguration } = require('./haster/environment');
+const { seedHasterPublicTestUser } = require('./haster/seedPublicTestUser');
 const {
   createCorpusTransportRateLimiter,
   createGlabSurveyRouter,
@@ -222,17 +224,23 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 // Start server
+// @implements SPEC-HASTER-ISOLATION
 async function start() {
   if (server) return server;
   assertOnlineConfiguration(config);
+  assertHasterConfiguration(config);
   assertFrontendBuild(frontendDirectory);
   getGlabSurveyService();
   getGlabReviewService();
+  if (config.haster.enabled) await seedHasterPublicTestUser();
   await initKeyStore();
   console.log('JWKS key store initialized');
   stopSessionMaintenance = startSessionMaintenance();
 
-  server = app.listen(config.port, () => {
+  // The HASTER bearer fixture is deliberately public, so its process must not
+  // accept connections from the network even if a catalog is misconfigured.
+  const listenHost = config.haster.enabled ? '127.0.0.1' : undefined;
+  server = app.listen(config.port, listenHost, () => {
     console.log(`Player Profile Server running on port ${config.port} [${config.nodeEnv}]`);
   });
   return server;

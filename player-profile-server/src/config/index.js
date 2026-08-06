@@ -1,5 +1,9 @@
 const path = require('node:path');
 const { normalizeOptionalBaseUrl } = require('./baseUrl');
+const {
+  deriveHasterDatabaseUrl,
+  isHasterEnvironment,
+} = require('../haster/environment');
 
 const port = process.env.PORT || 3000;
 const frontendUrl = process.env.FRONTEND_URL || `http://localhost:${port}`;
@@ -19,10 +23,14 @@ function positiveInteger(value, fallback) {
   return parsed;
 }
 
+// @implements SPEC-HASTER-ISOLATION
 function databaseConfig(env) {
   if (env.VOLPUTAS_DATABASE_URL?.trim()) {
+    const connectionString = isHasterEnvironment(env)
+      ? deriveHasterDatabaseUrl(env.VOLPUTAS_DATABASE_URL.trim())
+      : env.VOLPUTAS_DATABASE_URL.trim();
     return {
-      connectionString: env.VOLPUTAS_DATABASE_URL.trim(),
+      connectionString,
       max: parseInt(env.DB_POOL_MAX || '20', 10),
       connectionTimeoutMillis: 5_000,
     };
@@ -42,6 +50,10 @@ const config = {
   port,
   nodeEnv: process.env.NODE_ENV || 'development',
   frontendUrl,
+
+  haster: {
+    enabled: isHasterEnvironment(process.env),
+  },
 
   cernere: {
     baseUrl: normalizeOptionalBaseUrl(process.env.CERNERE_BASE_URL, 'CERNERE_BASE_URL'),
