@@ -1,0 +1,17 @@
+{
+  "name": "discussion-return",
+  "description": "Verified Discord OIDC identity と明示同意に基づき、Discutere の本人発話を署名付きで取得して匿名 evidence へ還流する境界。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/(spec/setup/discussion-return\\.md|src/routes/profileEvidence\\.js|src/services/discussion(BridgeAssertion|BridgeClient|ImportService)\\.js)$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-DISCUSSION-RETURN-SYNC",
+    "SPEC-DISCUSSION-RETURN-ASSERTION",
+    "SPEC-DISCUSSION-RETURN-PAGINATION"
+  ],
+  "source": "spec-review"
+}

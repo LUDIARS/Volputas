@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   DiscussionImportService,
+  discussionSourceRef,
   latestOccurredAt,
 } = require('./discussionImportService');
 
@@ -70,17 +71,20 @@ test('discussion import is incremental, deduplicated, and identity-free at rest'
     sourceKind: 'discussion',
     sourceRef: 'existing-id',
     occurredAt: '2026-07-28T01:00:00.000Z',
+    comment: 'already imported',
   }];
   const context = createService({
     current,
     utterances: [
       {
-        id: 'existing-id',
         text: 'already imported',
         createdAt: '2026-07-28T01:00:00.000Z',
       },
       {
-        id: 'new-id',
+        text: 'I liked the risk and reward.',
+        createdAt: '2026-07-28T01:01:00.000Z',
+      },
+      {
         text: 'I liked the risk and reward.',
         createdAt: '2026-07-28T01:01:00.000Z',
       },
@@ -88,7 +92,7 @@ test('discussion import is incremental, deduplicated, and identity-free at rest'
   });
 
   const result = await context.service.sync('user-1');
-  assert.deepEqual(result, { received: 2, imported: 1, duplicate: 1 });
+  assert.deepEqual(result, { received: 3, imported: 1, duplicate: 2 });
   assert.deepEqual(context.bridgeCalls, [{
     authorId: '123456789012345678',
     since: Date.parse('2026-07-28T01:00:00.000Z'),
@@ -96,7 +100,11 @@ test('discussion import is incremental, deduplicated, and identity-free at rest'
   assert.equal(context.created.length, 1);
   assert.equal(context.created[0].kind, 'voices');
   assert.equal(context.created[0].record.sourceKind, 'discussion');
-  assert.equal(context.created[0].record.sourceRef, 'new-id');
+  assert.equal(context.created[0].record.sourceRef, discussionSourceRef({
+    text: 'I liked the risk and reward.',
+    createdAt: '2026-07-28T01:01:00.000Z',
+  }));
+  assert.match(context.created[0].record.sourceRef, /^di:[A-Za-z0-9_-]{43}$/);
   assert.equal(context.created[0].record.comment, 'I liked the risk and reward.');
   assert.equal(
     JSON.stringify(context.created[0].record).includes('123456789012345678'),

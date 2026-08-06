@@ -121,6 +121,7 @@ const config = {
   discuterePersonaBridge: {
     baseUrl: process.env.DISCUTERE_PERSONA_BRIDGE_URL || '',
     token: process.env.DISCUTERE_PERSONA_BRIDGE_TOKEN || '',
+    assertionPrivateKey: process.env.DISCUTERE_PERSONA_BRIDGE_ASSERTION_PRIVATE_KEY || '',
   },
 
   db: databaseConfig(process.env),

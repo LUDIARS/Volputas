@@ -43,6 +43,7 @@ const VALIDATOR_BY_KIND = assertCoversEveryMedium({
   pitches: validatePitchInput,
 }, 'online evidence validator map');
 
+/** @implements SPEC-DISCUSSION-RETURN-SYNC */
 function createProfileEvidenceRouter({
   model = getProfileEvidenceStore(),
   mediaStore = new ProfileMediaStore(),
@@ -62,6 +63,7 @@ function createProfileEvidenceRouter({
       bridgeClient: new DiscussionBridgeClient({
         baseUrl: config.discuterePersonaBridge.baseUrl,
         token: config.discuterePersonaBridge.token,
+        assertionPrivateKey: config.discuterePersonaBridge.assertionPrivateKey,
       }),
       evidenceStore: model,
       identityModel,

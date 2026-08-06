@@ -1,11 +1,14 @@
+const { createHash } = require('node:crypto');
 const { validateVoiceInput } = require('./profileEvidenceSchemas');
 
+/** @implements SPEC-DISCUSSION-RETURN-PAGINATION */
 function importedDiscussion(record) {
   return record?.sourceKind === 'discussion'
     && typeof record.sourceRef === 'string'
     && typeof record.occurredAt === 'string';
 }
 
+/** @implements SPEC-DISCUSSION-RETURN-PAGINATION */
 function latestOccurredAt(records) {
   return (records || [])
     .filter(importedDiscussion)
@@ -15,7 +18,17 @@ function latestOccurredAt(records) {
     }, 0);
 }
 
+/** @implements SPEC-DISCUSSION-RETURN-PAGINATION */
+function discussionSourceRef(utterance) {
+  return `di:${createHash('sha256')
+    .update(utterance.createdAt)
+    .update('\0')
+    .update(utterance.text)
+    .digest('base64url')}`;
+}
+
 class DiscussionImportService {
+  /** @implements SPEC-DISCUSSION-RETURN-SYNC */
   constructor({
     bridgeClient,
     evidenceStore,
@@ -28,6 +41,7 @@ class DiscussionImportService {
     this.userModel = userModel;
   }
 
+  /** @implements SPEC-DISCUSSION-RETURN-SYNC */
   async sync(userId) {
     const user = await this.userModel.findById(userId);
     if (!user?.discussion_import_consent) {
@@ -45,14 +59,29 @@ class DiscussionImportService {
     }
 
     const current = await this.evidenceStore.list(userId, 'voices');
-    const existingSourceIds = new Set(
-      current.filter(importedDiscussion).map((record) => record.sourceRef)
-    );
+    const existingSourceIds = new Set();
+    for (const record of current.filter(importedDiscussion)) {
+      existingSourceIds.add(record.sourceRef);
+      if (typeof record.comment === 'string' && record.comment.length > 0) {
+        existingSourceIds.add(discussionSourceRef({
+          text: record.comment,
+          createdAt: record.occurredAt,
+        }));
+      }
+    }
     const utterances = await this.bridgeClient.listUtterances({
       authorId: identity.provider_sub,
       since: latestOccurredAt(current),
     });
-    const newUtterances = utterances.filter((utterance) => !existingSourceIds.has(utterance.id));
+    const candidates = utterances.map((utterance) => ({
+      ...utterance,
+      sourceRef: discussionSourceRef(utterance),
+    }));
+    const newUtterances = candidates.filter((utterance) => {
+      if (existingSourceIds.has(utterance.sourceRef)) return false;
+      existingSourceIds.add(utterance.sourceRef);
+      return true;
+    });
     for (const utterance of newUtterances) {
       const voice = validateVoiceInput({
         gameTitle: 'Discutere',
@@ -65,7 +94,7 @@ class DiscussionImportService {
       await this.evidenceStore.create(userId, 'voices', {
         ...voice,
         sourceKind: 'discussion',
-        sourceRef: utterance.id,
+        sourceRef: utterance.sourceRef,
         occurredAt: utterance.createdAt,
       });
     }
@@ -79,6 +108,7 @@ class DiscussionImportService {
 
 module.exports = {
   DiscussionImportService,
+  discussionSourceRef,
   importedDiscussion,
   latestOccurredAt,
 };
