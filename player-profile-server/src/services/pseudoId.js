@@ -2,7 +2,7 @@ const crypto = require('node:crypto');
 
 function pseudoId(sid, secret) {
   if (!secret) {
-    throw Object.assign(new Error('VOLUPTAS_PSEUDO_ID_SECRET is required for utterance export'), {
+    throw Object.assign(new Error('VOLPUTAS_PSEUDO_ID_SECRET is required for utterance export'), {
       code: 'PSEUDO_ID_DISABLED',
     });
   }

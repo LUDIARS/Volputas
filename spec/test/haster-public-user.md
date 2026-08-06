@@ -25,4 +25,13 @@ HASTER is enabled only by the exact `VOLPUTAS_ENVIRONMENT=HASTER` marker. Its da
 
 ### SPEC-HASTER-PUBLIC-IDENTITY
 
-The documented user, Discord subject, Cernere subject, and bearer value are public test fixtures, not credentials. The bearer value authenticates only while HASTER is enabled. Startup idempotently restores the fixture user, both verified identities, and both integration-test consents in the isolated HASTER database. Keeping the Cernere identity linked allows the Discord identity to be removed during the unlink-consent E2E without deleting the test account's last identity.
+The documented user, Discord subject, Cernere subject, bearer value, persona-report
+credential, and pseudonym secret are public test fixtures, not credentials. The
+bearer value and the persona-report credential authenticate only while HASTER is
+enabled. The persona-report credential and pseudonym secret are fallback values
+only: an explicitly configured value takes precedence, and non-HASTER
+environments remain unconfigured when no value is supplied. Startup idempotently
+restores the fixture user, both verified identities, and both integration-test
+consents in the isolated HASTER database. Keeping the Cernere identity linked
+allows the Discord identity to be removed during the unlink-consent E2E without
+deleting the test account's last identity.

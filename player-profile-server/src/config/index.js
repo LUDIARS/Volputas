@@ -4,6 +4,13 @@ const {
   deriveHasterDatabaseUrl,
   isHasterEnvironment,
 } = require('../haster/environment');
+const {
+  HASTER_PUBLIC_TEST_PERSONA_EXPORT_TOKEN,
+  HASTER_PUBLIC_TEST_PSEUDO_ID_SECRET,
+  hasterPublicFixtureValue,
+} = require('../haster/publicTestIdentity');
+
+const hasterEnabled = isHasterEnvironment(process.env);
 
 const port = process.env.PORT || 3000;
 const frontendUrl = process.env.FRONTEND_URL || `http://localhost:${port}`;
@@ -82,12 +89,21 @@ const config = {
     url: process.env.REDIS_URL || '',
   },
 
-  pseudoIdSecret: process.env.VOLUPTAS_PSEUDO_ID_SECRET || '',
+  // @implements SPEC-HASTER-PUBLIC-IDENTITY
+  pseudoIdSecret: hasterPublicFixtureValue(
+    process.env.VOLPUTAS_PSEUDO_ID_SECRET || process.env.VOLUPTAS_PSEUDO_ID_SECRET,
+    hasterEnabled,
+    HASTER_PUBLIC_TEST_PSEUDO_ID_SECRET
+  ),
 
   personaExport: {
     // Dedicated inbound project credential for Di. Do not reuse Cernere's
     // outbound project client secret or a user access token.
-    token: process.env.VOLPUTAS_PERSONA_EXPORT_TOKEN || '',
+    token: hasterPublicFixtureValue(
+      process.env.VOLPUTAS_PERSONA_EXPORT_TOKEN,
+      hasterEnabled,
+      HASTER_PUBLIC_TEST_PERSONA_EXPORT_TOKEN
+    ),
   },
 
   steam: {

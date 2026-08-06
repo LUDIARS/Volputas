@@ -7,6 +7,13 @@ const HASTER_PUBLIC_TEST_DISCORD_ID = '1000000000000000657';
 // deterministic and makes it safe to publish alongside the test token.
 const HASTER_PUBLIC_TEST_CERNERE_SUB = HASTER_PUBLIC_TEST_USER_ID;
 const HASTER_PUBLIC_TEST_TOKEN = 'haster-public-test-token-v1';
+const HASTER_PUBLIC_TEST_PERSONA_EXPORT_TOKEN = 'haster-public-persona-export-token-v1';
+const HASTER_PUBLIC_TEST_PSEUDO_ID_SECRET = 'haster-public-pseudo-id-secret-v1';
+
+// @implements SPEC-HASTER-PUBLIC-IDENTITY
+function hasterPublicFixtureValue(configuredValue, enabled, publicFixture) {
+  return configuredValue || (enabled ? publicFixture : '');
+}
 
 // @implements SPEC-HASTER-PUBLIC-IDENTITY
 function bearerToken(header) {
@@ -33,7 +40,10 @@ function authenticateHasterPublicToken(header, enabled) {
 module.exports = {
   HASTER_PUBLIC_TEST_CERNERE_SUB,
   HASTER_PUBLIC_TEST_DISCORD_ID,
+  HASTER_PUBLIC_TEST_PERSONA_EXPORT_TOKEN,
+  HASTER_PUBLIC_TEST_PSEUDO_ID_SECRET,
   HASTER_PUBLIC_TEST_TOKEN,
   HASTER_PUBLIC_TEST_USER_ID,
   authenticateHasterPublicToken,
+  hasterPublicFixtureValue,
 };
