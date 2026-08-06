@@ -2,7 +2,10 @@ const crypto = require('node:crypto');
 
 const HASTER_PUBLIC_TEST_USER_ID = '00000000-0000-4000-8000-000000000657';
 const HASTER_PUBLIC_TEST_DISCORD_ID = '1000000000000000657';
-const HASTER_PUBLIC_TEST_CERNERE_SUB = 'haster-public-test-user';
+// Cernere managed-project rows reference users(id), so this subject must be a
+// real UUID in Cernere. Reusing the public HASTER user ID keeps the fixture
+// deterministic and makes it safe to publish alongside the test token.
+const HASTER_PUBLIC_TEST_CERNERE_SUB = HASTER_PUBLIC_TEST_USER_ID;
 const HASTER_PUBLIC_TEST_TOKEN = 'haster-public-test-token-v1';
 
 // @implements SPEC-HASTER-PUBLIC-IDENTITY

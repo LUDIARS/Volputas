@@ -16,7 +16,7 @@
 //   - the HTTP path segment (`/api/local/<kind>`, `/api/profile/<kind>`),
 //   - the record directory inside the local data repository.
 // `column` is the Cernere managed-project column; it must stay in sync with the
-// declaration in Cernere's `037_volputas_profile_evidence_schema.sql`, because
+// declaration in Cernere's `040_volputas_profile_evidence_schema.sql`, because
 // managed_project.set_user_data silently drops undeclared columns.
 // `sourceKey` is the camelCase key in the analysis `sources` / `evidence` maps.
 const EVIDENCE_MEDIA = Object.freeze([

@@ -19,7 +19,7 @@ const SNAKE_RECORDS = /^[a-z]+(?:_[a-z]+)*_records$/;
 // pluralisation is not mechanically reversible (`pitches` → `pitch`, `voices` →
 // `voice`), so the expected names are pinned here: renaming a column becomes a
 // deliberate two-file edit instead of a silent drift. These must equal the
-// declarations in Cernere's 037_volputas_profile_evidence_schema.sql.
+// declarations in Cernere's 040_volputas_profile_evidence_schema.sql.
 const EXPECTED_COLUMNS = {
   gameplay: 'gameplay_records',
   voices: 'voice_records',

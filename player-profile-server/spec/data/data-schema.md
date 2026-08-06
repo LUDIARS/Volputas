@@ -73,10 +73,17 @@ local/online のルート登録、両 persona service の `readSources`、Cerner
 validator や store の map は `assertCoversEveryMedium` で起動時に検査され、
 取り残しは初回リクエストの 500 ではなく起動失敗になる。
 
-Cernere 側のカラム宣言 (`037_volputas_profile_evidence_schema.sql`) と `column` は一致して
+Cernere 側のカラム宣言 (`040_volputas_profile_evidence_schema.sql`) と `column` は一致して
 いなければならない。`managed_project.set_user_data` は宣言外のカラムを黙って捨て、
 1 つも一致しなければ `No valid columns to update` を返すため、**宣言漏れはその媒体を
 online モードで静かに全滅させる**。
+
+### SPEC-EVIDENCE-MEDIA-REGISTRY
+
+`EVIDENCE_MEDIA` は体験データ媒体の正本である。各媒体の kebab-case `kind`、Cernere
+`column`、分析 `sourceKey` は一意で、登録済み媒体、保護 media の所有許可、Cernere
+カラム対応表、証拠カウントの登録はこの正本と整合しなければならない。Cernere migration
+のカラム宣言とも一致し、未登録・未宣言の媒体は起動時検査またはテストで検出する。
 
 ## アンケート回答の権威
 

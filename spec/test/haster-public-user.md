@@ -6,7 +6,7 @@ Public fixture facts:
 
 - User ID: `00000000-0000-4000-8000-000000000657`
 - Discord subject: `1000000000000000657`
-- Cernere subject: `haster-public-test-user`
+- Cernere subject: `00000000-0000-4000-8000-000000000657`
 - Public bearer fixture: `haster-public-test-token-v1`
 - Persona report public fixture: `haster-public-persona-export-token-v1`
 - Pseudonym public fixture: `haster-public-pseudo-id-secret-v1`

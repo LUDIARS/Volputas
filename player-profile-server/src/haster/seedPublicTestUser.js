@@ -35,6 +35,14 @@ async function seedHasterPublicTestUser(database = db) {
         JSON.stringify({ fixture: 'haster-public-test-user', public: true }),
       ]
     );
+    // The public fixture subject changed from a label to Cernere's UUID user
+    // id. Remove only superseded Cernere identities for this fixture so an
+    // existing HASTER database cannot resolve an arbitrary stale subject.
+    await client.query(
+      `DELETE FROM federated_identities
+       WHERE user_id = $1 AND provider = 'cernere' AND provider_sub <> $2`,
+      [HASTER_PUBLIC_TEST_USER_ID, HASTER_PUBLIC_TEST_CERNERE_SUB]
+    );
     await client.query(
       `INSERT INTO federated_identities
          (user_id, provider, provider_sub, raw_profile, verified_at)
