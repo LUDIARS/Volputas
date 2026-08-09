@@ -1,34 +1,18 @@
 const { Router } = require('express');
-const rateLimit = require('express-rate-limit');
-const config = require('../config');
 const { createCernereProjectAuth } = require('../middleware/cernereProjectAuth');
+const { requireCernereAdmin } = require('../middleware/cernereAdmin');
 const { createGlabSurveyService } = require('../services/glabSurveyService');
-
-function cernereUserKey(req) {
-  return req.cernereUser.id;
-}
-
-function createCorpusTransportRateLimiter() {
-  return rateLimit({
-    windowMs: config.rateLimit.general.windowMs,
-    max: config.rateLimit.general.max * 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { ok: false, error: { code: 'RATE_LIMIT', message: 'Too many requests' } },
-  });
-}
+const {
+  cernereUserKey,
+  createCorpusTransportRateLimiter,
+  createCorpusUserRateLimiter,
+} = require('./corpusRateLimits');
 
 function createGlabSurveyRouter({
   authMiddleware = createCernereProjectAuth(),
   transportRateLimiter = createCorpusTransportRateLimiter(),
-  userRateLimiter = rateLimit({
-    windowMs: config.rateLimit.general.windowMs,
-    max: config.rateLimit.general.max,
-    standardHeaders: true,
-    legacyHeaders: false,
-    keyGenerator: cernereUserKey,
-    message: { ok: false, error: { code: 'RATE_LIMIT', message: 'Too many requests' } },
-  }),
+  userRateLimiter = createCorpusUserRateLimiter(),
+  adminMiddleware = requireCernereAdmin,
   service = null,
   serviceProvider = null,
 } = {}) {
@@ -49,8 +33,36 @@ function createGlabSurveyRouter({
       const surveys = await resolveService().listSurveys(
         req.cernereUser.id,
         req.query.category,
+        // ゲーム別アンケートの絞り込み。 未指定なら全件 (ゲーム非紐付けを含む)。
+        req.query.gameId,
       );
       return res.json({ ok: true, data: surveys });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  // 以降 2 本は管理者専用。 設問の正本は Volputas なので、 登録も公開切替も
+  // ここで受ける (GLAB は画面と中継だけを持つ)。
+  router.post('/', adminMiddleware, async (req, res, next) => {
+    try {
+      const survey = await resolveService().createSurvey(req.body);
+      return res.status(201).json({ ok: true, data: survey });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.patch('/:id', adminMiddleware, async (req, res, next) => {
+    try {
+      const survey = await resolveService().updateSurvey(req.params.id, req.body);
+      if (!survey) {
+        return res.status(404).json({
+          ok: false,
+          error: { code: 'NOT_FOUND', message: 'Survey not found' },
+        });
+      }
+      return res.json({ ok: true, data: survey });
     } catch (error) {
       return next(error);
     }
@@ -97,6 +109,8 @@ function createGlabSurveyRouter({
 }
 
 module.exports = {
+  // 実体は routes/corpusRateLimits。 既存の呼び出し側 (app.js / テスト) が
+  // このモジュール名で参照しているため、 移設後も入口を残す。
   cernereUserKey,
   createCorpusTransportRateLimiter,
   createGlabSurveyRouter,

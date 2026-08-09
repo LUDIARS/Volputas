@@ -42,9 +42,16 @@ class CernereProfileEvidenceStore {
   }
 
   async list(localUserId, kind) {
+    const ownerId = await this.resolveOwnerId(localUserId);
+    return this.listForOwner(ownerId, kind);
+  }
+
+  // GLAB 経由の呼び出しは Cernere の user id しか持たない (ローカル users 行が
+  // 無いこともある)。 owner id を直接受ける入口を、 ローカル id 版と対にして
+  // 一通り用意する。
+  async listForOwner(ownerId, kind) {
     const column = COLUMN_BY_KIND[kind];
     if (!column) throw new Error(`Unsupported profile evidence kind: ${kind}`);
-    const ownerId = await this.resolveOwnerId(localUserId);
     const data = await this.readColumns(ownerId, [column]);
     return requireArray(data[column], column);
   }
@@ -118,6 +125,10 @@ class CernereProfileEvidenceStore {
 
   async findOwned(localUserId, recordId) {
     const ownerId = await this.resolveOwnerId(localUserId);
+    return this.findForOwner(ownerId, recordId);
+  }
+
+  async findForOwner(ownerId, recordId) {
     const columns = Object.values(COLUMN_BY_KIND);
     const data = await this.readColumns(ownerId, columns);
     for (const [kind, column] of Object.entries(COLUMN_BY_KIND)) {
@@ -179,6 +190,10 @@ class CernereProfileEvidenceStore {
 
   async readAnalysis(localUserId) {
     const ownerId = await this.resolveOwnerId(localUserId);
+    return this.readAnalysisForOwner(ownerId);
+  }
+
+  async readAnalysisForOwner(ownerId) {
     const data = await this.readColumns(ownerId, ['persona_analysis']);
     return data.persona_analysis || null;
   }
@@ -191,6 +206,10 @@ class CernereProfileEvidenceStore {
 
   async findMedia(localUserId, recordId, kind) {
     const ownerId = await this.resolveOwnerId(localUserId);
+    return this.findMediaForOwner(ownerId, recordId, kind);
+  }
+
+  async findMediaForOwner(ownerId, recordId, kind) {
     const data = await this.readColumns(ownerId, ['profile_media']);
     return requireArray(data.profile_media, 'profile_media')
       .find((item) => item?.recordId === recordId && item?.kind === kind) || null;
@@ -198,6 +217,10 @@ class CernereProfileEvidenceStore {
 
   async saveMedia(localUserId, metadata) {
     const ownerId = await this.resolveOwnerId(localUserId);
+    return this.saveMediaForOwner(ownerId, metadata);
+  }
+
+  async saveMediaForOwner(ownerId, metadata) {
     return this.withWriteLock(ownerId, async () => {
       const data = await this.readColumns(ownerId, ['profile_media']);
       const current = requireArray(data.profile_media, 'profile_media')

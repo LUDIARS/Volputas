@@ -1,0 +1,21 @@
+{
+  "name": "glab-player-research",
+  "description": "Cernere project tokenで保護されたGLAB向けゲーム、アンケート、感想、感情曲線、保護mediaの統合境界。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/(migrations/016_game_catalog\\.sql|spec/feature/glab-(game-catalog|emotion-curves)\\.md|src/(app\\.js|corpus/(gameContract|surveyContract|surveyDefinitionContract)(\\.test)?\\.js|integrations/cernere/profileEvidenceStore\\.js|middleware/cernere(Admin|ProjectAuth)(\\.test)?\\.js|models/(gameModel|surveyModel)\\.js|routes/(corpusRateLimits|glabEvidence|glabGames|glabSurveys)(\\.test)?\\.js|services/(glabEvidenceService|glabGameSelection|glabGameService|glabReviewService|glabSurveyService|mediaTicketService)(\\.test)?\\.js|services/profileEvidenceSchemas(\\.gamereview)?(\\.test)?\\.js))$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-GLAB-ADMIN-AUTHORIZATION",
+    "SPEC-GLAB-GAME-CATALOG",
+    "SPEC-GLAB-GAME-SELECTION",
+    "SPEC-GLAB-SURVEY-CATALOG",
+    "SPEC-GLAB-EVIDENCE-OWNER-SCOPE",
+    "SPEC-GLAB-EVIDENCE-MEDIA-TRANSPORT",
+    "SPEC-GLAB-EVIDENCE-MEDIA-TICKET"
+  ],
+  "source": "pr-review"
+}

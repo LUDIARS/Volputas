@@ -38,7 +38,28 @@ test('accepts a verified Cernere subject without Voluptas login', async () => {
   assert.equal(called, true);
   assert.deepEqual(req.cernereUser, {
     id: '66e242b5-2f18-4463-b7f0-c0f12d818a20',
+    // role / displayName は任意クレーム。 載っていないトークンでも管理者に
+    // 昇格しないことを、 明示的な null で固定する。
+    role: null,
+    displayName: null,
   });
+});
+
+test('carries the role claim so admin routes can authorise', async () => {
+  const middleware = createCernereProjectAuth({
+    verifier: {
+      verify: async () => ({
+        sub: '66e242b5-2f18-4463-b7f0-c0f12d818a20',
+        role: 'admin',
+        displayName: 'Teacher',
+      }),
+    },
+  });
+  const req = { headers: { authorization: 'Bearer test-token' } };
+  await middleware(req, responseRecorder(), () => {});
+
+  assert.equal(req.cernereUser.role, 'admin');
+  assert.equal(req.cernereUser.displayName, 'Teacher');
 });
 
 test('rejects missing and invalid bearer tokens without echoing them', async () => {

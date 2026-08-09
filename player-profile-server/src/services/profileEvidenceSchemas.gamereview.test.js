@@ -1,8 +1,14 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { validateVoiceInput } = require('./profileEvidenceSchemas');
+const {
+  validateEmotionCurveInput,
+  validateGlabEmotionCurveInput,
+  validateGlabVoiceInput,
+  validateVoiceInput,
+} = require('./profileEvidenceSchemas');
 
 const base = { gameTitle: 'Elden Ring', comment: 'good', polarity: 'like' };
+const GAME_ID = '3f1a2b4c-5d6e-4f70-8192-a3b4c5d6e7f8';
 
 test('recommend defaults to null and accepts booleans', () => {
   assert.equal(validateVoiceInput({ ...base }).recommend, null);
@@ -34,4 +40,19 @@ test('anonymous defaults to false and rejects non-boolean', () => {
   assert.equal(validateVoiceInput({ ...base, anonymous: true }).anonymous, true);
   assert.throws(() => validateVoiceInput({ ...base, anonymous: 1 }),
     (error) => error.code === 'INVALID_PROFILE_INPUT');
+});
+
+test('only GLAB validators retain catalog ids for catalog-aware resolution', () => {
+  assert.equal(Object.hasOwn(validateVoiceInput({ ...base, gameId: GAME_ID }), 'gameId'), false);
+  assert.equal(validateGlabVoiceInput({ ...base, gameId: GAME_ID }).gameId, GAME_ID);
+
+  const emotionCurve = {
+    gameTitle: 'Elden Ring',
+    gameId: GAME_ID,
+    mode: 'video',
+    videoFileName: 'play.mp4',
+    entries: [{ timeSeconds: 1, stamp: 'like' }],
+  };
+  assert.equal(Object.hasOwn(validateEmotionCurveInput(emotionCurve), 'gameId'), false);
+  assert.equal(validateGlabEmotionCurveInput(emotionCurve).gameId, GAME_ID);
 });

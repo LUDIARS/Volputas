@@ -1,9 +1,13 @@
-const { validateVoiceInput } = require('./profileEvidenceSchemas');
+const { resolveActiveGameTitle } = require('./glabGameSelection');
+const { validateGlabVoiceInput } = require('./profileEvidenceSchemas');
 
 function reviewView(record, author) {
   return {
     id: record.id,
     gameTitle: record.gameTitle,
+    // マスタ登録前に書かれた感想には無い。 表示は gameTitle が担い、 gameId は
+    // ゲーム単位の集計と絞り込みのために付く。
+    gameId: record.gameId ?? null,
     recommend: record.recommend,
     polarity: record.polarity,
     comment: record.comment,
@@ -14,9 +18,11 @@ function reviewView(record, author) {
   };
 }
 
-function createGlabReviewService({ voiceStore, resolveDisplayName, pseudoId }) {
-  if (!voiceStore || !resolveDisplayName || !pseudoId) {
-    throw new TypeError('voiceStore, resolveDisplayName, and pseudoId are required');
+function createGlabReviewService({ voiceStore, resolveDisplayName, pseudoId, gameRepository }) {
+  if (!voiceStore || !resolveDisplayName || !pseudoId || !gameRepository) {
+    throw new TypeError(
+      'voiceStore, resolveDisplayName, pseudoId, and gameRepository are required',
+    );
   }
 
   return {
@@ -50,8 +56,12 @@ function createGlabReviewService({ voiceStore, resolveDisplayName, pseudoId }) {
     },
 
     async create(userId, body) {
-      const voice = validateVoiceInput(body);
-      return voiceStore.saveVoice({ userId, ...voice });
+      const voice = validateGlabVoiceInput(body);
+      return voiceStore.saveVoice({
+        userId,
+        ...voice,
+        gameTitle: await resolveActiveGameTitle(gameRepository, voice),
+      });
     },
   };
 }

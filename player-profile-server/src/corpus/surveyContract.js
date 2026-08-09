@@ -81,6 +81,9 @@ const surveyRowSchema = z.object({
   description: z.string().nullable(),
   questions: z.array(questionSchema).max(100),
   category: categorySchema,
+  // ゲーム別アンケートの紐付け先 (migration 016)。 ゲームに紐付かない全体
+  // アンケートは NULL のままなので、 nullable かつ既定 null にしておく。
+  game_id: uuidSchema.nullable().default(null),
   created_at: z.union([z.date(), z.string().datetime()]),
 }).strict();
 
@@ -113,6 +116,7 @@ function normalizeSurvey(row) {
     description: parsed.data.description,
     questions: parsed.data.questions,
     category: parsed.data.category,
+    gameId: parsed.data.game_id,
     createdAt: (
       parsed.data.created_at instanceof Date
         ? parsed.data.created_at

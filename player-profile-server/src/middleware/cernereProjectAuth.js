@@ -42,7 +42,14 @@ function createCernereProjectAuth({ verifier = defaultVerifier() } = {}) {
 
     try {
       const claims = await verifier.verify(token);
-      req.cernereUser = { id: claims.sub };
+      // role / displayName は Cernere が users 行から載せる任意クレーム。 管理者
+      // 判定 (cernereAdmin) が読むので、 ここで落とさず素通しする。 未載せの
+      // トークンでは role が undefined になり、 管理者扱いにはならない。
+      req.cernereUser = {
+        id: claims.sub,
+        role: claims.role || null,
+        displayName: claims.displayName || null,
+      };
       return next();
     } catch (error) {
       if (error instanceof InvalidCernereTokenError || error?.statusCode === 401) {

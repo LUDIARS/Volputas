@@ -2,6 +2,8 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createGlabReviewService } = require('./glabReviewService');
 
+const GAME_ID = '3f1a2b4c-5d6e-4f70-8192-a3b4c5d6e7f8';
+
 function record(overrides = {}) {
   return {
     id: 'v1', userId: 'u1', gameTitle: 'Elden Ring', recommend: true,
@@ -22,7 +24,20 @@ function makeService(records, calls = []) {
       if (typeof userId !== 'string' || !userId) throw new TypeError('sid must be a non-empty string');
       return 'pseudo-xyz';
     },
+    gameRepository: {
+      async findById() {
+        return { id: GAME_ID, title: 'Uni Quest', is_active: true };
+      },
+    },
   });
+}
+
+function voiceBody(overrides = {}) {
+  return {
+    gameTitle: 'client supplied title',
+    comment: 'good',
+    ...overrides,
+  };
 }
 
 test('list returns only community records', async () => {
@@ -62,4 +77,32 @@ test('one author is resolved once per page', async () => {
   const output = await service.list({});
   assert.equal(output.length, 2);
   assert.deepEqual(calls, ['u1']);
+});
+
+test('create replaces a submitted title with the active catalog title', async () => {
+  const service = makeService([]);
+
+  const saved = await service.create('u1', voiceBody({ gameId: GAME_ID }));
+
+  assert.equal(saved.gameId, GAME_ID);
+  assert.equal(saved.gameTitle, 'Uni Quest');
+});
+
+test('create refuses missing and inactive catalog games', async () => {
+  const serviceWith = (game) => createGlabReviewService({
+    voiceStore: { saveVoice: async (value) => value, listVoices: async () => [] },
+    resolveDisplayName: async () => 'Alice',
+    pseudoId: () => 'pseudo-xyz',
+    gameRepository: { findById: async () => game },
+  });
+
+  await assert.rejects(
+    () => serviceWith(null).create('u1', voiceBody({ gameId: GAME_ID })),
+    (error) => error.statusCode === 400 && error.code === 'GAME_NOT_FOUND',
+  );
+  await assert.rejects(
+    () => serviceWith({ id: GAME_ID, title: 'Uni Quest', is_active: false })
+      .create('u1', voiceBody({ gameId: GAME_ID })),
+    (error) => error.statusCode === 400 && error.code === 'GAME_INACTIVE',
+  );
 });

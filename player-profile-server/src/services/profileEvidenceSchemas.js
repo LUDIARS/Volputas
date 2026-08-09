@@ -19,6 +19,20 @@ function optionalText(value, maximum = 4000) {
   return normalized;
 }
 
+// ゲームマスタ (migration 016) への紐付け。 自由入力の gameTitle は表示のため
+// 残しつつ、 集計を成立させたい GLAB 記録には id を持たせる。 マスタを解決しない
+// ローカルアプリ側の validator は gameId を出力しない。
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function optionalGameId(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const normalized = String(value).trim().toLowerCase();
+  if (!UUID_PATTERN.test(normalized)) {
+    throw Object.assign(new Error('Game ID must be a UUID'), { code: 'INVALID_PROFILE_INPUT' });
+  }
+  return normalized;
+}
+
 function optionalNumber(value, minimum, maximum) {
   if (value === undefined || value === null || value === '') return null;
   const number = Number(value);
@@ -149,6 +163,17 @@ function validateVoiceInput(body = {}) {
   };
 }
 
+/** @implements SPEC-GLAB-GAME-SELECTION */
+function validateGlabVoiceInput(body = {}) {
+  return {
+    ...validateVoiceInput(body),
+    // Only the GLAB service resolves this id against the catalog and replaces
+    // gameTitle. Local evidence remains free-text and must not mint catalog
+    // identities without that lookup.
+    gameId: optionalGameId(body.gameId),
+  };
+}
+
 function validateVoiceMemoInput(body = {}) {
   return {
     gameTitle: requiredText(body.gameTitle, 'Game title'),
@@ -247,6 +272,16 @@ function validateEmotionCurveInput(body = {}) {
   };
 }
 
+/** @implements SPEC-GLAB-GAME-SELECTION */
+function validateGlabEmotionCurveInput(body = {}) {
+  return {
+    ...validateEmotionCurveInput(body),
+    // See validateGlabVoiceInput: only a catalog-aware boundary may retain an
+    // externally supplied catalog id.
+    gameId: optionalGameId(body.gameId),
+  };
+}
+
 // Pairwise comparison (design §4.1): experience cards reference the fixed
 // deck; game comparisons carry free-form titles.
 function validateComparisonInput(body = {}) {
@@ -319,6 +354,8 @@ module.exports = {
   validateCardSortInput,
   validateComparisonInput,
   validateEmotionCurveInput,
+  validateGlabEmotionCurveInput,
+  validateGlabVoiceInput,
   validateGameplayInput,
   validatePitchInput,
   validateVoiceMemoInput,

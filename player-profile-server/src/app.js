@@ -29,6 +29,15 @@ const { createGlabRelayClient } = require('./integrations/glab/glabRelayClient')
 const { pseudoId } = require('./services/pseudoId');
 const { getProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
 const { createGlabReviewRouter } = require('./routes/glabReviews');
+const { createGlabGameRouter } = require('./routes/glabGames');
+const { createGlabEvidenceRouter } = require('./routes/glabEvidence');
+const { createGlabGameService } = require('./services/glabGameService');
+const { createGlabEvidenceService } = require('./services/glabEvidenceService');
+const { ProfileMediaStore } = require('./services/profileMediaStore');
+const { EmotionCurveEvaluationService } = require('./services/emotionCurveEvaluationService');
+const { createLlmTextClient } = require('./services/llm/createLlmTextClient');
+const { OWNER_SUBJECT, issueMediaTicket } = require('./services/mediaTicketService');
+const gameModel = require('./models/gameModel');
 const steamModel = require('./models/steamModel');
 const userModel = require('./models/userModel');
 
@@ -56,10 +65,14 @@ const app = express();
 const frontendDirectory = path.resolve(__dirname, '../frontend/dist');
 const glabSurveyPath = '/api/v1/integrations/glab/surveys';
 const glabReviewPath = '/api/v1/integrations/glab/reviews';
+const glabGamePath = '/api/v1/integrations/glab/games';
+const glabEvidencePath = '/api/v1/integrations/glab/evidence';
 let server = null;
 let stopPromise = null;
 let glabSurveyService = null;
 let glabReviewService = null;
+let glabGameService = null;
+let glabEvidenceService = null;
 let reviewRelayService = null;
 let stopSessionMaintenance = null;
 
@@ -86,9 +99,38 @@ function getGlabReviewService() {
       },
       resolveDisplayName: resolveGlabReviewAuthor,
       pseudoId: (userId) => pseudoId(userId, config.pseudoIdSecret),
+      gameRepository: gameModel,
     });
   }
   return glabReviewService;
+}
+
+function getGlabGameService() {
+  if (!glabGameService) glabGameService = createGlabGameService();
+  return glabGameService;
+}
+
+function getGlabEvidenceService() {
+  if (!glabEvidenceService) {
+    glabEvidenceService = createGlabEvidenceService({
+      evidenceStore: getProfileEvidenceStore(),
+      mediaStore: new ProfileMediaStore(),
+      mediaRoot: config.profileMedia.root,
+      emotionCurveEvaluator: new EmotionCurveEvaluationService({
+        llmClient: createLlmTextClient(),
+      }),
+      gameRepository: gameModel,
+      // GLAB 経路の券の sub は Cernere の owner id。 自前フロントの券と混ざると
+      // 別人の id を所有者として解決してしまうため、 券面に種別を刻む。
+      issueTicket: ({ userId, kind, recordId }) => issueMediaTicket({
+        userId,
+        kind,
+        recordId,
+        subjectType: OWNER_SUBJECT,
+      }),
+    });
+  }
+  return glabEvidenceService;
 }
 
 function getReviewRelayService() {
@@ -131,6 +173,15 @@ app.use(glabSurveyPath, (_req, res, next) => {
 });
 app.use(glabSurveyPath, createCorpusTransportRateLimiter());
 app.use(glabReviewPath, createCorpusTransportRateLimiter());
+app.use(glabGamePath, createCorpusTransportRateLimiter());
+
+// 動画とゲームログは JSON ではないので、 evidence の中継は本文パーサより前に
+// 置いて req をそのままストリームとして渡す。 JSON の口 (記録作成・評価) は
+// content-type が application/json のときだけ express.json が拾う。
+app.use(
+  glabEvidencePath,
+  createGlabEvidenceRouter({ serviceProvider: getGlabEvidenceService }),
+);
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
@@ -157,6 +208,13 @@ app.use(
       const user = await userModel.findByCernereSubject(cernereUserId);
       return user ? steamModel.getRecentlyPlayedGames(user.id, 20) : [];
     },
+    transportRateLimiter: null,
+  }),
+);
+app.use(
+  glabGamePath,
+  createGlabGameRouter({
+    serviceProvider: getGlabGameService,
     transportRateLimiter: null,
   }),
 );
@@ -270,6 +328,8 @@ function stop() {
     const activeIntegration = glabSurveyService;
     glabSurveyService = null;
     glabReviewService = null;
+    glabGameService = null;
+    glabEvidenceService = null;
     reviewRelayService = null;
     await activeIntegration?.close();
     if (serverCloseError) throw serverCloseError;

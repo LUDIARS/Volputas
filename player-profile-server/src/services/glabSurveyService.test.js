@@ -15,6 +15,7 @@ const {
 
 const USER_ID = '66e242b5-2f18-4463-b7f0-c0f12d818a20';
 const SURVEY_ID = 'd2c6aca2-e754-4e4a-9f2b-270c85b989e5';
+const GAME_ID = '3f1a2b4c-5d6e-4f70-8192-a3b4c5d6e7f8';
 const CREATED_AT = new Date('2026-07-24T00:00:00.000Z');
 
 const questions = [
@@ -52,7 +53,7 @@ function surveyRow(overrides = {}) {
   };
 }
 
-function harness({ existingResponse = null } = {}) {
+function harness({ existingResponse = null, game = { id: GAME_ID } } = {}) {
   const calls = [];
   const surveyRepository = {
     async findForGlab(category) {
@@ -62,6 +63,29 @@ function harness({ existingResponse = null } = {}) {
     async findForGlabById(id) {
       calls.push(['detail', id]);
       return id === SURVEY_ID ? surveyRow() : null;
+    },
+    async createManaged(definition) {
+      calls.push(['create', definition]);
+      return surveyRow({
+        game_id: definition.gameId ?? null,
+        visible_to_glab: definition.visibleToGlab,
+        is_active: definition.isActive,
+      });
+    },
+    async updateManaged(id, patch) {
+      calls.push(['update', id, patch]);
+      if (id !== SURVEY_ID) return null;
+      return surveyRow({
+        game_id: patch.gameId ?? null,
+        visible_to_glab: patch.visibleToGlab ?? false,
+        is_active: patch.isActive ?? true,
+      });
+    },
+  };
+  const gameRepository = {
+    async findById(id) {
+      calls.push(['game', id]);
+      return game;
     },
   };
   const responseStore = {
@@ -87,7 +111,7 @@ function harness({ existingResponse = null } = {}) {
   };
   return {
     calls,
-    service: createGlabSurveyService({ surveyRepository, responseStore }),
+    service: createGlabSurveyService({ surveyRepository, gameRepository, responseStore }),
   };
 }
 
@@ -167,6 +191,30 @@ test('rejects an invalid survey path parameter as a client error', () => {
     (error) => error.code === 'INVALID_SURVEY_ID'
       && error.statusCode === 400,
   );
+});
+
+test('creates a game-linked survey unpublished after checking the game exists', async () => {
+  const { service, calls } = harness();
+  const survey = await service.createSurvey({
+    title: 'Uni Quest survey',
+    questions,
+    gameId: GAME_ID,
+  });
+
+  assert.equal(survey.gameId, GAME_ID);
+  assert.equal(survey.visibleToGlab, false);
+  assert.equal(survey.isActive, true);
+  assert.deepEqual(calls.slice(0, 2).map(([name]) => name), ['game', 'create']);
+});
+
+test('refuses a survey linked to a missing game before writing it', async () => {
+  const { service, calls } = harness({ game: null });
+
+  await assert.rejects(
+    () => service.createSurvey({ title: 'Unknown game survey', questions, gameId: GAME_ID }),
+    (error) => error.code === 'GAME_NOT_FOUND' && error.statusCode === 400,
+  );
+  assert.equal(calls.some(([name]) => name === 'create'), false);
 });
 
 test('enforces freetext boundaries and omits optional empty answers', () => {
