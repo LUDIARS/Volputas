@@ -43,6 +43,12 @@ services:
 
   - code: volputas-haster
     name: Volputas HASTER
+    # 通常運用では起動させない。 HASTER は公開 fixture identity を使う使い捨ての
+    # 統合テスト環境で (spec/test/haster-public-user.md)、 本番と同じ形式の
+    # 検証には使えない。 起動できる状態のまま置くと「経路を通すため」に
+    # 立ち上げてしまい、 実データがテスト環境の DB へ入る事故になる。
+    # supervisor は disabled なサービスの stop 以外を SERVICE_DISABLED で拒否する。
+    disabled: true
     tier: local-app
     project_code: volputas
     component: backend
@@ -58,6 +64,11 @@ services:
       PORT: "18892"
       VOLPUTAS_ENVIRONMENT: HASTER
       JWT_ISSUER: http://localhost:18892
+      # 自分自身の URL は自分の env で持つ。 provides で配ると topology は
+      # 後勝ちで全消費者の VOLPUTAS_URL を 18892 へ上書きしてしまい、
+      # GLAB など本来 8892 を見るサービスが HASTER へ繋がる。
+      # (優先順位は topology < env: なので、 ここでの指定は自分にだけ効く)
+      VOLPUTAS_URL: http://localhost:18892
       CERNERE_OIDC_CALLBACK_URL: http://localhost:18892/auth/callback
       VOLPUTAS_PERSONA_EXPORT_TOKEN: haster-public-persona-export-token-v1
       VOLPUTAS_PSEUDO_ID_SECRET: haster-public-pseudo-id-secret-v1
@@ -92,5 +103,3 @@ services:
       type: http
       url: http://localhost:18892/health
       interval_sec: 30
-    provides:
-      VOLPUTAS_URL: http://${host}:${port}
