@@ -122,7 +122,7 @@ VolputasDataのcloneと設定JSON作成をまとめたサンプルは次に置�
 
 ### 前提条件
 
-- Node.js 20 以上
+- Node.js 22 以上
 - PostgreSQL
 - Redis (キャッシュ用、オプション)
 
@@ -140,7 +140,7 @@ worktree、複製folder、直接の`npm run dev`からサービスを起動し�
 
 ### DBなしでアンケートに回答する
 
-ローカル経路はVolputas serverを起動しない。Node.js 20、Git、GitHub CLIが必要で、
+ローカル経路はVolputas serverを起動しない。Node.js 22、Git、GitHub CLIが必要で、
 GitHub CLIの現在の認証ユーザーを本人として扱う。`LUDIARS/VolputasData` は
 **public な template** であり、実運用ではこれをコピーした自分の **private データ
 リポジトリ** を作って `config/local-survey.json` で指定する (回答が push されるのは

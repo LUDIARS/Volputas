@@ -1,4 +1,4 @@
-FROM node:20-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ RUN npm ci --prefix frontend
 COPY frontend/ ./frontend/
 RUN npm run build --prefix frontend
 
-FROM node:20-alpine
+FROM node:22-alpine
 
 RUN apk add --no-cache clamav ffmpeg
 

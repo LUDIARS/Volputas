@@ -17,7 +17,7 @@ related:
   - ../setup/local-okf-survey.md
   - ../test/local-okf-survey.md
   - ../data/data-schema.md
-updated: 2026-07-28
+updated: 2026-07-31
 ---
 
 # Local survey
@@ -29,7 +29,7 @@ updated: 2026-07-28
 
 ## Preconditions
 
-- Node.js 20以上、Git、GitHub CLIが利用できる。
+- Node.js 22以上、Git、GitHub CLIが利用できる。
 - `gh`で本人identityを取得できる。
 - `npm run setup:survey-data`でdata repositoryを独立clone済みである。
 - cloneの`origin`とGitHub上のcanonical repository identityが一致する。

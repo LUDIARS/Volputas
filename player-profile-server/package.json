@@ -18,7 +18,7 @@
     "predev": "npm run migrate",
     "dev": "node --watch src/app.js",
     "migrate": "node migrations/run.js",
-    "test": "node --test src/**/*.test.js desktop/**/*.test.js",
+    "test": "node --test \"src/**/*.test.js\" \"desktop/**/*.test.js\"",
     "test:e2e:media": "node scripts/run-media-e2e.js --confirm-local",
     "desktop:package": "npm run build:frontend && electron-forge package",
     "desktop:make": "npm run build:frontend && electron-forge make",
@@ -53,7 +53,7 @@
     "zod": "^4.3.6"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "config": {
     "forge": "./forge.config.js"

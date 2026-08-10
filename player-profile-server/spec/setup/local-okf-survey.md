@@ -15,7 +15,8 @@ related:
   - ../feature/local-okf-survey.md
   - ../interface/local-survey-git-workflow.md
   - ../test/local-okf-survey.md
-updated: 2026-07-28
+  - ./build-test.md
+updated: 2026-07-31
 ---
 
 # Local survey setup
@@ -36,7 +37,7 @@ gh repo create <owner>/<your-volputas-data> --private --template LUDIARS/Volputa
 
 ## Prerequisites
 
-- Node.js 20以上
+- Node.js 22以上
 - Git
 - GitHub CLI (`gh`)
 - 上記で作成した private データリポジトリへのread/write権限
