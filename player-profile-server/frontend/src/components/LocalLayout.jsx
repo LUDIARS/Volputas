@@ -50,6 +50,7 @@ export default function LocalLayout() {
           <NavLink to="/voices"><span className="nav-icon">◖</span><span>ユーザの声</span></NavLink>
           <NavLink to="/voice-memos"><span className="nav-icon">●</span><span>ボイスメモ</span></NavLink>
           <NavLink to="/emotion-curves"><span className="nav-icon">⌁</span><span>感情曲線</span></NavLink>
+          <NavLink to="/capture"><span className="nav-icon">◉</span><span>感情キャプチャ</span></NavLink>
           <NavLink to="/comparisons"><span className="nav-icon">⚖</span><span>どっちが好き?</span></NavLink>
           <NavLink to="/annotations"><span className="nav-icon">▧</span><span>スクショ注釈</span></NavLink>
           <NavLink to="/card-sort"><span className="nav-icon">▤</span><span>カードソート</span></NavLink>

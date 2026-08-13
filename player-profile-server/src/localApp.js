@@ -14,6 +14,15 @@ const { EmotionCurveEvaluationService } = require('./services/emotionCurveEvalua
 const { ProfileMediaStore } = require('./services/profileMediaStore');
 const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
 const { createEvidenceStores } = require('./local/createEvidenceStores');
+const { createConfiguredContext } = require('./local/localContext');
+const { createCaptureSessionRoutes } = require('./local/captureSessionRoutes');
+const { createCaptureSessionService } = require('./local/captureSessionComposition');
+const { createCompanionApp } = require('./local/companionApp');
+const {
+  companionStatus,
+  readCompanionConfig,
+  startCompanionListener,
+} = require('./local/companionListener');
 const config = require('./config');
 const { LocalPopulationReportService } = require('./services/populationReport');
 const { errorHandler } = require('./middleware/errorHandler');
@@ -30,6 +39,8 @@ function createLocalApp({
   surveyDefinitionStore = new SurveyDefinitionStore(),
   personaService,
   populationReportService,
+  captureSessionService = createCaptureSessionService(),
+  companionInfo = () => companionStatus(readCompanionConfig()),
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
   serveFrontend = true,
 } = {}) {
@@ -56,6 +67,11 @@ function createLocalApp({
   app.get('/api/runtime', (_req, res) => {
     res.json({ ok: true, data: { mode: 'local', authentication: 'none' } });
   });
+  app.use('/api/local/capture-sessions', createCaptureSessionRoutes({
+    captureSessionService,
+    configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
+    companionInfo,
+  }));
   app.use('/api/local', createLocalRoutes({
     configStore,
     gitCli,
@@ -95,11 +111,22 @@ function readPort(value) {
 if (require.main === module) {
   try {
     const port = readPort(process.env.PORT);
-    createLocalApp().listen(port, '127.0.0.1');
+    // The main app stays loopback-only; iPhone companions connect to the
+    // separate opt-in listener below, which exposes only the token-guarded
+    // capture endpoints (spec/feature/emotion-capture-companion.md).
+    const companionConfig = readCompanionConfig();
+    const captureSessionService = createCaptureSessionService();
+    createLocalApp({
+      captureSessionService,
+      companionInfo: () => companionStatus(companionConfig),
+    }).listen(port, '127.0.0.1');
+    if (companionConfig) {
+      startCompanionListener(createCompanionApp({ captureSessionService }), companionConfig);
+    }
   } catch (error) {
     process.stderr.write(`Volputas local startup failed: ${error.message}\n`);
     process.exitCode = 1;
   }
 }
 
-module.exports = { createLocalApp, readPort };
+module.exports = { createCaptureSessionService, createLocalApp, readPort };

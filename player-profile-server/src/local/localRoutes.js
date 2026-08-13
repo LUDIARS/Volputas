@@ -6,6 +6,7 @@ const {
   validateLocalConfig,
 } = require('./localConfigStore');
 const { listSurveysWithResponseStatus } = require('./surveyResponseStatus');
+const { createConfiguredContext } = require('./localContext');
 const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
 const { EVIDENCE_MEDIA, assertCoversEveryMedium } = require('../services/evidenceMedia');
 const {
@@ -69,21 +70,7 @@ function createLocalRoutes({
     }
   });
 
-  async function configuredContext() {
-    const storedConfig = await configStore.read();
-    if (!storedConfig) {
-      throw new AppError(
-        409,
-        'LOCAL_CONFIG_REQUIRED',
-        'Set the data repository and GitHub name in Settings first'
-      );
-    }
-    const gitAuthor = await gitAuthorReader.read(storedConfig.dataRepositoryPath);
-    const config = storedConfig.name === gitAuthor.name
-      ? storedConfig
-      : await configStore.write({ ...storedConfig, name: gitAuthor.name });
-    return { config, gitAuthor };
-  }
+  const configuredContext = createConfiguredContext({ configStore, gitAuthorReader });
 
   function profileRecord(input, config, gitAuthor) {
     return {

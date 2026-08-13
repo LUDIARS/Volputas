@@ -827,3 +827,78 @@
 .voice-transcript-pending {
   font-style: italic;
 }
+
+/* --- 感情キャプチャ (CaptureSessionPage) --- */
+.capture-companion-note {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  color: var(--color-text-muted);
+}
+
+.capture-active-card,
+.capture-start-card,
+.capture-record-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.capture-active-meta,
+.capture-record-meta {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.capture-stamp-row {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  flex-wrap: wrap;
+}
+
+.capture-active-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.capture-active-actions .danger {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.capture-pairing {
+  margin-top: 0.75rem;
+}
+
+.capture-pairing-code {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  font-variant-numeric: tabular-nums;
+}
+
+.capture-record-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.capture-marker-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+.capture-marker-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.capture-marker-origin {
+  color: var(--color-text-muted);
+}

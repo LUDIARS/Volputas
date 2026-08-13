@@ -1,0 +1,15 @@
+{
+  "name": "emotion-capture-companion",
+  "description": "感情キャプチャ・コンパニオン: ゲーム同期タイムラインのセッションライフサイクル、ペアリング、iPhone 視線/音声取り込み、LAN companion listener の境界。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/(frontend/src/(components/CaptureTimelineView|pages/CaptureSessionPage)\\.jsx|src/services/captureSession/[^/]+\\.js|src/local/(captureSessionComposition|captureSessionRoutes(?:\\.test)?|companionApp(?:\\.test)?|companionListener|companionPage|localContext)\\.js|spec/feature/emotion-capture-companion\\.md)$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-EMOTION-CAPTURE-COMPANION"
+  ],
+  "source": "spec-review"
+}

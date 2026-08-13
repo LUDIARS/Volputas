@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import LocalLayout from './components/LocalLayout';
 import AnalysisPage from './pages/AnalysisPage';
 import AnnotationPage from './pages/AnnotationPage';
+import CaptureSessionPage from './pages/CaptureSessionPage';
 import CardSortPage from './pages/CardSortPage';
 import ComparisonPage from './pages/ComparisonPage';
 import DashboardPage from './pages/DashboardPage';
@@ -62,6 +63,7 @@ function LocalRoutes() {
       <Route element={<LocalLayout />}>
         <Route index element={<Navigate to="/surveys" replace />} />
         <Route path="surveys" element={<LocalSurveysPage />} />
+        <Route path="capture" element={<CaptureSessionPage />} />
         {EvidenceRoutes()}
         <Route path="settings" element={<LocalSettingsPage />} />
       </Route>
