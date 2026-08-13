@@ -79,6 +79,7 @@ const COMPANION_PAGE_HTML = /* html */ `<!doctype html>
   let recorder = null;
   let recordedChunks = [];
   let recordingStartedAtMs = null;
+  let recordStartSessionMs = null;
   let syncTimer = null;
   let stopped = false;
 
@@ -142,6 +143,10 @@ const COMPANION_PAGE_HTML = /* html */ `<!doctype html>
         ...(recordingStartedAtMs === null ? {} : {
           'x-audio-duration-seconds': String((performance.now() - recordingStartedAtMs) / 1000),
         }),
+        // ローカル感情分析が文字起こしをセッションクロックへ置くための開始位置。
+        ...(recordStartSessionMs === null
+          ? {}
+          : { 'x-audio-start-session-ms': String(recordStartSessionMs) }),
       },
       body: blob,
     });
@@ -229,6 +234,7 @@ const COMPANION_PAGE_HTML = /* html */ `<!doctype html>
       recordedChunks = [];
       recordingStartedAtMs = performance.now();
       recorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.push(event.data); };
+      recordStartSessionMs = sessionMsNow();
       recorder.start(10000);
       $('record').disabled = true;
       $('audio-status').textContent = '収録中… (セッション終了で自動アップロード)';

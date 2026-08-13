@@ -3,10 +3,17 @@ const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 
 const serverRoot = path.resolve(__dirname, '..');
-const packageRoot = path.join(serverRoot, 'lib', 'lapilli', 'packages', 'sentiment-core');
+const lapilliRoot = path.join(serverRoot, 'lib', 'lapilli');
+const packageRoot = path.join(lapilliRoot, 'packages', 'sentiment-core');
 const npmCli = resolveNpmCli();
 
 if (!process.argv.includes('--skip-git-update')) {
+  if (fs.existsSync(lapilliRoot) && !fs.existsSync(path.join(packageRoot, 'package.json'))) {
+    throw new Error(
+      `Lapilli exists but is incomplete at ${lapilliRoot}; refusing to delete it automatically. `
+      + 'Move or remove that directory after preserving any local work, then rerun setup.'
+    );
+  }
   execFileSync('git', [
     'submodule',
     'update',

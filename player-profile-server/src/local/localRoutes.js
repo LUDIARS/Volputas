@@ -6,7 +6,7 @@ const {
   validateLocalConfig,
 } = require('./localConfigStore');
 const { listSurveysWithResponseStatus } = require('./surveyResponseStatus');
-const { createConfiguredContext } = require('./localContext');
+const { createConfiguredContext, profileRecord } = require('./localContext');
 const { EXPERIENCE_CARDS } = require('../services/personaEvidence/experienceCards');
 const { EVIDENCE_MEDIA, assertCoversEveryMedium } = require('../services/evidenceMedia');
 const {
@@ -71,20 +71,6 @@ function createLocalRoutes({
   });
 
   const configuredContext = createConfiguredContext({ configStore, gitAuthorReader });
-
-  function profileRecord(input, config, gitAuthor) {
-    return {
-      ...input,
-      respondent: {
-        name: config.name,
-        gitAuthor: {
-          name: gitAuthor.name,
-          email: gitAuthor.email,
-        },
-      },
-      dataRepository: { remoteUrl: gitAuthor.remoteUrl },
-    };
-  }
 
   function collectionRoutes(routePath, store, validate) {
     router.get(routePath, async (_req, res, next) => {

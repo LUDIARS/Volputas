@@ -28,4 +28,22 @@ function storeContext({ config, gitAuthor }) {
   return { repositoryRoot: gitAuthor.repositoryRoot, name: config.name };
 }
 
-module.exports = { createConfiguredContext, storeContext };
+// Wraps a validated evidence input with the respondent identity every local
+// profile record carries (shared by localRoutes and the capture-analysis
+// emotion-curve draft route).
+/** @implements SPEC-EMOTION-CAPTURE-COMPANION */
+function profileRecord(input, config, gitAuthor) {
+  return {
+    ...input,
+    respondent: {
+      name: config.name,
+      gitAuthor: {
+        name: gitAuthor.name,
+        email: gitAuthor.email,
+      },
+    },
+    dataRepository: { remoteUrl: gitAuthor.remoteUrl },
+  };
+}
+
+module.exports = { createConfiguredContext, profileRecord, storeContext };

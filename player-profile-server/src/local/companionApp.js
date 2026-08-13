@@ -146,11 +146,12 @@ function createCompanionApp({ captureSessionService }) {
 
   app.put('/api/audio', handle(async (req, res, token) => {
     const contentType = String(req.headers['content-type'] || '').split(';')[0].trim();
-    const { durationSeconds } = validateAudioMetaInput(req.headers);
+    const { durationSeconds, startSessionMs } = validateAudioMetaInput(req.headers);
     const result = await captureSessionService.attachAudio(token, {
       contentType,
       stream: req,
       durationSeconds,
+      startSessionMs,
     });
     res.status(201).json({ ok: true, data: result });
   }));

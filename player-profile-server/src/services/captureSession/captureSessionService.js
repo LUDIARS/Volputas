@@ -121,7 +121,12 @@ class CaptureSessionService {
         anchors,
         markers: [],
         devices: [],
-        capture: { gazeSampleCount: 0, audioFileName: null, audioDurationSeconds: null },
+        capture: {
+          gazeSampleCount: 0,
+          audioFileName: null,
+          audioDurationSeconds: null,
+          audioStartSessionMs: null,
+        },
       },
     });
     this.activeSession = { record, context };
@@ -298,7 +303,7 @@ class CaptureSessionService {
     });
   }
 
-  async attachAudio(token, { contentType, stream, durationSeconds }) {
+  async attachAudio(token, { contentType, stream, durationSeconds, startSessionMs }) {
     const { holder } = this.companionSession(token);
     const { record, context } = holder;
     if (record.status === 'recording') {
@@ -321,6 +326,10 @@ class CaptureSessionService {
           ...holder.record.capture,
           audioFileName: saved.fileName,
           audioDurationSeconds: durationSeconds,
+          // Where on the session clock the recording began; the transcript
+          // cannot be anchored without it (captureAnalysisService refuses to
+          // guess).
+          audioStartSessionMs: startSessionMs ?? null,
         },
       };
       const { record: persisted } = await this.recordStore.write({ ...context, data: updated });
@@ -344,6 +353,25 @@ class CaptureSessionService {
       throw captureError(404, 'CAPTURE_SESSION_NOT_FOUND', 'Capture session not found');
     }
     return record;
+  }
+
+  // Persists a derived analysis onto a (usually finished) session record. The
+  // in-memory holder is refreshed when one still exists so later writes do not
+  // resurrect the pre-analysis record.
+  async saveAnalysis(context, sessionId, analysis) {
+    return this.enqueueMutation(async () => {
+      const record = await this.findRecord(context, sessionId);
+      const { record: persisted } = await this.recordStore.write({
+        ...context,
+        data: { ...record, analysis },
+      });
+      if (this.activeSession && this.activeSession.record.id === sessionId) {
+        this.activeSession.record = persisted;
+      }
+      const finished = this.finishedSessions.get(sessionId);
+      if (finished) finished.record = persisted;
+      return persisted;
+    });
   }
 
   async timeline(context, sessionId) {

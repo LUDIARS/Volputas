@@ -5,7 +5,7 @@
   "templateRules": [],
   "membership": [
     {
-      "pathPattern": "(^|/)player-profile-server/(frontend/src/(components/CaptureTimelineView|pages/CaptureSessionPage)\\.jsx|src/services/captureSession/[^/]+\\.js|src/local/(captureSessionComposition|captureSessionRoutes(?:\\.test)?|companionApp(?:\\.test)?|companionListener|companionPage|localContext)\\.js|spec/feature/emotion-capture-companion\\.md)$"
+      "pathPattern": "(^|/)player-profile-server/(frontend/src/(components/(CaptureTimelineView|EmotionCurveRecordCard)|pages/CaptureSessionPage)\\.jsx|src/services/captureSession/[^/]+\\.js|src/services/captureAnalysis/[^/]+\\.js|src/local/(captureSessionComposition|captureSessionRoutes(?:\\.test)?|companionApp(?:\\.test)?|companionListener|companionPage|localContext)\\.js|spec/feature/emotion-capture-companion\\.md)$"
     }
   ],
   "specRefs": [

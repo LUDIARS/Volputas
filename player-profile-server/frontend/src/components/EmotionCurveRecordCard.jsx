@@ -9,6 +9,7 @@ function formatTime(seconds) {
   return `${minutes}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
 }
 
+/** @implements SPEC-EMOTION-CAPTURE-COMPANION */
 export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
   const client = useProfileClient();
   const [evaluating, setEvaluating] = useState(false);
@@ -39,7 +40,7 @@ export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
           <span className="tag">プレイ後 {record.daysAfterPlay} 日</span>
         )}
       </div>
-      {record.mode !== 'memory' && (
+      {record.mode !== 'memory' && record.mode !== 'capture' && (
         <ProfileMedia
           as="video"
           className="emotion-video"
@@ -71,6 +72,7 @@ export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
       </div>
       <div className="tags-row">
         {record.mode === 'memory' && <span className="tag">記憶スケッチ</span>}
+        {record.mode === 'capture' && <span className="tag">キャプチャ由来</span>}
         {record.narrativeArc && <span className="tag">Arc: {record.narrativeArc}</span>}
         {record.journeyStage && <span className="tag">Journey: {record.journeyStage}</span>}
         {record.totalPlaytimeHours !== null && record.totalPlaytimeHours !== undefined && (

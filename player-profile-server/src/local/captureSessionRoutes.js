@@ -3,14 +3,23 @@
 // the 127.0.0.1 local app.
 const { Router } = require('express');
 const { asAppError } = require('./localRoutes');
-const { storeContext } = require('./localContext');
+const { profileRecord, storeContext } = require('./localContext');
 const {
   validateMarkerInput,
   validateSignalInput,
   validateStartInput,
 } = require('../services/captureSession/captureSessionSchemas');
+const { buildEmotionCurveDraft } = require('../services/captureAnalysis/emotionCurveDraft');
+const { validateEmotionCurveInput } = require('../services/profileEvidenceSchemas');
 
-function createCaptureSessionRoutes({ captureSessionService, configuredContext, companionInfo }) {
+/** @implements SPEC-EMOTION-CAPTURE-COMPANION */
+function createCaptureSessionRoutes({
+  captureSessionService,
+  captureAnalysisService,
+  emotionCurveStore,
+  configuredContext,
+  companionInfo,
+}) {
   const router = Router();
 
   function requireJson(req, _res, next) {
@@ -33,6 +42,10 @@ function createCaptureSessionRoutes({ captureSessionService, configuredContext, 
 
   router.get('/companion/status', handle(async (_req, res) => {
     res.json({ ok: true, data: companionInfo() });
+  }));
+
+  router.get('/analysis/status', handle(async (_req, res) => {
+    res.json({ ok: true, data: captureAnalysisService.status() });
   }));
 
   router.get('/active', handle(async (_req, res) => {
@@ -79,6 +92,28 @@ function createCaptureSessionRoutes({ captureSessionService, configuredContext, 
       'manual'
     );
     res.status(201).json({ ok: true, data: record });
+  }));
+
+  // ローカル単独の感情分析: 音声 → whisper-stt → sentiment-core。結果はセッション
+  // レコードの analysis に保存され、再実行で上書きされる。
+  router.post('/:id/analyze', handle(async (req, res) => {
+    const context = storeContext(await configuredContext());
+    const record = await captureAnalysisService.analyze(context, req.params.id);
+    res.json({ ok: true, data: record });
+  }));
+
+  // 分析済みキャプチャから感情曲線レコード (mode: capture) を起こす。既存の
+  // validate + respondent 付与を通すので、手書きの曲線と同じ経路で persona に載る。
+  router.post('/:id/emotion-curve', handle(async (req, res) => {
+    const { config, gitAuthor } = await configuredContext();
+    const context = storeContext({ config, gitAuthor });
+    const record = await captureSessionService.findRecord(context, req.params.id);
+    const draft = buildEmotionCurveDraft({ record, analysis: record.analysis });
+    const result = await emotionCurveStore.write({
+      ...context,
+      data: profileRecord(validateEmotionCurveInput(draft), config, gitAuthor),
+    });
+    res.status(201).json({ ok: true, data: result.record });
   }));
 
   router.get('/:id/timeline', handle(async (req, res) => {

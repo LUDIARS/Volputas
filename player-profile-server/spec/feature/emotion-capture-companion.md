@@ -144,6 +144,41 @@ loopback API の操作を拒否する。
   ため、iPhone から接続する LAN listener は HTTPS 必須とする (自己署名証明書は iPhone 側で
   プロファイル信頼が必要)。
 
+## 分析 (ローカル単独・自分のプレイデータ運用)
+
+> 追補 2026-08-13: neco 指示「ローカル単独で感情分析が動くように。自分のプレイデータとして運用」。
+
+キャプチャ済みセッションを **外部送信ゼロ** で感情分析し、既存のペルソナ経路に載せる。
+
+```
+capture-audio ──ffmpeg (16kHz mono WAV)──▶ whisper-stt (ローカル, POST /inference)
+   └─ 発話 segments (audioStartSessionMs でセッションクロックへ) ──▶ sentiment-core (辞書)
+        └─ analysis { utterances[{sessionMs, text, valence, arousal}] } をレコードに保存
+             └─ 感情曲線レコード (mode: capture) を生成 → 既存ペルソナ分析が消費
+```
+
+- `src/services/captureAnalysis/` — `sttClient` (whisper.cpp 互換 `/inference`、
+  verbose_json の segments、非対応サーバは全文 1 segment にフォールバック) /
+  `audioToWav` (ffmpeg CLI、shell 非経由、temp WAV は全経路で削除) /
+  `affectMapping` (sentiment-core → valence -2..2 / arousal 1..5 への純写像) /
+  `captureAnalysisService` (オーケストレーション、provenance
+  `extractor: "whisper-stt+sentiment-lexicon"` 付きでレコードへ保存・再実行で上書き) /
+  `emotionCurveDraft` (マーカー→スタンプ entry、発話→コメント entry の純変換)。
+- STT endpoint は loopback の HTTP(S) URL のみを受け入れ、redirect を拒否する。
+  endpoint 自体は分析記録に保存しないため、データリポジトリにローカル構成を混入させない。
+- 音声アップロードは `x-audio-start-session-ms` (コンパニオンが録音開始時の
+  sessionMs を申告) を必須の分析前提とする。無い録音は
+  `CAPTURE_AUDIO_UNANCHORED` で拒否し、推測で時刻を貼らない。
+- 感情曲線に **mode `capture`** を追加 (動画なし・timeSeconds 軸・
+  `captureSessionId` で由来を保持)。`sourceContributions` の記憶バイアス割引
+  (memory=0.75) は適用せず weight 1 (プレイ中の実測のため)。evidence media
+  レジストリは触らない — 感情曲線という登録済み媒体に変換して流すので、
+  Cernere カラム追加なしで「ローカルの自分のプレイデータ」として完結する。
+- API: `POST /:id/analyze` (STT+辞書分析)、`POST /:id/emotion-curve` (曲線生成、
+  respondent 付与と `validateEmotionCurveInput` を通常経路と共有)、
+  `GET /analysis/status` (STT/ffmpeg 設定状態)。
+- LLM 評価は既存の感情曲線評価 (`claude-cli` 既定 = ローカル) をそのまま使う。
+
 ## 環境変数
 
 | 変数 | 意味 |
@@ -151,12 +186,13 @@ loopback API の操作を拒否する。
 | `VOLPUTAS_COMPANION_PORT` | 設定時のみ companion listener を起動 (1-65535 以外は起動失敗) |
 | `VOLPUTAS_COMPANION_HOST` | バインド先 (既定 `0.0.0.0`) |
 | `VOLPUTAS_COMPANION_TLS_CERT_FILE` / `_KEY_FILE` | 非 loopback listener では両方必須。片方だけは起動失敗 |
+| `VOLPUTAS_STT_URL` | ローカル whisper-stt サーバ (例: LocalServices/whisper-stt)。正本ポートは Excubitor catalog。未設定時の分析は `STT_NOT_CONFIGURED` (503) |
+| `VOLPUTAS_FFMPEG` | ffmpeg コマンド (既定 `ffmpeg`、不在は `FFMPEG_NOT_AVAILABLE`) |
 
 ## 非目標
 
-- キャプチャの persona evidence 化 (evidence media レジストリ登録・Cernere
-  `capture_session_records` カラム宣言・分析エンジン接続)。感情曲線への自動変換も含め、
-  視線/音声からの感情推定は将来の別 spec (まず収集経路を確立する)。
-- 音声の自動文字起こし・音量解析。
+- キャプチャセッション自体の evidence media レジストリ登録・Cernere
+  `capture_session_records` カラム宣言 (感情曲線 mode `capture` への変換で代替)。
+- 視線からの感情推定 (focusScore は注意指標に留める)。音量・韻律解析。
 - ゲームプロセスの自動検知による開始 (合図はゲーム側の POST に限る)。
 - online (認証) モードへの展開。本機能は local モード専用。

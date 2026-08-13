@@ -16,7 +16,10 @@ const { assertFrontendBuild, mountFrontend } = require('./services/frontendAsset
 const { createEvidenceStores } = require('./local/createEvidenceStores');
 const { createConfiguredContext } = require('./local/localContext');
 const { createCaptureSessionRoutes } = require('./local/captureSessionRoutes');
-const { createCaptureSessionService } = require('./local/captureSessionComposition');
+const {
+  createCaptureAnalysisService,
+  createCaptureSessionService,
+} = require('./local/captureSessionComposition');
 const { createCompanionApp } = require('./local/companionApp');
 const {
   companionStatus,
@@ -40,6 +43,7 @@ function createLocalApp({
   personaService,
   populationReportService,
   captureSessionService = createCaptureSessionService(),
+  captureAnalysisService,
   companionInfo = () => companionStatus(readCompanionConfig()),
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
   serveFrontend = true,
@@ -69,6 +73,9 @@ function createLocalApp({
   });
   app.use('/api/local/capture-sessions', createCaptureSessionRoutes({
     captureSessionService,
+    captureAnalysisService: captureAnalysisService
+      || createCaptureAnalysisService(captureSessionService),
+    emotionCurveStore: evidenceStores['emotion-curves'],
     configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
     companionInfo,
   }));

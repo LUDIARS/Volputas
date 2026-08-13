@@ -20,23 +20,29 @@ function formatClock(ms) {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
+/** @implements SPEC-EMOTION-CAPTURE-COMPANION */
 export default function CaptureSessionPage() {
   const [companion, setCompanion] = useState(null);
+  const [analysisStatus, setAnalysisStatus] = useState(null);
   const [active, setActive] = useState(null);
   const [records, setRecords] = useState([]);
   const [gameTitle, setGameTitle] = useState('');
   const [pairing, setPairing] = useState(null);
   const [timelines, setTimelines] = useState({});
+  const [busyRecordId, setBusyRecordId] = useState(null);
+  const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const shouldPollActiveSession = active !== null;
 
   const reload = useCallback(async () => {
-    const [companionData, activeData, recordData] = await Promise.all([
+    const [companionData, analysisData, activeData, recordData] = await Promise.all([
       localApi(`${BASE}/companion/status`),
+      localApi(`${BASE}/analysis/status`),
       localApi(`${BASE}/active`),
       localApi(BASE),
     ]);
     setCompanion(companionData);
+    setAnalysisStatus(analysisData);
     setActive(activeData);
     setRecords(recordData);
   }, []);
@@ -82,6 +88,37 @@ export default function CaptureSessionPage() {
     setPairing(await localApi(`${BASE}/active/pairing`, { method: 'POST', body: {} }));
   });
 
+  async function analyze(recordId) {
+    setError('');
+    setNotice('');
+    setBusyRecordId(recordId);
+    try {
+      await localApi(`${BASE}/${recordId}/analyze`, { method: 'POST', body: {} });
+      setNotice('文字起こしと感情スコアを保存しました。');
+      await reload();
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setBusyRecordId(null);
+    }
+  }
+
+  async function createEmotionCurve(recordId) {
+    setError('');
+    setNotice('');
+    setBusyRecordId(recordId);
+    try {
+      const curve = await localApi(`${BASE}/${recordId}/emotion-curve`, {
+        method: 'POST', body: {},
+      });
+      setNotice(`感情曲線を作成しました (${curve.entries.length} エントリ)。感情曲線ページとペルソナ分析に反映されます。`);
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setBusyRecordId(null);
+    }
+  }
+
   async function toggleTimeline(recordId) {
     if (timelines[recordId]) {
       setTimelines((current) => ({ ...current, [recordId]: null }));
@@ -107,6 +144,15 @@ export default function CaptureSessionPage() {
         </p>
       </div>
       {error && <div className="error-message">{error}</div>}
+      {notice && <div className="success-message">{notice}</div>}
+
+      {analysisStatus && !analysisStatus.stt.configured && (
+        <div className="capture-companion-note">
+          ローカル感情分析 (文字起こし) には VOLPUTAS_STT_URL に whisper-stt サーバの
+          URL を設定してください。設定するまで分析ボタンは失敗します
+          (視線・マーカーのタイムラインはそのまま使えます)。
+        </div>
+      )}
 
       {companion && !companion.enabled && (
         <div className="capture-companion-note">
@@ -184,7 +230,48 @@ export default function CaptureSessionPage() {
             <button type="button" onClick={() => toggleTimeline(record.id)}>
               {timelines[record.id] ? 'タイムラインを閉じる' : 'タイムラインを見る'}
             </button>
+            {record.status === 'completed' && record.capture.audioFileName && (
+              <button
+                type="button"
+                disabled={busyRecordId === record.id}
+                onClick={() => analyze(record.id)}
+              >
+                {busyRecordId === record.id
+                  ? '処理中…'
+                  : record.analysis ? '音声を再分析' : '音声を感情分析'}
+              </button>
+            )}
+            {record.status === 'completed' && (record.analysis || record.markers.length > 0) && (
+              <button
+                type="button"
+                disabled={busyRecordId === record.id}
+                onClick={() => createEmotionCurve(record.id)}
+              >
+                感情曲線を作成
+              </button>
+            )}
           </div>
+          {record.analysis && (
+            <div className="capture-analysis">
+              <div className="capture-record-meta">
+                文字起こし {record.analysis.utteranceCount} 発話
+                ({new Date(record.analysis.analyzedAt).toLocaleString()},
+                {' '}{record.analysis.extractor})
+              </div>
+              <ul className="capture-utterance-list">
+                {record.analysis.utterances.map((utterance, index) => (
+                  <li key={`${utterance.sessionMs}-${index}`}>
+                    <span className="capture-marker-time">{formatClock(utterance.sessionMs)}</span>
+                    {' '}
+                    <span className={`capture-valence-${utterance.valence >= 1 ? 'positive' : utterance.valence <= -1 ? 'negative' : 'neutral'}`}>
+                      {utterance.valence > 0 ? `+${utterance.valence}` : utterance.valence}/覚醒{utterance.arousal}
+                    </span>
+                    {' '}{utterance.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {timelines[record.id] && <CaptureTimelineView timeline={timelines[record.id]} />}
           {timelines[record.id] && record.capture.audioFileName && (
             <audio controls src={`${BASE}/${record.id}/audio`} style={{ width: '100%' }} />

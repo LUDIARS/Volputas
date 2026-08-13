@@ -242,8 +242,14 @@ function validateEmotionEntry(entry = {}, mode = 'video') {
   };
 }
 
+// video = 動画レビュー / memory = 記憶スケッチ (§3.4) / capture = 感情キャプチャ
+// セッション由来 (spec/feature/emotion-capture-companion.md)。capture は動画を
+// 持たず timeSeconds 軸で、sourceContributions では video と同じ weight 1 で扱う
+// (プレイ中の実測なので記憶バイアス割引を適用しない)。
+const EMOTION_CURVE_MODES = new Set(['video', 'memory', 'capture']);
+
 function validateEmotionCurveInput(body = {}) {
-  const mode = body.mode === 'memory' ? 'memory' : 'video';
+  const mode = EMOTION_CURVE_MODES.has(body.mode) ? body.mode : 'video';
   const entries = Array.isArray(body.entries) ? body.entries : [];
   if (entries.length === 0) {
     throw Object.assign(new Error('Add at least one timed reaction'), {
@@ -254,6 +260,9 @@ function validateEmotionCurveInput(body = {}) {
   return {
     gameTitle: requiredText(body.gameTitle, 'Game title'),
     mode,
+    captureSessionId: mode === 'capture'
+      ? requiredText(body.captureSessionId, 'Capture session id', 64)
+      : '',
     // memory mode is the video-less recollection sketch (design §3.4).
     videoFileName: mode === 'video'
       ? requiredText(body.videoFileName, 'Video file name', 255)

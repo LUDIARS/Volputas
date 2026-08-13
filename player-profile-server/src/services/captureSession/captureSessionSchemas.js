@@ -122,6 +122,9 @@ function validateAudioMetaInput(headers = {}) {
     durationSeconds: optionalNumber(
       headers['x-audio-duration-seconds'], 0, 24 * 3600, 'x-audio-duration-seconds'
     ),
+    startSessionMs: optionalNumber(
+      headers['x-audio-start-session-ms'], 0, MAXIMUM_SESSION_MS, 'x-audio-start-session-ms'
+    ),
   };
 }
 
