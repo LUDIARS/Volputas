@@ -79,3 +79,58 @@ test('a still-recording timeline derives duration from observed activity', () =>
   });
   assert.equal(timeline.durationMs, 45000);
 });
+
+test('recordings and speech affect ride the same session clock as gaze and markers', () => {
+  const timeline = buildTimeline({
+    session: {
+      id: 's2',
+      gameTitle: 'X',
+      status: 'interrupted',
+      startedAt: '2026-08-13T00:00:00.000Z',
+      endedAt: null,
+      markers: [],
+      anchors: [],
+      capture: {
+        gazeSampleCount: 0,
+        gazeSource: 'face-video',
+        audioFileName: 's2.webm',
+        audioDurationSeconds: 90,
+        audioStartSessionMs: 500,
+        screenRecording: {
+          fileName: 's2.mp4', contentType: 'video/mp4', startSessionMs: 2000,
+          durationSeconds: 100, width: 1920, height: 1080,
+        },
+        faceRecording: null,
+      },
+      analysis: {
+        utterances: [
+          { sessionMs: 40000, endSessionMs: 41000, text: 'later', valence: -1, arousal: 4 },
+          { sessionMs: 5000, endSessionMs: 6000, text: 'first', valence: 2, arousal: 5 },
+        ],
+      },
+    },
+    gazeSamples: [],
+  });
+  assert.equal(timeline.media.screen.startSessionMs, 2000);
+  assert.equal(timeline.media.screen.endSessionMs, 102000);
+  assert.equal(timeline.media.face, null);
+  assert.equal(timeline.media.audio.endSessionMs, 90500);
+  // Interrupted sessions take their length from the longest known media.
+  assert.equal(timeline.durationMs, 102000);
+  assert.equal(timeline.gazeSource, 'face-video');
+  assert.deepEqual(timeline.affect.map((point) => point.text), ['first', 'later']);
+  assert.equal(timeline.affect[0].valence, 2);
+});
+
+test('sessions recorded before recordings existed still build a timeline', () => {
+  const timeline = buildTimeline({
+    session: {
+      id: 's3', gameTitle: 'X', status: 'completed',
+      startedAt: '2026-08-13T00:00:00.000Z', endedAt: '2026-08-13T00:00:10.000Z',
+      markers: [], anchors: [],
+    },
+  });
+  assert.deepEqual(timeline.media, { screen: null, face: null, audio: null });
+  assert.deepEqual(timeline.affect, []);
+  assert.equal(timeline.gazeSource, null);
+});

@@ -8,3 +8,7 @@ out/
 
 # Independent VolputasData clone; never stage local survey or persona data here.
 /private/survey-data/
+
+# Local gaze-estimation runtime (MediaPipe wasm + Face Landmarker model);
+# populated by `npm run setup:gaze-model`, never committed.
+/frontend/public/mediapipe/

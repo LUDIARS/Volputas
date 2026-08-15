@@ -70,3 +70,61 @@ test('gaze batches validate every sample and enforce the batch cap', () => {
     { sessionMs: 20, x: 0.5, y: 0.5, valid: false },
   ]);
 });
+
+test('recording uploads must say where they start on the session clock', () => {
+  const { validateVideoMetaInput } = require('./captureSessionSchemas');
+  assert.throws(() => validateVideoMetaInput({}), /x-capture-start-session-ms header is required/);
+  assert.deepEqual(
+    validateVideoMetaInput({
+      'x-capture-start-session-ms': '1500.4',
+      'x-capture-duration-seconds': '61.5',
+      'x-capture-width': '1920',
+    }),
+    { startSessionMs: 1500, durationSeconds: 61.5, width: 1920, height: null }
+  );
+  assert.throws(() => validateVideoMetaInput({ 'x-capture-start-session-ms': '-1' }), /between 0 and/);
+});
+
+test('calibration needs 3..25 in-screen points with ordered session windows', () => {
+  const { validateCalibrationInput } = require('./captureSessionSchemas');
+  const point = (x, y, from) => ({ x, y, fromSessionMs: from, toSessionMs: from + 1000 });
+  assert.throws(() => validateCalibrationInput({ points: [point(0, 0, 0)] }), /between 3 and 25/);
+  assert.throws(
+    () => validateCalibrationInput({ points: [point(0, 0, 0), point(1.2, 0, 2000), point(1, 1, 4000)] }),
+    /within 0..1/
+  );
+  assert.throws(
+    () => validateCalibrationInput({
+      points: [point(0, 0, 0), point(1, 0, 2000), { x: 1, y: 1, fromSessionMs: 5000, toSessionMs: 4000 }],
+    }),
+    /fromSessionMs < toSessionMs/
+  );
+  const valid = validateCalibrationInput({
+    screen: { width: 1920 },
+    points: [point(0.1, 0.1, 0), point(0.9, 0.1, 2000.6), point(0.5, 0.9, 4000)],
+  });
+  assert.equal(valid.points[1].fromSessionMs, 2001);
+  assert.deepEqual(valid.screen, { width: 1920, height: null });
+});
+
+test('gaze estimation provenance headers are required and typed', () => {
+  const { validateGazeEstimationMetaInput } = require('./captureSessionSchemas');
+  assert.throws(() => validateGazeEstimationMetaInput({}), /x-gaze-extractor header is required/);
+  assert.throws(
+    () => validateGazeEstimationMetaInput({ 'x-gaze-extractor': 'mp', 'x-gaze-calibrated': 'yes' }),
+    /must be true or false/
+  );
+  assert.deepEqual(
+    validateGazeEstimationMetaInput({
+      'x-gaze-extractor': 'mediapipe-face-landmarker+affine-calibration',
+      'x-gaze-calibrated': 'false',
+      'x-gaze-frame-rate': '15',
+    }),
+    {
+      extractor: 'mediapipe-face-landmarker+affine-calibration',
+      calibrated: false,
+      fitError: null,
+      frameRate: 15,
+    }
+  );
+});

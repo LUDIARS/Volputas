@@ -117,4 +117,50 @@ test('emotion curve routes accept stamps, game logs, and produce LLM evaluations
     method: 'POST',
   });
   assert.equal(missing.status, 404);
+
+  // Human edits rewrite entries and metadata but keep the record's identity,
+  // media names and the (now stale) evaluation.
+  const edited = await json(`/api/local/emotion-curves/${record.id}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      gameTitle: 'Example Quest',
+      mode: 'memory',
+      videoFileName: 'hijack.mp4',
+      sessionLabel: '編集後',
+      totalPlaytimeHours: 13,
+      entries: [
+        { timeSeconds: 30, stamp: 'like', comment: '実は落ち着いた喜び' },
+        { timeSeconds: 95, comment: 'UI は慣れた', valence: 0, arousal: 2 },
+        { timeSeconds: 200, stamp: 'hype' },
+      ],
+    }),
+  });
+  assert.equal(edited.status, 200);
+  const editedRecord = edited.payload.data;
+  assert.equal(editedRecord.id, record.id);
+  assert.equal(editedRecord.mode, 'video');
+  assert.equal(editedRecord.videoFileName, 'play.mp4');
+  assert.equal(editedRecord.gameLogFileName, 'session.log');
+  assert.equal(editedRecord.sessionLabel, '編集後');
+  assert.equal(editedRecord.totalPlaytimeHours, 13);
+  assert.equal(editedRecord.entries.length, 3);
+  assert.deepEqual(editedRecord.entries.map((entry) => entry.stamp), ['like', null, 'hype']);
+  assert.equal(editedRecord.evaluation.text, 'テスト評価');
+  assert.equal(editedRecord.editCount, 1);
+  assert.ok(editedRecord.editedAt);
+  assert.equal(editedRecord.respondent.name, config.name);
+
+  const invalidEdit = await json(`/api/local/emotion-curves/${record.id}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ gameTitle: 'Example Quest', entries: [] }),
+  });
+  assert.equal(invalidEdit.status, 400);
+  const missingEdit = await json('/api/local/emotion-curves/unknown-id', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ gameTitle: 'X', entries: [{ timeSeconds: 1, stamp: 'hype' }] }),
+  });
+  assert.equal(missingEdit.status, 404);
 });

@@ -1,11 +1,11 @@
 {
   "name": "emotion-capture-companion",
-  "description": "感情キャプチャ・コンパニオン: ゲーム同期タイムラインのセッションライフサイクル、ペアリング、iPhone 視線/音声取り込み、LAN companion listener の境界。",
+  "description": "感情キャプチャ・コンパニオン: ゲーム同期タイムラインのセッションライフサイクル、ペアリング、iPhone/デスクトップの視線・音声・録画取り込み、事後の視線推定とリプレイ、感情曲線の編集、LAN companion listener の境界。",
   "presetRules": [],
   "templateRules": [],
   "membership": [
     {
-      "pathPattern": "(^|/)player-profile-server/(frontend/src/(components/(CaptureTimelineView|EmotionCurveRecordCard)|pages/CaptureSessionPage)\\.jsx|src/services/captureSession/[^/]+\\.js|src/services/captureAnalysis/[^/]+\\.js|src/local/(captureSessionComposition|captureSessionRoutes(?:\\.test)?|companionApp(?:\\.test)?|companionListener|companionPage|localContext)\\.js|spec/feature/emotion-capture-companion\\.md)$"
+      "pathPattern": "(^|/)player-profile-server/(frontend/src/(components/(CaptureTimelineView|CaptureReplayView|CaptureDesktopPanel|CaptureRecordingUpload|GazeAnalysisControl|GazeCalibrationOverlay|EmotionCurveRecordCard|EmotionCurveEditor)\\.jsx|hooks/useDesktopCapture\\.js|lib/(captureRecording|gazeOverlay)(?:\\.test)?\\.js|lib/gaze/[^/]+\\.js|pages/CaptureSessionPage\\.jsx)|scripts/setup-gaze-model\\.js|src/services/captureSession/[^/]+\\.js|src/services/captureAnalysis/[^/]+\\.js|src/local/(captureSessionComposition|captureSessionRoutes(?:\\.test)?|companionApp(?:\\.test)?|companionListener|companionPage|localContext)\\.js|spec/feature/emotion-capture-companion\\.md)$"
     }
   ],
   "specRefs": [

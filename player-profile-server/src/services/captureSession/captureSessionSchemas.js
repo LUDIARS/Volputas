@@ -117,6 +117,81 @@ function validateSyncInput(body = {}) {
   };
 }
 
+// Screen / face recordings arrive as raw streams; their placement on the
+// session clock travels in headers. startSessionMs is mandatory: a recording
+// that cannot be anchored cannot be replayed against gaze, markers or speech.
+function validateVideoMetaInput(headers = {}) {
+  const startSessionMs = optionalNumber(
+    headers['x-capture-start-session-ms'], 0, MAXIMUM_SESSION_MS, 'x-capture-start-session-ms'
+  );
+  if (startSessionMs === null) {
+    throw invalidInput('x-capture-start-session-ms header is required for recordings');
+  }
+  return {
+    startSessionMs: Math.round(startSessionMs),
+    durationSeconds: optionalNumber(
+      headers['x-capture-duration-seconds'], 0, 24 * 3600, 'x-capture-duration-seconds'
+    ),
+    width: optionalNumber(headers['x-capture-width'], 1, 16384, 'x-capture-width'),
+    height: optionalNumber(headers['x-capture-height'], 1, 16384, 'x-capture-height'),
+  };
+}
+
+// Gaze calibration: while the face camera records, the desktop UI shows target
+// dots one after another; each point is the screen position (normalized) and
+// the session-clock window during which the player looked at it. Post-hoc gaze
+// estimation fits its screen mapping on exactly these windows.
+const MINIMUM_CALIBRATION_POINTS = 3;
+const MAXIMUM_CALIBRATION_POINTS = 25;
+
+function validateCalibrationPoint(point = {}) {
+  const x = Number(point.x);
+  const y = Number(point.y);
+  if (!Number.isFinite(x) || x < 0 || x > 1 || !Number.isFinite(y) || y < 0 || y > 1) {
+    throw invalidInput('Calibration point coordinates must be within 0..1');
+  }
+  const fromSessionMs = Number(point.fromSessionMs);
+  const toSessionMs = Number(point.toSessionMs);
+  if (!Number.isFinite(fromSessionMs) || fromSessionMs < 0 || fromSessionMs > MAXIMUM_SESSION_MS
+    || !Number.isFinite(toSessionMs) || toSessionMs <= fromSessionMs || toSessionMs > MAXIMUM_SESSION_MS) {
+    throw invalidInput('Calibration point needs fromSessionMs < toSessionMs on the session clock');
+  }
+  return { x, y, fromSessionMs: Math.round(fromSessionMs), toSessionMs: Math.round(toSessionMs) };
+}
+
+function validateCalibrationInput(body = {}) {
+  if (!Array.isArray(body.points)) throw invalidInput('points must be an array');
+  if (body.points.length < MINIMUM_CALIBRATION_POINTS || body.points.length > MAXIMUM_CALIBRATION_POINTS) {
+    throw invalidInput(
+      `points must contain between ${MINIMUM_CALIBRATION_POINTS} and ${MAXIMUM_CALIBRATION_POINTS} entries`
+    );
+  }
+  return {
+    points: body.points.map(validateCalibrationPoint),
+    screen: {
+      width: optionalNumber(body.screen?.width, 1, 16384, 'screen.width'),
+      height: optionalNumber(body.screen?.height, 1, 16384, 'screen.height'),
+    },
+  };
+}
+
+// Post-hoc gaze estimation streams its samples as NDJSON; the provenance of the
+// estimator travels in headers so the record can say how the samples were made.
+function validateGazeEstimationMetaInput(headers = {}) {
+  const extractor = optionalText(headers['x-gaze-extractor'], 120);
+  if (!extractor) throw invalidInput('x-gaze-extractor header is required');
+  const calibratedRaw = headers['x-gaze-calibrated'];
+  if (calibratedRaw !== 'true' && calibratedRaw !== 'false') {
+    throw invalidInput('x-gaze-calibrated header must be true or false');
+  }
+  return {
+    extractor,
+    calibrated: calibratedRaw === 'true',
+    fitError: optionalNumber(headers['x-gaze-fit-error'], 0, 10, 'x-gaze-fit-error'),
+    frameRate: optionalNumber(headers['x-gaze-frame-rate'], 0.1, 240, 'x-gaze-frame-rate'),
+  };
+}
+
 function validateAudioMetaInput(headers = {}) {
   return {
     durationSeconds: optionalNumber(
@@ -129,16 +204,22 @@ function validateAudioMetaInput(headers = {}) {
 }
 
 module.exports = {
+  MAXIMUM_CALIBRATION_POINTS,
+  MINIMUM_CALIBRATION_POINTS,
   MARKER_ORIGINS,
   MARKER_TYPES,
   MAXIMUM_GAZE_BATCH,
   MAXIMUM_SESSION_MS,
   SIGNAL_ACTIONS,
   validateAudioMetaInput,
+  validateCalibrationInput,
   validateGazeBatchInput,
+  validateGazeEstimationMetaInput,
+  validateGazeSample,
   validateJoinInput,
   validateMarkerInput,
   validateSignalInput,
   validateStartInput,
   validateSyncInput,
+  validateVideoMetaInput,
 };

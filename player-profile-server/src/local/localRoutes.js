@@ -239,6 +239,41 @@ function createLocalRoutes({
     return fs.readFile(media.filePath, 'utf8');
   }
 
+  // Human editing of a saved emotion curve (spec/feature/emotion-capture-companion.md
+  // §感情曲線の編集): capture-derived curves start as machine drafts and the
+  // player corrects stamps, affect and comments afterwards. Identity fields
+  // (mode, capture session, media file names, respondent) are taken from the
+  // stored record so an edit can never re-home a curve; the AI evaluation is
+  // kept but flagged stale by editedAt > evaluatedAt on the client.
+  router.put('/emotion-curves/:recordId', async (req, res, next) => {
+    try {
+      const { config, gitAuthor } = await configuredContext();
+      const context = { repositoryRoot: gitAuthor.repositoryRoot, name: config.name };
+      const records = await emotionCurveStore.list(context);
+      const existing = records.find((item) => item.id === req.params.recordId);
+      if (!existing) throw new AppError(404, 'PROFILE_RECORD_NOT_FOUND', 'Emotion curve not found');
+      const validated = validateEmotionCurveInput({
+        ...req.body,
+        mode: existing.mode,
+        captureSessionId: existing.captureSessionId,
+        videoFileName: existing.videoFileName,
+        gameLogFileName: existing.gameLogFileName,
+      });
+      const result = await emotionCurveStore.write({
+        ...context,
+        data: {
+          ...existing,
+          ...validated,
+          editedAt: new Date().toISOString(),
+          editCount: (existing.editCount || 0) + 1,
+        },
+      });
+      return res.json({ ok: true, data: result.record });
+    } catch (error) {
+      return next(asAppError(error));
+    }
+  });
+
   router.post('/emotion-curves/:recordId/evaluate', async (req, res, next) => {
     try {
       const { config, gitAuthor } = await configuredContext();

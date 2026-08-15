@@ -19,6 +19,14 @@ function createProfileClient(mode) {
     create(kind, body) {
       return request(`${base}/${kind}`, { method: 'POST', body });
     },
+    // Human editing of a saved record; local-mode only for now (the capture
+    // pipeline that produces machine drafts is local-only as well).
+    update(kind, recordId, body) {
+      if (!isLocal) {
+        return Promise.reject(new Error('記録の編集はローカルモード専用です。'));
+      }
+      return request(`${base}/${kind}/${recordId}`, { method: 'PUT', body });
+    },
     upload(kind, recordId, file) {
       return upload(`${base}/media/${kind}/${recordId}`, file);
     },

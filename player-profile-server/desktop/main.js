@@ -2,8 +2,10 @@ const path = require('node:path');
 const {
   app,
   BrowserWindow,
+  desktopCapturer,
   dialog,
   ipcMain,
+  session,
   shell,
   utilityProcess,
 } = require('electron');
@@ -77,6 +79,22 @@ async function bootstrap() {
   });
 
   await app.whenReady();
+  // getDisplayMedia (game-screen recording on the emotion capture page) needs
+  // an explicit handler in Electron. Prefer the OS picker; where it is not
+  // available, offer the primary screen with loopback (system) audio so the
+  // recording carries the game sound (spec/feature/emotion-capture-companion.md
+  // §デスクトップキャプチャ).
+  session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] })
+      .then((sources) => {
+        if (sources.length === 0) {
+          callback({});
+          return;
+        }
+        callback({ video: sources[0], audio: 'loopback' });
+      })
+      .catch(() => callback({}));
+  }, { useSystemPicker: true });
   app.setAppUserModelId('com.squirrel.Volputas.Volputas');
   registerDesktopHandlers();
   stopUpdates = startAutoUpdates({ isPackaged: app.isPackaged });

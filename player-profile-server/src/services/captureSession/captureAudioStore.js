@@ -3,17 +3,12 @@
 // capture media is not evidence media, and registering it in the shared
 // registry would force a Cernere column declaration the capture feature does
 // not want yet (spec/feature/emotion-capture-companion.md 非目標).
-const fs = require('node:fs');
-const fsPromises = require('node:fs/promises');
-const path = require('node:path');
-const { Transform } = require('node:stream');
-const { pipeline } = require('node:stream/promises');
-const { randomUUID } = require('node:crypto');
 const {
   assertSafeSegment,
   collectionDirectory,
   insideRepository,
 } = require('../profileDataPaths');
+const { resolveMediaFile, saveMediaStream, unsupportedMediaType } = require('./captureMediaFile');
 
 const AUDIO_MEDIA_KIND = 'capture-audio';
 
@@ -40,57 +35,25 @@ class CaptureAudioStore {
 
   async save({ repositoryRoot, name, sessionId, contentType, stream }) {
     const extension = AUDIO_RULE.contentTypes[contentType];
-    if (!extension) {
-      throw Object.assign(new Error('Unsupported audio type'), {
-        statusCode: 415,
-        code: 'UNSUPPORTED_MEDIA_TYPE',
-      });
-    }
+    if (!extension) throw unsupportedMediaType('audio');
     assertSafeSegment(sessionId, 'Session ID');
     const directory = this.directory({ repositoryRoot, name });
     const filePath = insideRepository(directory, `${sessionId}${extension}`);
-    const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-    let bytes = 0;
-    const limiter = new Transform({
-      transform(chunk, _encoding, callback) {
-        bytes += chunk.length;
-        if (bytes > AUDIO_RULE.maximumBytes) {
-          callback(Object.assign(new Error('Audio file is too large'), {
-            statusCode: 413,
-            code: 'MEDIA_TOO_LARGE',
-          }));
-          return;
-        }
-        callback(null, chunk);
-      },
+    const saved = await saveMediaStream({
+      filePath,
+      stream,
+      maximumBytes: AUDIO_RULE.maximumBytes,
     });
-
-    await fsPromises.mkdir(directory, { recursive: true });
-    try {
-      await pipeline(stream, limiter, fs.createWriteStream(temporaryPath, { flags: 'wx' }));
-      await fsPromises.rename(temporaryPath, filePath);
-      return { filePath, fileName: path.basename(filePath), bytes, contentType };
-    } catch (error) {
-      // The primary pipeline/rename error is more useful than a best-effort
-      // cleanup failure for a temporary file that may not exist.
-      await fsPromises.unlink(temporaryPath).catch(() => {});
-      throw error;
-    }
+    return { ...saved, contentType };
   }
 
   async resolve({ repositoryRoot, name, sessionId }) {
     assertSafeSegment(sessionId, 'Session ID');
-    const directory = this.directory({ repositoryRoot, name });
-    for (const [contentType, extension] of Object.entries(AUDIO_RULE.contentTypes)) {
-      const filePath = path.join(directory, `${sessionId}${extension}`);
-      try {
-        await fsPromises.access(filePath);
-        return { filePath, contentType };
-      } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
-      }
-    }
-    return null;
+    return resolveMediaFile({
+      directory: this.directory({ repositoryRoot, name }),
+      baseName: sessionId,
+      contentTypes: AUDIO_RULE.contentTypes,
+    });
   }
 }
 

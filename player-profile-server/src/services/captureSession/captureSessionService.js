@@ -16,10 +16,11 @@ function captureError(statusCode, code, message) {
 }
 
 class CaptureSessionService {
-  constructor({ recordStore, gazeLog, audioStore, pairing, now = () => new Date() }) {
+  constructor({ recordStore, gazeLog, audioStore, videoStore, pairing, now = () => new Date() }) {
     this.recordStore = recordStore;
     this.gazeLog = gazeLog;
     this.audioStore = audioStore;
+    this.videoStore = videoStore;
     this.pairing = pairing;
     this.now = now;
     this.activeSession = null; // { record, context }
@@ -27,7 +28,7 @@ class CaptureSessionService {
     this.mutationQueue = Promise.resolve();
     this.initializedContexts = new Set();
     this.contextInitializations = new Map();
-    this.audioUploads = new Set();
+    this.uploadsInFlight = new Set(); // audio: sessionId, video: `${sessionId}:${kind}`
   }
 
   currentSessionMs(record) {
@@ -123,10 +124,16 @@ class CaptureSessionService {
         devices: [],
         capture: {
           gazeSampleCount: 0,
+          // 'companion' = live samples from a paired device, 'face-video' =
+          // post-hoc estimation over the face recording (§視線推定).
+          gazeSource: null,
           audioFileName: null,
           audioDurationSeconds: null,
           audioStartSessionMs: null,
+          screenRecording: null,
+          faceRecording: null,
         },
+        calibration: null,
       },
     });
     this.activeSession = { record, context };
@@ -287,7 +294,7 @@ class CaptureSessionService {
       const total = record.capture.gazeSampleCount + batch.samples.length;
       holder.record = {
         ...record,
-        capture: { ...record.capture, gazeSampleCount: total },
+        capture: { ...record.capture, gazeSampleCount: total, gazeSource: 'companion' },
       };
       return { accepted: batch.samples.length, total };
     });
@@ -305,14 +312,26 @@ class CaptureSessionService {
 
   async attachAudio(token, { contentType, stream, durationSeconds, startSessionMs }) {
     const { holder } = this.companionSession(token);
-    const { record, context } = holder;
+    return this.attachAudioTo(holder.record, holder.context, {
+      contentType, stream, durationSeconds, startSessionMs,
+    });
+  }
+
+  // Loopback variant for the desktop capture panel: the browser tab that
+  // recorded the microphone uploads after stop, no pairing token involved.
+  async attachAudioLocal(context, sessionId, input) {
+    const record = await this.findRecord(context, sessionId);
+    return this.attachAudioTo(record, context, input);
+  }
+
+  async attachAudioTo(record, context, { contentType, stream, durationSeconds, startSessionMs }) {
     if (record.status === 'recording') {
       throw captureError(409, 'CAPTURE_SESSION_RECORDING', 'Stop the capture session before uploading audio');
     }
-    if (record.capture.audioFileName || this.audioUploads.has(record.id)) {
+    if (record.capture.audioFileName || this.uploadsInFlight.has(record.id)) {
       throw captureError(409, 'CAPTURE_AUDIO_EXISTS', 'Session audio has already been uploaded');
     }
-    this.audioUploads.add(record.id);
+    this.uploadsInFlight.add(record.id);
     try {
       const saved = await this.audioStore.save({
         ...context,
@@ -320,10 +339,10 @@ class CaptureSessionService {
         contentType,
         stream,
       });
-      const updated = {
-        ...holder.record,
+      await this.patchRecord(context, record.id, (current) => ({
+        ...current,
         capture: {
-          ...holder.record.capture,
+          ...current.capture,
           audioFileName: saved.fileName,
           audioDurationSeconds: durationSeconds,
           // Where on the session clock the recording began; the transcript
@@ -331,13 +350,94 @@ class CaptureSessionService {
           // guess).
           audioStartSessionMs: startSessionMs ?? null,
         },
-      };
-      const { record: persisted } = await this.recordStore.write({ ...context, data: updated });
-      holder.record = persisted;
+      }));
       return { fileName: saved.fileName, bytes: saved.bytes };
     } finally {
-      this.audioUploads.delete(record.id);
+      this.uploadsInFlight.delete(record.id);
     }
+  }
+
+  // Screen (gameplay) and face (player camera) recordings. Unlike audio these
+  // may be re-uploaded: an external recorder file can replace an in-browser
+  // capture, and the newer file simply wins.
+  async attachVideo(context, sessionId, {
+    kind, contentType, stream, startSessionMs, durationSeconds, width, height,
+  }) {
+    const record = await this.findRecord(context, sessionId);
+    if (record.status === 'recording') {
+      throw captureError(409, 'CAPTURE_SESSION_RECORDING', 'Stop the capture session before uploading recordings');
+    }
+    const uploadKey = `${record.id}:${kind}`;
+    if (this.uploadsInFlight.has(uploadKey)) {
+      throw captureError(409, 'CAPTURE_UPLOAD_IN_PROGRESS', 'This recording is already being uploaded');
+    }
+    this.uploadsInFlight.add(uploadKey);
+    try {
+      const saved = await this.videoStore.save({
+        ...context, sessionId: record.id, kind, contentType, stream,
+      });
+      const field = `${kind}Recording`;
+      await this.patchRecord(context, record.id, (current) => ({
+        ...current,
+        capture: {
+          ...current.capture,
+          [field]: {
+            fileName: saved.fileName,
+            contentType: saved.contentType,
+            bytes: saved.bytes,
+            startSessionMs,
+            durationSeconds,
+            width,
+            height,
+            uploadedAt: this.now().toISOString(),
+          },
+        },
+      }));
+      return { fileName: saved.fileName, bytes: saved.bytes };
+    } finally {
+      this.uploadsInFlight.delete(uploadKey);
+    }
+  }
+
+  // Calibration windows are recorded while the face camera runs (usually right
+  // after start), so this is allowed on the active session as well as on a
+  // finished one whose calibration is being corrected.
+  async saveCalibration(context, sessionId, input) {
+    return this.patchRecord(context, sessionId, (current) => ({
+      ...current,
+      calibration: {
+        schemaVersion: 1,
+        recordedAt: this.now().toISOString(),
+        screen: input.screen,
+        points: input.points,
+      },
+    }));
+  }
+
+  // Post-hoc gaze estimation replaces whatever gaze log exists: the estimator
+  // ran over the whole face recording, so partial merges would only mix
+  // sources. Companion (live) samples are overwritten deliberately and the
+  // record says so through gazeSource.
+  async replaceGazeSamples(context, sessionId, { samples, estimation }) {
+    const record = await this.findRecord(context, sessionId);
+    if (record.status === 'recording') {
+      throw captureError(409, 'CAPTURE_SESSION_RECORDING', 'Stop the capture session before replacing gaze samples');
+    }
+    const written = await this.gazeLog.replace({ ...context, sessionId }, samples);
+    return this.patchRecord(context, sessionId, (current) => ({
+      ...current,
+      capture: {
+        ...current.capture,
+        gazeSampleCount: written.written,
+        gazeSource: 'face-video',
+      },
+      gazeEstimation: {
+        schemaVersion: 1,
+        ...estimation,
+        sampleCount: written.written,
+        estimatedAt: this.now().toISOString(),
+      },
+    }));
   }
 
   // ---- read-side ----
@@ -355,15 +455,15 @@ class CaptureSessionService {
     return record;
   }
 
-  // Persists a derived analysis onto a (usually finished) session record. The
-  // in-memory holder is refreshed when one still exists so later writes do not
-  // resurrect the pre-analysis record.
-  async saveAnalysis(context, sessionId, analysis) {
+  // Serialized read-modify-write of one session record. In-memory holders
+  // (active / recently finished) are refreshed so a later write from the
+  // companion path does not resurrect the pre-patch record.
+  async patchRecord(context, sessionId, patch) {
     return this.enqueueMutation(async () => {
       const record = await this.findRecord(context, sessionId);
       const { record: persisted } = await this.recordStore.write({
         ...context,
-        data: { ...record, analysis },
+        data: patch(record),
       });
       if (this.activeSession && this.activeSession.record.id === sessionId) {
         this.activeSession.record = persisted;
@@ -374,10 +474,26 @@ class CaptureSessionService {
     });
   }
 
+  // Persists a derived analysis onto a (usually finished) session record.
+  async saveAnalysis(context, sessionId, analysis) {
+    return this.patchRecord(context, sessionId, (record) => ({ ...record, analysis }));
+  }
+
   async timeline(context, sessionId) {
     const record = await this.findRecord(context, sessionId);
     const gazeSamples = await this.gazeLog.read({ ...context, sessionId });
     return buildTimeline({ session: record, gazeSamples });
+  }
+
+  // Raw samples for the replay overlay (the timeline only carries 5s bins).
+  async gazeSamples(context, sessionId) {
+    await this.findRecord(context, sessionId);
+    return this.gazeLog.read({ ...context, sessionId });
+  }
+
+  async resolveVideo(context, sessionId, kind) {
+    await this.findRecord(context, sessionId);
+    return this.videoStore.resolve({ ...context, sessionId, kind });
   }
 
   async resolveAudio(context, sessionId) {

@@ -1,0 +1,15 @@
+{
+  "name": "narrative-arc",
+  "description": "ナラティブアーク: 同一プレイヤー×同一ゲームの複数感情曲線を進行 0..1 軸に正規化して集約し、形状分類・ピーク/谷/終端・回を重ねた傾向を決定的に導出、LLM 解説は派生物として分離する境界。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/(frontend/src/(components/NarrativeArcChart\\.jsx|pages/NarrativeArcPage\\.jsx)|src/services/narrativeArc/[^/]+\\.js|src/local/narrativeArcRoutes(?:\\.test)?\\.js|spec/feature/narrative-arc\\.md)$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-NARRATIVE-ARC"
+  ],
+  "source": "spec-review"
+}

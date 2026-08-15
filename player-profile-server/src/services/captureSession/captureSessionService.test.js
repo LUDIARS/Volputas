@@ -34,6 +34,28 @@ function fakeGazeLog() {
     async read({ sessionId }) {
       return samplesBySession.get(sessionId) || [];
     },
+    async replace({ sessionId }, samples) {
+      const collected = [];
+      for await (const sample of samples) collected.push(sample);
+      samplesBySession.set(sessionId, collected);
+      return { filePath: `/media/${sessionId}.jsonl`, written: collected.length };
+    },
+  };
+}
+
+function fakeVideoStore() {
+  const saved = [];
+  return {
+    saved,
+    async save({ sessionId, kind, contentType }) {
+      saved.push({ sessionId, kind, contentType });
+      return { filePath: `/media/${kind}/${sessionId}.webm`, fileName: `${sessionId}.webm`, bytes: 7, contentType, kind };
+    },
+    async resolve({ sessionId, kind }) {
+      return saved.some((entry) => entry.sessionId === sessionId && entry.kind === kind)
+        ? { filePath: `/media/${kind}/${sessionId}.webm`, contentType: 'video/webm' }
+        : null;
+    },
   };
 }
 
@@ -47,14 +69,16 @@ function createService({ startMs = 0 } = {}) {
     },
     async resolve() { return null; },
   };
+  const videoStore = fakeVideoStore();
   const service = new CaptureSessionService({
     recordStore,
     gazeLog,
     audioStore,
+    videoStore,
     pairing: new CapturePairing({ now: () => nowMs }),
     now: () => new Date(nowMs),
   });
-  return { service, recordStore, gazeLog, advance: (ms) => { nowMs += ms; } };
+  return { service, recordStore, gazeLog, videoStore, advance: (ms) => { nowMs += ms; } };
 }
 
 test('a game start signal opens a session and a second start is rejected', async () => {
@@ -192,6 +216,7 @@ test('marker and stop writes are serialized into one completed record', async ()
     recordStore: delayedStore,
     gazeLog: fakeGazeLog(),
     audioStore: { async save() {}, async resolve() { return null; } },
+    videoStore: fakeVideoStore(),
     pairing: new CapturePairing(),
   });
   await service.start(CONTEXT, { gameTitle: 'X', gameClockMs: null }, 'manual');
@@ -218,6 +243,7 @@ test('startup recovery marks persisted recording sessions as interrupted', async
     recordStore,
     gazeLog,
     audioStore: { async save() {}, async resolve() { return null; } },
+    videoStore: fakeVideoStore(),
     pairing: new CapturePairing(),
   });
   const started = await firstService.start(
@@ -233,6 +259,7 @@ test('startup recovery marks persisted recording sessions as interrupted', async
     recordStore,
     gazeLog,
     audioStore: { async save() {}, async resolve() { return null; } },
+    videoStore: fakeVideoStore(),
     pairing: new CapturePairing(),
   });
 
@@ -242,4 +269,107 @@ test('startup recovery marks persisted recording sessions as interrupted', async
   assert.equal(recovered.status, 'interrupted');
   assert.equal(recovered.endedAt, null);
   assert.equal(recovered.capture.gazeSampleCount, 1);
+});
+
+test('desktop capture uploads audio without a token and refuses a second copy', async () => {
+  const { service } = createService();
+  const started = await service.start(CONTEXT, { gameTitle: 'X', gameClockMs: null }, 'manual');
+  await assert.rejects(
+    service.attachAudioLocal(CONTEXT, started.id, {
+      contentType: 'audio/webm', stream: null, durationSeconds: 10, startSessionMs: 0,
+    }),
+    /Stop the capture session/
+  );
+  await service.stop();
+  const uploaded = await service.attachAudioLocal(CONTEXT, started.id, {
+    contentType: 'audio/webm', stream: null, durationSeconds: 10, startSessionMs: 250,
+  });
+  assert.equal(uploaded.fileName, `${started.id}.webm`);
+  const record = await service.findRecord(CONTEXT, started.id);
+  assert.equal(record.capture.audioStartSessionMs, 250);
+  await assert.rejects(
+    service.attachAudioLocal(CONTEXT, started.id, {
+      contentType: 'audio/webm', stream: null, durationSeconds: 10, startSessionMs: 0,
+    }),
+    /already been uploaded/
+  );
+});
+
+test('screen and face recordings are anchored on the session clock and may be replaced', async () => {
+  const { service, videoStore } = createService();
+  const started = await service.start(CONTEXT, { gameTitle: 'X', gameClockMs: null }, 'manual');
+  await assert.rejects(
+    service.attachVideo(CONTEXT, started.id, {
+      kind: 'screen', contentType: 'video/webm', stream: null, startSessionMs: 0,
+      durationSeconds: 60, width: 1920, height: 1080,
+    }),
+    /Stop the capture session/
+  );
+  await service.stop();
+  await service.attachVideo(CONTEXT, started.id, {
+    kind: 'screen', contentType: 'video/webm', stream: null, startSessionMs: 1200,
+    durationSeconds: 60, width: 1920, height: 1080,
+  });
+  await service.attachVideo(CONTEXT, started.id, {
+    kind: 'face', contentType: 'video/webm', stream: null, startSessionMs: 0,
+    durationSeconds: 61.5, width: null, height: null,
+  });
+  let record = await service.findRecord(CONTEXT, started.id);
+  assert.equal(record.capture.screenRecording.startSessionMs, 1200);
+  assert.equal(record.capture.screenRecording.width, 1920);
+  assert.equal(record.capture.faceRecording.durationSeconds, 61.5);
+  assert.equal(record.capture.audioFileName, null);
+
+  // An external recorder file replaces the in-browser capture.
+  await service.attachVideo(CONTEXT, started.id, {
+    kind: 'screen', contentType: 'video/mp4', stream: null, startSessionMs: 0,
+    durationSeconds: 65, width: null, height: null,
+  });
+  record = await service.findRecord(CONTEXT, started.id);
+  assert.equal(record.capture.screenRecording.contentType, 'video/mp4');
+  assert.equal(record.capture.screenRecording.startSessionMs, 0);
+  assert.equal(videoStore.saved.length, 3);
+  assert.equal((await service.resolveVideo(CONTEXT, started.id, 'face')).contentType, 'video/webm');
+});
+
+test('calibration is stored on the record and post-hoc gaze replaces live samples', async () => {
+  const { service, gazeLog, advance } = createService();
+  const started = await service.start(CONTEXT, { gameTitle: 'X', gameClockMs: null }, 'manual');
+  const calibrated = await service.saveCalibration(CONTEXT, started.id, {
+    screen: { width: 2560, height: 1440 },
+    points: [
+      { x: 0.1, y: 0.1, fromSessionMs: 1000, toSessionMs: 2500 },
+      { x: 0.9, y: 0.1, fromSessionMs: 3000, toSessionMs: 4500 },
+      { x: 0.5, y: 0.9, fromSessionMs: 5000, toSessionMs: 6500 },
+    ],
+  });
+  assert.equal(calibrated.calibration.points.length, 3);
+  assert.equal(calibrated.calibration.screen.width, 2560);
+
+  const { code } = await service.issuePairing();
+  const { token } = await service.join(code);
+  await service.ingestGaze(token, { samples: [{ sessionMs: 100, x: 0.5, y: 0.5, valid: true }] });
+  advance(10000);
+  await service.stop();
+
+  const replaced = await service.replaceGazeSamples(CONTEXT, started.id, {
+    samples: (async function* samples() {
+      yield { sessionMs: 0, x: 0.2, y: 0.2, valid: true };
+      yield { sessionMs: 33, x: 0.21, y: 0.2, valid: true };
+    }()),
+    estimation: {
+      extractor: 'mediapipe-face-landmarker+affine-calibration',
+      calibrated: true,
+      fitError: 0.04,
+      frameRate: 30,
+    },
+  });
+  assert.equal(replaced.capture.gazeSampleCount, 2);
+  assert.equal(replaced.capture.gazeSource, 'face-video');
+  assert.equal(replaced.gazeEstimation.calibrated, true);
+  assert.equal(replaced.gazeEstimation.sampleCount, 2);
+  assert.deepEqual(gazeLog.samplesBySession.get(started.id).map((sample) => sample.x), [0.2, 0.21]);
+  assert.equal((await service.gazeSamples(CONTEXT, started.id)).length, 2);
+  const timeline = await service.timeline(CONTEXT, started.id);
+  assert.equal(timeline.gazeSource, 'face-video');
 });

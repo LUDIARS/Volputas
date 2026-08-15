@@ -9,8 +9,9 @@
   "scripts": {
     "setup:submodules": "node scripts/setup-submodules.js",
     "setup:survey-data": "node scripts/setup-survey-data.js",
+    "setup:gaze-model": "node scripts/setup-gaze-model.js",
     "survey:local": "node scripts/run-local-survey.js",
-    "build:frontend": "npm --prefix frontend run build",
+    "build:frontend": "npm run setup:gaze-model && npm --prefix frontend run build",
     "prestart:local": "npm run build:frontend",
     "prestart": "npm run migrate && npm run build:frontend",
     "start:local": "node src/localApp.js",
@@ -19,6 +20,7 @@
     "dev": "node --watch src/app.js",
     "migrate": "node migrations/run.js",
     "test": "node --test \"src/**/*.test.js\" \"desktop/**/*.test.js\"",
+    "test:frontend": "npm --prefix frontend test",
     "test:e2e:media": "node scripts/run-media-e2e.js --confirm-local",
     "desktop:package": "npm run build:frontend && electron-forge package",
     "desktop:make": "npm run build:frontend && electron-forge make",

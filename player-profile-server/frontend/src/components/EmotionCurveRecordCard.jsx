@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import EmotionCurveEditor from './EmotionCurveEditor';
 import ProfileMedia from './ProfileMedia';
 import { STAMP_BY_ID } from '../lib/emotionStamps';
 import { useProfileClient } from '../lib/profileClient';
+import { useRuntimeMode } from '../hooks/useRuntimeMode';
 
 function formatTime(seconds) {
   const value = Math.max(0, Number(seconds) || 0);
@@ -12,9 +14,13 @@ function formatTime(seconds) {
 /** @implements SPEC-EMOTION-CAPTURE-COMPANION */
 export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
   const client = useProfileClient();
+  const { mode } = useRuntimeMode();
   const [evaluating, setEvaluating] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState('');
   const [showEvaluation, setShowEvaluation] = useState(false);
+  const evaluationStale = Boolean(record.evaluation && record.editedAt
+    && Date.parse(record.editedAt) > Date.parse(record.evaluation.evaluatedAt));
 
   async function evaluate() {
     setEvaluating(true);
@@ -73,6 +79,7 @@ export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
       <div className="tags-row">
         {record.mode === 'memory' && <span className="tag">記憶スケッチ</span>}
         {record.mode === 'capture' && <span className="tag">キャプチャ由来</span>}
+        {record.editCount > 0 && <span className="tag">編集 {record.editCount} 回</span>}
         {record.narrativeArc && <span className="tag">Arc: {record.narrativeArc}</span>}
         {record.journeyStage && <span className="tag">Journey: {record.journeyStage}</span>}
         {record.totalPlaytimeHours !== null && record.totalPlaytimeHours !== undefined && (
@@ -87,9 +94,21 @@ export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
         AI 評価は、この記録のスタンプ・メモ・プレイ時間・添付ゲームログとペルソナ分析を
         LLM (Claude) に送信して生成します。
       </p>
+      {mode === 'local' && editing && (
+        <EmotionCurveEditor
+          record={record}
+          onSaved={(updated) => { onRecordUpdated(updated); setEditing(false); }}
+          onCancel={() => setEditing(false)}
+        />
+      )}
       <div className="evaluation-actions">
+        {mode === 'local' && !editing && (
+          <button type="button" className="btn-outline" onClick={() => setEditing(true)}>
+            記録を編集
+          </button>
+        )}
         <button type="button" className="btn-outline" disabled={evaluating} onClick={evaluate}>
-          {evaluating ? 'AI 評価中…' : record.evaluation ? 'AI 評価を更新' : 'AI でこの感情曲線を評価'}
+          {evaluating ? 'AI 評価中…' : record.evaluation ? (evaluationStale ? 'AI 評価を更新 (編集後未評価)' : 'AI 評価を更新') : 'AI でこの感情曲線を評価'}
         </button>
         {record.evaluation && (
           <button type="button" className="btn-outline" onClick={() => setShowEvaluation((value) => !value)}>

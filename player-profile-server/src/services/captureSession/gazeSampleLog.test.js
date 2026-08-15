@@ -35,3 +35,15 @@ test('a path-escaping session id is rejected', async (t) => {
     /escapes the data repository|cannot be used in a data path/
   );
 });
+
+test('an empty replacement is rejected without erasing the existing log', async (t) => {
+  const log = new GazeSampleLog();
+  const context = await temporaryContext(t);
+  const original = { sessionMs: 0, x: 0.1, y: 0.2, valid: true };
+  await log.append(context, [original]);
+  await assert.rejects(
+    log.replace(context, []),
+    (error) => error.code === 'INVALID_CAPTURE_INPUT'
+  );
+  assert.deepEqual(await log.read(context), [original]);
+});

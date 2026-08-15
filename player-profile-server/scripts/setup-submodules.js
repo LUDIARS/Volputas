@@ -8,7 +8,9 @@ const packageRoot = path.join(lapilliRoot, 'packages', 'sentiment-core');
 const npmCli = resolveNpmCli();
 
 if (!process.argv.includes('--skip-git-update')) {
-  if (fs.existsSync(lapilliRoot) && !fs.existsSync(path.join(packageRoot, 'package.json'))) {
+  if (isGeneratedDependencyResidue(lapilliRoot, packageRoot)) {
+    fs.rmSync(lapilliRoot, { recursive: true, force: true });
+  } else if (fs.existsSync(lapilliRoot) && !fs.existsSync(path.join(packageRoot, 'package.json'))) {
     throw new Error(
       `Lapilli exists but is incomplete at ${lapilliRoot}; refusing to delete it automatically. `
       + 'Move or remove that directory after preserving any local work, then rerun setup.'
@@ -25,6 +27,21 @@ if (!process.argv.includes('--skip-git-update')) {
     cwd: path.resolve(serverRoot, '..'),
     stdio: 'inherit',
   });
+}
+
+function isGeneratedDependencyResidue(root, packageDirectory) {
+  if (!fs.existsSync(root) || fs.existsSync(path.join(packageDirectory, 'package.json'))) {
+    return false;
+  }
+  const packagesDirectory = path.dirname(packageDirectory);
+  return hasOnlyEntry(root, path.basename(packagesDirectory))
+    && hasOnlyEntry(packagesDirectory, path.basename(packageDirectory))
+    && hasOnlyEntry(packageDirectory, 'node_modules');
+}
+
+function hasOnlyEntry(directory, expectedEntry) {
+  return fs.readdirSync(directory).length === 1
+    && fs.readdirSync(directory)[0] === expectedEntry;
 }
 
 runNpm(['install', '--include=dev', '--package-lock=false']);

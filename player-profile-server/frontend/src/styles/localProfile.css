@@ -812,18 +812,32 @@
   color: var(--color-text-muted);
   margin-top: 1rem;
   white-space: pre-wrap;
+}
+
+/* --- ボイスメモ (VoiceMemoPage) --- */
 .voice-record-button {
   padding: 0.9rem 1rem;
   border: 1px solid var(--color-danger);
   background: rgba(255, 77, 106, 0.08);
   font-weight: 700;
+}
+
 .voice-recording {
   color: white;
   background: var(--color-danger);
+}
+
 .voice-recording-preview {
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
+}
+
 .voice-recording-preview audio,
 .voice-memo-audio {
+  width: 100%;
+}
+
 .voice-transcript-pending {
   font-style: italic;
 }
@@ -920,3 +934,261 @@
 .capture-valence-positive { color: var(--color-primary); }
 .capture-valence-negative { color: var(--color-danger); }
 .capture-valence-neutral { color: var(--color-text-muted); }
+
+/* --- デスクトップキャプチャ (face/mic/screen recording) --- */
+.capture-desktop-panel {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.capture-desktop-panel h4 {
+  margin: 0 0 0.5rem;
+}
+
+.capture-desktop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.capture-desktop-track {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.capture-desktop-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.capture-face-preview {
+  width: 100%;
+  max-width: 240px;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border-radius: 6px;
+}
+
+.capture-upload-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--color-border);
+  font-size: 0.85rem;
+}
+
+.capture-upload-offset {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+}
+
+.capture-upload-offset input {
+  width: 5rem;
+}
+
+/* --- 視線キャリブレーション --- */
+.gaze-calibration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #101014;
+  color: #f4f4f4;
+}
+
+.gaze-calibration-intro {
+  max-width: 32rem;
+  margin: 15vh auto 0;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.gaze-calibration-target {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border-radius: 50%;
+  background: #ff6040;
+  box-shadow: 0 0 0 6px rgba(255, 96, 64, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  transition: transform 0.2s ease;
+}
+
+.gaze-calibration-settle {
+  transform: scale(1.4);
+  opacity: 0.7;
+}
+
+.gaze-calibration-dwell {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.gaze-calibration-cancel {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+}
+
+/* --- リプレイ (screen recording + gaze overlay) --- */
+.capture-replay {
+  margin-top: 0.5rem;
+}
+
+.capture-replay-stage {
+  position: relative;
+  background: #000;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.capture-replay-screen {
+  position: relative;
+}
+
+.capture-replay-screen video {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+}
+
+.capture-gaze-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.capture-face-inset {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 3rem;
+  width: 160px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  background: #000;
+}
+
+.capture-replay-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.capture-timeline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.capture-timeline-legend i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+}
+
+.capture-legend-focus { background: var(--color-primary); }
+.capture-legend-affect { background: var(--color-accent); border-top: 1px dashed var(--color-accent); height: 0; }
+.capture-legend-session { background: var(--color-text-muted); }
+
+.capture-seek-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.gaze-analysis-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.gaze-analysis-video {
+  width: 96px;
+  height: 72px;
+  background: #000;
+  border-radius: 4px;
+}
+
+.gaze-analysis-video:not([src]) {
+  display: none;
+}
+
+/* --- 感情曲線の編集 --- */
+.emotion-curve-editor {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+/* --- ナラティブアーク --- */
+.narrative-arc-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+}
+
+.narrative-arc-stats > div {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.narrative-arc-stats span {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.narrative-arc-stats strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.narrative-arc-stats small {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.narrative-arc-sessions {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin: 0.5rem 0;
+}
+
+.narrative-arc-sessions th,
+.narrative-arc-sessions td {
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}

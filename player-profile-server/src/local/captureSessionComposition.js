@@ -3,6 +3,7 @@
 const { ProfileRecordStore } = require('./profileRecordStore');
 const { CapturePairing } = require('../services/captureSession/capturePairing');
 const { CaptureAudioStore } = require('../services/captureSession/captureAudioStore');
+const { CaptureVideoStore } = require('../services/captureSession/captureVideoStore');
 const { CaptureSessionService } = require('../services/captureSession/captureSessionService');
 const { GazeSampleLog } = require('../services/captureSession/gazeSampleLog');
 const { CaptureAnalysisService } = require('../services/captureAnalysis/captureAnalysisService');
@@ -14,6 +15,7 @@ function createCaptureSessionService() {
     recordStore: new ProfileRecordStore('capture-sessions'),
     gazeLog: new GazeSampleLog(),
     audioStore: new CaptureAudioStore(),
+    videoStore: new CaptureVideoStore(),
     pairing: new CapturePairing(),
   });
 }

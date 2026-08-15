@@ -54,14 +54,63 @@ function aggregateGazeBins(samples, binMs = DEFAULT_BIN_MS) {
     });
 }
 
+// Where a recording sits on the session clock, so the replay view can convert
+// video.currentTime into sessionMs (and back) without guessing.
+function describeRecording(recording) {
+  if (!recording) return null;
+  const durationMs = Number.isFinite(recording.durationSeconds)
+    ? Math.round(recording.durationSeconds * 1000)
+    : null;
+  return {
+    fileName: recording.fileName,
+    contentType: recording.contentType ?? null,
+    startSessionMs: recording.startSessionMs,
+    durationMs,
+    endSessionMs: durationMs === null ? null : recording.startSessionMs + durationMs,
+    width: recording.width ?? null,
+    height: recording.height ?? null,
+  };
+}
+
+// Speech affect per utterance, thinned to the fields the chart needs. The
+// full transcript stays on the record's analysis block.
+function affectSeries(analysis) {
+  if (!analysis || !Array.isArray(analysis.utterances)) return [];
+  return analysis.utterances
+    .filter((utterance) => Number.isFinite(utterance.sessionMs))
+    .map((utterance) => ({
+      sessionMs: utterance.sessionMs,
+      endSessionMs: utterance.endSessionMs ?? null,
+      valence: utterance.valence,
+      arousal: utterance.arousal,
+      text: utterance.text,
+    }))
+    .sort((left, right) => left.sessionMs - right.sessionMs);
+}
+
 function buildTimeline({ session, gazeSamples = [], binMs = DEFAULT_BIN_MS }) {
   const startedAtMs = Date.parse(session.startedAt);
   const endedAtMs = session.endedAt ? Date.parse(session.endedAt) : null;
   const markerMax = session.markers.reduce((max, marker) => Math.max(max, marker.sessionMs), 0);
   const gazeMax = gazeSamples.reduce((max, sample) => Math.max(max, sample.sessionMs), 0);
+  const capture = session.capture || {};
+  const media = {
+    screen: describeRecording(capture.screenRecording),
+    face: describeRecording(capture.faceRecording),
+    audio: capture.audioFileName
+      ? describeRecording({
+        fileName: capture.audioFileName,
+        startSessionMs: capture.audioStartSessionMs ?? 0,
+        durationSeconds: capture.audioDurationSeconds,
+      })
+      : null,
+  };
+  const mediaMax = Object.values(media)
+    .filter((entry) => entry && entry.endSessionMs !== null)
+    .reduce((max, entry) => Math.max(max, entry.endSessionMs), 0);
   const durationMs = endedAtMs !== null
     ? Math.max(endedAtMs - startedAtMs, 0)
-    : Math.max(markerMax, gazeMax);
+    : Math.max(markerMax, gazeMax, mediaMax);
   return {
     sessionId: session.id,
     gameTitle: session.gameTitle,
@@ -69,9 +118,12 @@ function buildTimeline({ session, gazeSamples = [], binMs = DEFAULT_BIN_MS }) {
     durationMs,
     binMs,
     gaze: aggregateGazeBins(gazeSamples, binMs),
+    gazeSource: capture.gazeSource ?? null,
     markers: [...session.markers].sort((left, right) => left.sessionMs - right.sessionMs),
     anchors: [...session.anchors].sort((left, right) => left.sessionMs - right.sessionMs),
+    media,
+    affect: affectSeries(session.analysis),
   };
 }
 
-module.exports = { DEFAULT_BIN_MS, aggregateGazeBins, buildTimeline };
+module.exports = { DEFAULT_BIN_MS, aggregateGazeBins, buildTimeline, describeRecording };

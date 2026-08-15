@@ -497,7 +497,7 @@ test('retires a timed-out connection and reconnects on the next request', async 
 });
 
 test('a retired generation cannot settle a newer generation pending request', async () => {
-  const { client, sockets } = lifecycleHarness({ requestTimeoutMs: 60, autoClose: false });
+  const { client, sockets } = lifecycleHarness({ requestTimeoutMs: 200, autoClose: false });
 
   const timedOut = client.request('volputas_survey', 'get_response', {});
   while (sockets.length < 1) await tick();

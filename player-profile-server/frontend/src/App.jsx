@@ -14,6 +14,7 @@ import GameplayPage from './pages/GameplayPage';
 import LocalSettingsPage from './pages/LocalSettingsPage';
 import LocalSurveysPage from './pages/LocalSurveysPage';
 import LoginPage from './pages/LoginPage';
+import NarrativeArcPage from './pages/NarrativeArcPage';
 import PersonaPage from './pages/PersonaPage';
 import PitchPage from './pages/PitchPage';
 import ProfilePage from './pages/ProfilePage';
@@ -64,6 +65,7 @@ function LocalRoutes() {
         <Route index element={<Navigate to="/surveys" replace />} />
         <Route path="surveys" element={<LocalSurveysPage />} />
         <Route path="capture" element={<CaptureSessionPage />} />
+        <Route path="narrative-arcs" element={<NarrativeArcPage />} />
         {EvidenceRoutes()}
         <Route path="settings" element={<LocalSettingsPage />} />
       </Route>

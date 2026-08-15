@@ -2,10 +2,14 @@
 
 > Spec ID: `SPEC-EMOTION-CAPTURE-COMPANION`
 >
-> 状態: 実装 (2026-08-13)。neco 指示「Volputas の感情分析補助ツールを用意する。ゲームから合図が
+> 状態: 実装 (2026-08-13)、追補 (2026-08-16: デスクトップキャプチャ・録画・事後視線推定・
+> リプレイ・感情曲線の編集)。neco 指示「Volputas の感情分析補助ツールを用意する。ゲームから合図が
 > あった、または自動で開始した Volputas はゲーム画面と同期したタイムラインを持ち、iPhone を通して
-> アイトラッキングと音声のキャプチャを行う」の設計。
-> 関連: `emotion-curve-video-tool.md` (事後の感情曲線記入)、`persona-engine-v2-design.md`。
+> アイトラッキングと音声のキャプチャを行う」および「感情分析処理を仕上げる (音声+映像キャプチャ →
+> 事後の視線解析をゲーム画面に反映 → 録画アップロードでタイムライン → STT 感情曲線 → 人間が編集 →
+> 複数プレイでナラティブアーク)」の設計。
+> 関連: `emotion-curve-video-tool.md` (事後の感情曲線記入)、`narrative-arc.md` (複数セッションの集約)、
+> `persona-engine-v2-design.md`。
 
 ## 目的
 
@@ -90,6 +94,11 @@ iPhone (同一 LAN) ──/api/join /api/gaze /api/audio ───▶ companion 
 
 | Method | Path | 動作 |
 |---|---|---|
+| PUT | `/api/local/capture-sessions/:id/audio` | この PC で録った音声 (companion `PUT /api/audio` と同じヘッダ契約、停止後・1 回限り) |
+| PUT/GET | `/api/local/capture-sessions/:id/recordings/:kind` | `screen` / `face` 録画の保存 (`x-capture-start-session-ms` 必須、`-duration-seconds` / `-width` / `-height` 任意) と配信 |
+| PUT | `/api/local/capture-sessions/:id/calibration` | 視線キャリブレーション窓の保存 (3〜25 点) |
+| PUT/GET | `/api/local/capture-sessions/:id/gaze` | 事後推定の視線サンプル置換 (`application/x-ndjson`、`x-gaze-extractor` / `x-gaze-calibrated` 必須) と生サンプル取得 |
+| PUT | `/api/local/emotion-curves/:recordId` | 感情曲線の人間編集 (§感情曲線の編集) |
 | POST | `/api/local/capture-sessions/signal` | ゲーム合図。`action: start/stop/marker` |
 | POST | `/api/local/capture-sessions` | 手動開始 `{ gameTitle }` |
 | GET | `/api/local/capture-sessions` | セッション一覧 |
@@ -179,10 +188,118 @@ capture-audio ──ffmpeg (16kHz mono WAV)──▶ whisper-stt (ローカル, 
   `GET /analysis/status` (STT/ffmpeg 設定状態)。
 - LLM 評価は既存の感情曲線評価 (`claude-cli` 既定 = ローカル) をそのまま使う。
 
+## デスクトップキャプチャ (追補 2026-08-16)
+
+> neco 指示 (1)(2): 「Volputas 上で音声+映像をキャプチャ」「ゲームプレイを録画 (音声も)」。
+
+iPhone が無くても、Volputas を開いている PC だけで完結するキャプチャ経路。`CaptureSessionPage` の
+録画中カードに **この PC で録画** パネル (`CaptureDesktopPanel` + `useDesktopCapture`) を置く。
+
+- **顔カメラ + マイク** — `getUserMedia({ video, audio })` を 2 本の `MediaRecorder` で記録する:
+  映像+音声 (`video/webm`、事後の視線推定用) と音声のみ (`audio/webm`、STT 用)。同じストリーム
+  なので開始時刻は同じ。
+- **ゲーム画面 (音声込み)** — `getDisplayMedia({ video, audio: true })`。ブラウザ/OS の画面選択で
+  ゲームのウィンドウか画面を選ぶ。Electron 版は `setDisplayMediaRequestHandler` (OS ピッカー優先、
+  無ければプライマリ画面 + loopback 音声) を `desktop/main.js` に持つ。「共有を停止」は録画停止として扱う。
+- **セッションクロックへの固定** — 各レコーダの `onstart` / `onstop` 時点の `sessionMs`
+  (= `Date.now() − startedAt`。同一 PC なのでサーバと時計が一致) を控え、アップロード時に
+  ヘッダで申告する。サーバは推測しない (音声の `CAPTURE_AUDIO_UNANCHORED` と同じ姿勢)。
+- **停止順序** — 「セッション終了」はレコーダ停止 → `POST /active/stop` → アップロードの順。
+  録画の終端がセッションクロック上に載り、アップロードは `completed` なセッションに対して行われる。
+  ゲーム合図で先に停止された場合はポーリングで検知し、束縛していたセッション ID へ同じ順で送る。
+- **事後アップロード** — OBS 等の外部録画・別端末の音声は完了後に `CaptureRecordingUpload`
+  (種類 = screen / face / audio、セッション開始からのずれ秒) で追加できる。録画 (screen/face) は
+  再アップロードで置き換え可、音声は 1 セッション 1 回のまま。
+
+### 録画のデータモデル
+
+`capture` に追加:
+
+```jsonc
+"capture": {
+  "gazeSampleCount": 0,
+  "gazeSource": "companion" | "face-video" | null,
+  "audioFileName": null, "audioDurationSeconds": null, "audioStartSessionMs": null,
+  "screenRecording": { "fileName": "<id>.webm", "contentType": "video/webm", "bytes": 0,
+                        "startSessionMs": 0, "durationSeconds": 0, "width": 1920, "height": 1080,
+                        "uploadedAt": "ISO8601" } | null,
+  "faceRecording":   { ...同上 } | null
+},
+"calibration": { "schemaVersion": 1, "recordedAt": "ISO8601", "screen": { "width", "height" },
+                 "points": [{ "x": 0..1, "y": 0..1, "fromSessionMs": 0, "toSessionMs": 0 }] } | null,
+"gazeEstimation": { "schemaVersion": 1, "extractor": "mediapipe-face-landmarker+affine-calibration",
+                    "calibrated": true, "fitError": 0.04, "frameRate": 15, "sampleCount": 0,
+                    "estimatedAt": "ISO8601" } | null
+```
+
+- 録画ファイルは `media/<name>/capture-screen/<sessionId>.<ext>` / `capture-face/…`
+  (`captureVideoStore`、webm/mp4/mov/mkv、最大 8GB、別拡張子での再アップロードは旧ファイルを消す)。
+  音声・視線と同じく evidence media レジストリには**登録しない**。共通のストリーム→一時ファイル→
+  rename は `captureMediaFile.js` に切り出し、音声ストアも同じ実装を使う。
+
+## 視線推定 (追補 2026-08-16)
+
+> neco 指示 (1-1)(1-2): 「後からプレイしている人間の視線を解析 (アイトラッキング)」「アイトラッキングは
+> ゲーム画面に反映する」。ARKit ネイティブコンパニオンが無くても、顔カメラ映像から事後に推定する。
+
+```
+顔カメラ録画 ──(ブラウザ内再生 4x, 15fps 間引き)──▶ MediaPipe Face Landmarker (WASM, ローカル配信)
+   └─ 478 点ランドマーク ──▶ gazeFeatures: [irisX, irisY, yaw, pitch, 1]
+        └─ gazeCalibration: キャリブレーション窓のフレームで最小二乗 (リッジ付き) affine 当てはめ
+             └─ 画面正規化座標 (x, y) を全フレームへ適用 ──▶ PUT /:id/gaze (NDJSON) で視線ログを置換
+```
+
+- **キャリブレーション** — 録画開始後に `GazeCalibrationOverlay` が全画面で 3×3 の 9 点を順に表示
+  (settle 0.7 秒 + dwell 1.3 秒)。各点の dwell 窓を `sessionMs` で `PUT /:id/calibration` に保存する。
+  推定は窓内のフレームだけで写像を学習するので、記録済み映像に対して何度でもやり直せる。
+- **キャリブレーション無し** — `UNCALIBRATED_MAPPING` (虹彩位置が画面全体に対応する粗い写像) で
+  推定し、`gazeEstimation.calibrated=false` と UI の「粗い推定」表示で正直に伝える。
+- **モデルの配置** — `npm run build:frontend` が事前に `setup:gaze-model` を呼び、
+  `@mediapipe/tasks-vision` の WASM を
+  `frontend/public/mediapipe/wasm/` へコピーし、Face Landmarker モデルを一度だけ取得する
+  (`VOLPUTAS_GAZE_MODEL_URL` は HTTPS の最終 URL のみ・redirect 拒否、または
+  `VOLPUTAS_GAZE_MODEL_PATH` で差し替え可、gitignore 済)。desktop package も同じ build を通るため
+  runtime/model を成果物へ必ず同梱する。解析時に
+  外部へ出るものは無い。モデル未配置は `GAZE_MODEL_UNAVAILABLE` として **fail-fast** する。
+- **視線ログの置換** — 事後推定は 1 件以上のサンプルを必須とし、`gazeSampleLog.replace` でファイルごと置き換え、
+  `capture.gazeSource='face-video'` にする。ライブ (companion) サンプルと混ぜない。
+- 純関数 (`gazeFeatures` / `gazeCalibration` / `gazeEstimationRunner` の throttle・NDJSON) は
+  `frontend/src/lib/gaze/*.test.js` (node --test) で検証する。MediaPipe 呼び出しは
+  `faceLandmarkerAdapter.js` の 1 箇所に閉じる。
+
+## リプレイ (追補 2026-08-16)
+
+> neco 指示 (3): 「ゲームプレイ終了後、(2) のデータをアップロードしてタイムラインを作成」。
+
+`GET /:id/timeline` は `media` (screen / face / audio の `startSessionMs` / `endSessionMs`) と
+`affect` (発話ごとの `sessionMs` / valence / arousal / text) を返すようになり、
+`CaptureReplayView` が 1 つのセッションクロックで次を同期する:
+
+- 画面録画 `<video>` (`GET /:id/recordings/screen`、Range 対応) を主クロックとし、`<canvas>` に
+  直近 600ms の視線軌跡と現在の注視点を重ねる (`gazeOverlay.js`。画面外は縁にグレーで表示)。
+  顔カメラ映像は小窓で追従。
+- タイムライン SVG (注視スコア + 発話の感情価 + マーカー + 再生ヘッド) はクリックでシーク、
+  マーカー・発話の一覧もクリックでシーク。
+- 画面録画が無いセッションでも従来どおりタイムラインと音声プレーヤを表示する。
+
+## 感情曲線の編集 (追補 2026-08-16)
+
+> neco 指示 (5): 「(4) のデータを人間が編集可能にする」。
+
+- `PUT /api/local/emotion-curves/:recordId` — 本文は作成時と同じ入力契約 (`validateEmotionCurveInput`)。
+  `mode` / `captureSessionId` / `videoFileName` / `gameLogFileName` / `respondent` は保存済み
+  レコードから引き継ぎ、本文の値は無視する (編集で別セッションへ付け替えない)。`editedAt` /
+  `editCount` を刻み、既存の `evaluation` は残す (UI は `editedAt > evaluatedAt` を「編集後未評価」と表示)。
+- UI: `EmotionCurveRecordCard` の「記録を編集」で `EmotionCurveEditor` を開く (ローカルモードのみ)。
+  エントリの時刻/位置・スタンプ・感情価・強さ・進行アンカー・メモの修正、追加、削除、
+  プレイ時間・申告ナラティブアーク等のメタデータ修正ができる。キャプチャ由来の機械ドラフト
+  (発話 1 件 = 1 エントリ) を人間が整えてからペルソナ分析・ナラティブアークに載せる、が想定の流れ。
+
 ## 環境変数
 
 | 変数 | 意味 |
 |---|---|
+| `VOLPUTAS_GAZE_MODEL_URL` / `VOLPUTAS_GAZE_MODEL_PATH` | `setup:gaze-model` の取得元 (未指定は Google 公開モデルバケット / ローカルファイル) |
 | `VOLPUTAS_COMPANION_PORT` | 設定時のみ companion listener を起動 (1-65535 以外は起動失敗) |
 | `VOLPUTAS_COMPANION_HOST` | バインド先 (既定 `0.0.0.0`) |
 | `VOLPUTAS_COMPANION_TLS_CERT_FILE` / `_KEY_FILE` | 非 loopback listener では両方必須。片方だけは起動失敗 |
@@ -193,6 +310,8 @@ capture-audio ──ffmpeg (16kHz mono WAV)──▶ whisper-stt (ローカル, 
 
 - キャプチャセッション自体の evidence media レジストリ登録・Cernere
   `capture_session_records` カラム宣言 (感情曲線 mode `capture` への変換で代替)。
-- 視線からの感情推定 (focusScore は注意指標に留める)。音量・韻律解析。
+- 視線からの感情推定 (focusScore は注意指標に留める)。音量・韻律解析。表情 (blendshape) からの感情推定。
+- 視線推定の精度保証 (単眼カメラ + affine 写像。ヒートマップ的な参照材料であり計測器ではない)。
 - ゲームプロセスの自動検知による開始 (合図はゲーム側の POST に限る)。
-- online (認証) モードへの展開。本機能は local モード専用。
+- 録画のトランスコード・サムネイル生成 (ブラウザが再生できる形式のまま保存する)。
+- online (認証) モードへの展開。本機能は local モード専用 (感情曲線の編集 API も local のみ)。

@@ -34,3 +34,19 @@ export async function localUpload(path, file) {
   }
   return payload.data;
 }
+
+// Raw PUT with caller-provided headers (capture recordings carry their session
+// clock placement and provenance in headers, not in a JSON envelope).
+export async function localPutRaw(path, body, headers) {
+  const response = await fetch(path, { method: 'PUT', headers, body });
+  const payload = await response.json().catch(() => ({
+    ok: false,
+    error: { message: `Upload failed with status ${response.status}` },
+  }));
+  if (!response.ok || !payload.ok) {
+    const error = new Error(payload.error?.message || 'Upload failed');
+    error.code = payload.error?.code;
+    throw error;
+  }
+  return payload.data;
+}

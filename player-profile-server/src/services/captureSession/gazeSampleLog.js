@@ -6,9 +6,13 @@
 // spec/feature/emotion-capture-companion.md.
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { randomUUID } = require('node:crypto');
 const { assertSafeSegment, collectionDirectory, insideRepository } = require('../profileDataPaths');
 
 const GAZE_MEDIA_KIND = 'capture-gaze';
+// Lines per write() call when replacing a whole log (30 Hz over an hour is
+// ~100k samples; writing one line per call would be needlessly slow).
+const WRITE_CHUNK_LINES = 2000;
 
 class GazeSampleLog {
   filePath({ repositoryRoot, name, sessionId }) {
@@ -26,6 +30,44 @@ class GazeSampleLog {
     const lines = samples.map((sample) => `${JSON.stringify(sample)}\n`).join('');
     await fs.appendFile(filePath, lines, 'utf8');
     return { filePath, appended: samples.length };
+  }
+
+  // Whole-file replacement for post-hoc estimation. Accepts sync or async
+  // iterables so a route can stream-parse an NDJSON upload. Written to a temporary
+  // sibling and renamed so a failed write leaves the previous log intact.
+  async replace(context, samples) {
+    const filePath = this.filePath(context);
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+    let written = 0;
+    try {
+      const handle = await fs.open(temporaryPath, 'wx');
+      try {
+        let chunk = [];
+        for await (const sample of samples) {
+          chunk.push(JSON.stringify(sample));
+          written += 1;
+          if (chunk.length >= WRITE_CHUNK_LINES) {
+            await handle.write(`${chunk.join('\n')}\n`, null, 'utf8');
+            chunk = [];
+          }
+        }
+        if (chunk.length > 0) await handle.write(`${chunk.join('\n')}\n`, null, 'utf8');
+      } finally {
+        await handle.close();
+      }
+      if (written === 0) {
+        throw Object.assign(new Error('Gaze upload must contain at least one sample'), {
+          statusCode: 400,
+          code: 'INVALID_CAPTURE_INPUT',
+        });
+      }
+      await fs.rename(temporaryPath, filePath);
+      return { filePath, written };
+    } catch (error) {
+      await fs.unlink(temporaryPath).catch(() => {});
+      throw error;
+    }
   }
 
   async read(context) {

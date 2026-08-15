@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { localApi } from '../lib/localApi';
-import CaptureTimelineView from '../components/CaptureTimelineView';
+import CaptureReplayView from '../components/CaptureReplayView';
+import CaptureDesktopPanel from '../components/CaptureDesktopPanel';
+import CaptureRecordingUpload from '../components/CaptureRecordingUpload';
+import GazeAnalysisControl from '../components/GazeAnalysisControl';
+import { useDesktopCapture } from '../hooks/useDesktopCapture';
 
 // 感情キャプチャ (spec/feature/emotion-capture-companion.md)。ゲーム合図または
-// 手動でセッションを開始し、iPhone コンパニオンのペアリングとタイムラインの
-// 確認を行う。感情の記入自体は事後の感情曲線ページで行う。
+// 手動でセッションを開始し、この PC の顔カメラ/マイク/画面録画、iPhone コンパニオン
+// のペアリング、事後の分析 (文字起こし・視線推定・感情曲線) とリプレイを行う。
+// 感情の記入・編集自体は感情曲線ページ、複数セッションの解析はナラティブアーク
+// ページ。
 const BASE = '/api/local/capture-sessions';
 const ACTIVE_POLL_MS = 3000;
 
@@ -18,6 +24,20 @@ const STAMP_BUTTONS = [
 function formatClock(ms) {
   const total = Math.round(ms / 1000);
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+function recordSummary(record) {
+  const parts = [
+    `${new Date(record.startedAt).toLocaleString()} ・ ${record.status}`,
+    record.endedAt ? formatClock(Date.parse(record.endedAt) - Date.parse(record.startedAt)) : null,
+    `マーカー ${record.markers.length} 件`,
+    `視線 ${record.capture.gazeSampleCount} sample${record.capture.gazeSource === 'face-video' ? ' (顔映像から推定)' : ''}`,
+    record.capture.audioFileName ? '音声あり' : null,
+    record.capture.screenRecording ? '画面録画あり' : null,
+    record.capture.faceRecording ? '顔カメラあり' : null,
+    record.calibration ? `キャリブレーション ${record.calibration.points.length} 点` : null,
+  ];
+  return parts.filter(Boolean).join(' ・ ');
 }
 
 /** @implements SPEC-EMOTION-CAPTURE-COMPANION */
@@ -46,6 +66,15 @@ export default function CaptureSessionPage() {
     setActive(activeData);
     setRecords(recordData);
   }, []);
+
+  const showError = useCallback((message) => setError(message), []);
+  const onUploaded = useCallback(({ uploaded }) => {
+    if (uploaded.length > 0) {
+      setNotice(`録画をアップロードしました (${uploaded.join(', ')})。`);
+      reload().catch((reason) => setError(reason.message));
+    }
+  }, [reload]);
+  const capture = useDesktopCapture({ active, onError: showError, onUploaded });
 
   useEffect(() => {
     reload().catch((reason) => setError(reason.message));
@@ -77,9 +106,12 @@ export default function CaptureSessionPage() {
   const start = () => run(async () => {
     await localApi(BASE, { method: 'POST', body: { gameTitle } });
     setPairing(null);
+    capture.reset();
   });
+  // Recorders stop first so their end lands on the session clock, then the
+  // session, then the recordings upload against the completed session.
   const stop = () => run(async () => {
-    await localApi(`${BASE}/active/stop`, { method: 'POST', body: {} });
+    await capture.finish(() => localApi(`${BASE}/active/stop`, { method: 'POST', body: {} }));
     setPairing(null);
   });
   const mark = (type) => run(() =>
@@ -96,6 +128,7 @@ export default function CaptureSessionPage() {
       await localApi(`${BASE}/${recordId}/analyze`, { method: 'POST', body: {} });
       setNotice('文字起こしと感情スコアを保存しました。');
       await reload();
+      if (timelines[recordId]) await refreshTimeline(recordId);
     } catch (reason) {
       setError(reason.message);
     } finally {
@@ -111,12 +144,17 @@ export default function CaptureSessionPage() {
       const curve = await localApi(`${BASE}/${recordId}/emotion-curve`, {
         method: 'POST', body: {},
       });
-      setNotice(`感情曲線を作成しました (${curve.entries.length} エントリ)。感情曲線ページとペルソナ分析に反映されます。`);
+      setNotice(`感情曲線を作成しました (${curve.entries.length} エントリ)。感情曲線ページで編集でき、ペルソナ分析とナラティブアークに反映されます。`);
     } catch (reason) {
       setError(reason.message);
     } finally {
       setBusyRecordId(null);
     }
+  }
+
+  async function refreshTimeline(recordId) {
+    const timeline = await localApi(`${BASE}/${recordId}/timeline`);
+    setTimelines((current) => ({ ...current, [recordId]: timeline }));
   }
 
   async function toggleTimeline(recordId) {
@@ -126,11 +164,17 @@ export default function CaptureSessionPage() {
     }
     setError('');
     try {
-      const timeline = await localApi(`${BASE}/${recordId}/timeline`);
-      setTimelines((current) => ({ ...current, [recordId]: timeline }));
+      await refreshTimeline(recordId);
     } catch (reason) {
       setError(reason.message);
     }
+  }
+
+  async function afterMediaChange(recordId, message) {
+    setError('');
+    setNotice(message);
+    await reload();
+    if (timelines[recordId]) await refreshTimeline(recordId).catch((reason) => setError(reason.message));
   }
 
   return (
@@ -139,8 +183,9 @@ export default function CaptureSessionPage() {
         <h2>感情キャプチャ</h2>
         <p>
           プレイ中のセッションをゲームと同じ時間軸で記録します。ゲームからの合図
-          (POST {BASE}/signal) か下のボタンで開始し、iPhone をペアリングすると
-          視線・音声・ワンタップ記録がタイムラインに載ります。
+          (POST {BASE}/signal) か下のボタンで開始し、この PC の顔カメラ・マイク・画面録画、
+          または iPhone をペアリングして視線・音声・ワンタップ記録をタイムラインに載せます。
+          終了後は文字起こし→感情分析、顔映像からの視線推定、画面録画に視線を重ねたリプレイができます。
         </p>
       </div>
       {error && <div className="error-message">{error}</div>}
@@ -158,7 +203,7 @@ export default function CaptureSessionPage() {
         <div className="capture-companion-note">
           iPhone コンパニオン用の待ち受けは無効です。有効にするには
           <code> VOLPUTAS_COMPANION_PORT </code> と TLS 証明書・秘密鍵を設定して
-          再起動してください。
+          再起動してください (この PC の録画は設定なしで使えます)。
         </div>
       )}
 
@@ -177,9 +222,17 @@ export default function CaptureSessionPage() {
               </button>
             ))}
           </div>
+          <CaptureDesktopPanel
+            active={active}
+            capture={capture}
+            onNotice={setNotice}
+            onError={setError}
+          />
           <div className="capture-active-actions">
             <button type="button" onClick={issuePairing}>iPhone をペアリング</button>
-            <button type="button" className="danger" onClick={stop}>セッション終了</button>
+            <button type="button" className="danger" disabled={capture.uploading || capture.starting} onClick={stop}>
+              {capture.recording ? 'セッション終了 (録画を停止してアップロード)' : 'セッション終了'}
+            </button>
           </div>
           {pairing && (
             <div className="capture-pairing">
@@ -205,9 +258,12 @@ export default function CaptureSessionPage() {
             onChange={(event) => setGameTitle(event.target.value)}
             placeholder="手動でセッションを開始する場合"
           />
-          <button type="button" disabled={!gameTitle.trim()} onClick={start}>
+          <button type="button" disabled={!gameTitle.trim() || capture.uploading} onClick={start}>
             キャプチャ開始
           </button>
+          {capture.uploading && (
+            <div className="capture-companion-note">前のセッションの録画をアップロードしています…</div>
+          )}
         </div>
       )}
 
@@ -218,17 +274,9 @@ export default function CaptureSessionPage() {
           <div className="capture-record-head">
             <strong>{record.gameTitle}</strong>
             {' '}
-            <span className="capture-record-meta">
-              {new Date(record.startedAt).toLocaleString()} ・ {record.status}
-              {record.endedAt
-                ? ` ・ ${formatClock(Date.parse(record.endedAt) - Date.parse(record.startedAt))}`
-                : ''}
-              ・ マーカー {record.markers.length} 件
-              ・ 視線 {record.capture.gazeSampleCount} sample
-              {record.capture.audioFileName ? ' ・ 音声あり' : ''}
-            </span>
+            <span className="capture-record-meta">{recordSummary(record)}</span>
             <button type="button" onClick={() => toggleTimeline(record.id)}>
-              {timelines[record.id] ? 'タイムラインを閉じる' : 'タイムラインを見る'}
+              {timelines[record.id] ? 'リプレイを閉じる' : 'リプレイ / タイムライン'}
             </button>
             {record.status === 'completed' && record.capture.audioFileName && (
               <button
@@ -241,6 +289,13 @@ export default function CaptureSessionPage() {
                   : record.analysis ? '音声を再分析' : '音声を感情分析'}
               </button>
             )}
+            {record.status !== 'recording' && (
+              <GazeAnalysisControl
+                record={record}
+                onDone={(message) => afterMediaChange(record.id, message)}
+                onError={setError}
+              />
+            )}
             {record.status === 'completed' && (record.analysis || record.markers.length > 0) && (
               <button
                 type="button"
@@ -251,30 +306,27 @@ export default function CaptureSessionPage() {
               </button>
             )}
           </div>
-          {record.analysis && (
+          {record.analysis && !timelines[record.id] && (
             <div className="capture-analysis">
               <div className="capture-record-meta">
                 文字起こし {record.analysis.utteranceCount} 発話
                 ({new Date(record.analysis.analyzedAt).toLocaleString()},
                 {' '}{record.analysis.extractor})
+                {record.gazeEstimation
+                  ? ` ・ 視線推定 ${record.gazeEstimation.extractor} (${record.gazeEstimation.calibrated ? 'キャリブレーション適用' : '粗い推定'})`
+                  : ''}
               </div>
-              <ul className="capture-utterance-list">
-                {record.analysis.utterances.map((utterance, index) => (
-                  <li key={`${utterance.sessionMs}-${index}`}>
-                    <span className="capture-marker-time">{formatClock(utterance.sessionMs)}</span>
-                    {' '}
-                    <span className={`capture-valence-${utterance.valence >= 1 ? 'positive' : utterance.valence <= -1 ? 'negative' : 'neutral'}`}>
-                      {utterance.valence > 0 ? `+${utterance.valence}` : utterance.valence}/覚醒{utterance.arousal}
-                    </span>
-                    {' '}{utterance.text}
-                  </li>
-                ))}
-              </ul>
             </div>
           )}
-          {timelines[record.id] && <CaptureTimelineView timeline={timelines[record.id]} />}
-          {timelines[record.id] && record.capture.audioFileName && (
-            <audio controls src={`${BASE}/${record.id}/audio`} style={{ width: '100%' }} />
+          {timelines[record.id] && (
+            <CaptureReplayView record={record} timeline={timelines[record.id]} />
+          )}
+          {record.status !== 'recording' && timelines[record.id] && (
+            <CaptureRecordingUpload
+              record={record}
+              onUploaded={(message) => afterMediaChange(record.id, message)}
+              onError={setError}
+            />
           )}
         </div>
       ))}

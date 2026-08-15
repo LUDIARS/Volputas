@@ -57,6 +57,7 @@ export default function LocalLayout() {
           <NavLink to="/pitches"><span className="nav-icon">✎</span><span>理想のゲーム企画</span></NavLink>
           <div className="local-nav-section">自分を知る</div>
           <NavLink to="/persona"><span className="nav-icon">◇</span><span>ペルソナ分析</span></NavLink>
+          <NavLink to="/narrative-arcs"><span className="nav-icon">∿</span><span>ナラティブアーク</span></NavLink>
         </nav>
 
         <div className="sidebar-user local-mode-footer">

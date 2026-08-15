@@ -21,6 +21,9 @@ const {
   createCaptureSessionService,
 } = require('./local/captureSessionComposition');
 const { createCompanionApp } = require('./local/companionApp');
+const { createNarrativeArcRoutes } = require('./local/narrativeArcRoutes');
+const { NarrativeArcService } = require('./services/narrativeArc/narrativeArcService');
+const { ProfileRecordStore } = require('./local/profileRecordStore');
 const {
   companionStatus,
   readCompanionConfig,
@@ -44,6 +47,8 @@ function createLocalApp({
   populationReportService,
   captureSessionService = createCaptureSessionService(),
   captureAnalysisService,
+  narrativeArcService,
+  llmClient,
   companionInfo = () => companionStatus(readCompanionConfig()),
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
   serveFrontend = true,
@@ -55,8 +60,17 @@ function createLocalApp({
     evidenceStores,
     surveyDefinitionStore,
   });
+  // One LLM client serves both the per-curve evaluation and the narrative-arc
+  // commentary; tests inject either service directly.
+  const resolvedLlmClient = llmClient
+    || ((emotionCurveEvaluator && narrativeArcService) ? null : createLlmTextClient());
   const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
-    || new EmotionCurveEvaluationService({ llmClient: createLlmTextClient() });
+    || new EmotionCurveEvaluationService({ llmClient: resolvedLlmClient });
+  const resolvedNarrativeArcService = narrativeArcService || new NarrativeArcService({
+    emotionCurveStore: evidenceStores['emotion-curves'],
+    arcStore: new ProfileRecordStore('narrative-arcs'),
+    llmClient: resolvedLlmClient,
+  });
   const resolvedSurveyPublisher = surveyPublisher || new GitSurveyPublisher(gitCli);
   const resolvedPopulationReportService = populationReportService
     || new LocalPopulationReportService({
@@ -78,6 +92,10 @@ function createLocalApp({
     emotionCurveStore: evidenceStores['emotion-curves'],
     configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
     companionInfo,
+  }));
+  app.use('/api/local/narrative-arcs', createNarrativeArcRoutes({
+    narrativeArcService: resolvedNarrativeArcService,
+    configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
   }));
   app.use('/api/local', createLocalRoutes({
     configStore,
