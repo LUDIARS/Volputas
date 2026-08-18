@@ -76,11 +76,6 @@ const config = {
     ),
   },
 
-  glab: {
-    baseUrl: normalizeOptionalBaseUrl(process.env.GLAB_URL, 'GLAB_URL'),
-    serviceToken: process.env.GLAB_SERVICE_TOKEN || '',
-  },
-
   auth: {
     sources: commaSeparated(process.env.AUTH_SOURCES, 'cernere'),
   },

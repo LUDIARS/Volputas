@@ -16,6 +16,7 @@ function positiveInteger(value, fallback, maximum, minimum = 0) {
   return parsed;
 }
 
+/** @implements SPEC-GLAB-REVIEW-RELAY */
 function createGlabReviewRouter({
   authMiddleware = createCernereProjectAuth(),
   transportRateLimiter = rateLimit({
@@ -34,8 +35,6 @@ function createGlabReviewRouter({
     message: RATE_LIMIT_MESSAGE,
   }),
   serviceProvider,
-  reviewRelayServiceProvider = null,
-  authorNameProvider = null,
   recentGamesProvider = null,
 } = {}) {
   const router = Router();
@@ -75,23 +74,9 @@ function createGlabReviewRouter({
   router.post('/', async (req, res, next) => {
     try {
       const record = await serviceProvider().create(req.cernereUser.id, req.body);
-      // 投稿は成立済み。 リレー経路 (表示名解決を含む) の失敗で 5xx を返さない。
-      if (reviewRelayServiceProvider) {
-        try {
-          // Private reviews are never relayed, so resolving the author for them
-          // would only cost an extra user lookup on the default posting path.
-          const needsAuthor = record.visibility === 'community' && !record.anonymous;
-          const authorName = needsAuthor && authorNameProvider
-            ? await authorNameProvider(req.cernereUser.id, record)
-            : undefined;
-          await reviewRelayServiceProvider().relay({ ...record, authorName });
-        } catch (relayError) {
-          req.log?.warn?.('GLab review relay failed after the review was stored', {
-            reviewId: record.id,
-            error: relayError.message,
-          });
-        }
-      }
+      // The 201 record is what GLAB (the front) uses to queue its own Discord
+      // relay, so it must keep visibility / anonymous / glabProjectId / gameTitle /
+      // recommend / comment (see GLAB spec/interface/review-relay.md).
       return res.status(201).json({ ok: true, data: { record } });
     } catch (error) {
       return next(asInputError(error));

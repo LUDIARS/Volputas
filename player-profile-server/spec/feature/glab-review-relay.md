@@ -1,15 +1,18 @@
 # GLAB review relay
 
-Community-visible game reviews are delivered best-effort to GLAB at
-`POST /api/x/volputas/external/review-relay`. Volputas sends the review ID,
-project ID, game title, boolean-or-null recommendation, sanitised 300-character
-excerpt, author, and a Volputas review URL. The request authenticates with
-`X-Glab-Service-Token`; Volputas neither stores Discord credentials nor posts to
-Discord directly.
+### SPEC-GLAB-REVIEW-RELAY
 
-Both HTTP 200 and 201 acknowledge a relay. Missing GLAB configuration, a
-rejected status, and a relay that exceeds the 10-second request timeout all
-leave review creation successful and do not set `relayedAt`; review submission
-never waits on an unresponsive GLAB.
-Anonymous reviews use an anonymous author label, and all outbound free text
-neutralises mass mentions before GLAB's bot renders it.
+Community-visible game reviews reach Discord through GLAB, not through a
+callback from Volputas. GLAB is the authenticated front for review posting: it
+proxies `POST /api/v1/integrations/glab/reviews`, reads the `201 { ok, data: { record } }`
+response, and queues its own relay row (`glab_review_relay`) from
+`record.id` / `glabProjectId` / `gameTitle` / `recommend` / `comment` / `visibility` /
+`anonymous`. Volputas therefore keeps those fields on the created record and
+does not need `GLAB_URL`, `GLAB_SERVICE_TOKEN`, a relay client, or an author
+lookup for relaying (removed 2026-08-18; the previous
+`POST /api/x/volputas/external/review-relay` callback no longer exists on GLAB).
+
+Volputas neither stores Discord credentials nor posts to Discord directly. The
+`relayedAt` field on older voice records is historical and is no longer written.
+Attribution, mention neutralisation, and length limits for the Discord card are
+GLAB's responsibility (GLAB `spec/interface/review-relay.md`).

@@ -24,8 +24,6 @@ const {
   createGlabSurveyService,
 } = require('./services/glabSurveyService');
 const { createGlabReviewService } = require('./services/glabReviewService');
-const { createReviewRelayService } = require('./services/reviewRelayService');
-const { createGlabRelayClient } = require('./integrations/glab/glabRelayClient');
 const { pseudoId } = require('./services/pseudoId');
 const { getProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
 const { createGlabReviewRouter } = require('./routes/glabReviews');
@@ -73,7 +71,6 @@ let glabSurveyService = null;
 let glabReviewService = null;
 let glabGameService = null;
 let glabEvidenceService = null;
-let reviewRelayService = null;
 let stopSessionMaintenance = null;
 
 function getGlabSurveyService() {
@@ -81,8 +78,9 @@ function getGlabSurveyService() {
   return glabSurveyService;
 }
 
-// Shared by the public review feed and the Discord relay so both attribute a
-// review the same way.
+// Attribution for the public review feed. The Discord relay is queued by GLAB
+// itself from the 201 response of its review proxy (GLAB is the front), so
+// Volputas no longer resolves an author for relaying.
 async function resolveGlabReviewAuthor(cernereUserId, record) {
   if (record.displayName) return record.displayName;
   const user = await userModel.findByCernereSubject(cernereUserId);
@@ -133,34 +131,6 @@ function getGlabEvidenceService() {
   return glabEvidenceService;
 }
 
-function getReviewRelayService() {
-  if (!reviewRelayService) {
-    const store = getProfileEvidenceStore();
-    // Every piece of the relay path is optional config; without all of it the
-    // service stays wired but degrades to "not relayed" instead of failing.
-    const glabRelayClient = createGlabRelayClient({
-      baseUrl: config.glab.baseUrl,
-      serviceToken: config.glab.serviceToken,
-    });
-    reviewRelayService = createReviewRelayService({
-      glabRelayClient,
-      voiceStore: {
-        // record.userId is the Cernere owner id stamped by createForOwner, not a
-        // local user id, so it must not go through the local-id resolution path.
-        markRelayed: (id, relayedAt, record) => store.updateForOwner(
-          record.userId,
-          'voices',
-          id,
-          { relayedAt },
-        ),
-      },
-      logger: console,
-      reviewBaseUrl: config.frontendUrl,
-    });
-  }
-  return reviewRelayService;
-}
-
 // Security middleware
 app.use(helmet());
 app.use(cors(config.cors));
@@ -202,8 +172,6 @@ app.use(
   glabReviewPath,
   createGlabReviewRouter({
     serviceProvider: getGlabReviewService,
-    reviewRelayServiceProvider: getReviewRelayService,
-    authorNameProvider: resolveGlabReviewAuthor,
     recentGamesProvider: async (cernereUserId) => {
       const user = await userModel.findByCernereSubject(cernereUserId);
       return user ? steamModel.getRecentlyPlayedGames(user.id, 20) : [];
@@ -330,7 +298,6 @@ function stop() {
     glabReviewService = null;
     glabGameService = null;
     glabEvidenceService = null;
-    reviewRelayService = null;
     await activeIntegration?.close();
     if (serverCloseError) throw serverCloseError;
   })().finally(() => {
