@@ -10,6 +10,7 @@ import CardSortPage from './pages/CardSortPage';
 import ComparisonPage from './pages/ComparisonPage';
 import DashboardPage from './pages/DashboardPage';
 import EmotionCurvePage from './pages/EmotionCurvePage';
+import GameInsightPage from './pages/GameInsightPage';
 import GameplayPage from './pages/GameplayPage';
 import LocalSettingsPage from './pages/LocalSettingsPage';
 import LocalSurveysPage from './pages/LocalSurveysPage';
@@ -66,6 +67,7 @@ function LocalRoutes() {
         <Route path="surveys" element={<LocalSurveysPage />} />
         <Route path="capture" element={<CaptureSessionPage />} />
         <Route path="narrative-arcs" element={<NarrativeArcPage />} />
+        <Route path="game-insights" element={<GameInsightPage />} />
         {EvidenceRoutes()}
         <Route path="settings" element={<LocalSettingsPage />} />
       </Route>

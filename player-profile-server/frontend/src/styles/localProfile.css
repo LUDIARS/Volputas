@@ -1147,6 +1147,20 @@
   border-radius: 8px;
 }
 
+/* --- ゲーム洞察 --- */
+.game-insight-propose {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.6rem;
+  margin: 0.5rem 0;
+}
+
+.game-insight-propose small {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
 /* --- ナラティブアーク --- */
 .narrative-arc-stats {
   display: grid;

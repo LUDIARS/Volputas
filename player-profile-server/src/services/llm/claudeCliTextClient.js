@@ -2,15 +2,55 @@
 // LLM transport: it needs no API key, only a locally authenticated Claude CLI.
 // A missing CLI fails fast at call time (no silent stub fallback).
 const { spawn } = require('node:child_process');
+const path = require('node:path');
 
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 const STDERR_EXCERPT_LIMIT = 500;
+const FRAME_FILE_PATTERN = /^frame-[0-9]+\.jpg$/i;
 
 function configurationError(detail) {
   return Object.assign(
     new Error(`LLM is not configured: ${detail}`),
     { code: 'LLM_NOT_CONFIGURED', statusCode: 503 }
   );
+}
+
+function imagePathError() {
+  return Object.assign(
+    new Error('LLM image paths must be frame-NN.jpg files in one temporary directory'),
+    { code: 'LLM_IMAGE_PATH_INVALID', statusCode: 400 }
+  );
+}
+
+// Claude Code's Read tool has process-wide filesystem visibility unless each
+// permission is scoped. FrameExtractor creates one private directory containing
+// only frame-NN.jpg files; run the CLI there and grant each relative filename
+// separately so prompt content cannot turn image access into arbitrary reads.
+/** @implements SPEC-GAME-INSIGHT */
+function prepareImageAccess(prompt, imagePaths) {
+  if (!Array.isArray(imagePaths) || imagePaths.length === 0) {
+    return { prompt: String(prompt), cwd: null, allowedTools: null };
+  }
+  const supplied = imagePaths.map((imagePath) => String(imagePath));
+  const resolved = supplied.map((imagePath) => path.resolve(imagePath));
+  const cwd = path.dirname(resolved[0]);
+  const names = resolved.map((imagePath) => {
+    const name = path.basename(imagePath);
+    if (path.dirname(imagePath) !== cwd || !FRAME_FILE_PATTERN.test(name)) {
+      throw imagePathError();
+    }
+    return name;
+  });
+  let relativePrompt = String(prompt);
+  resolved.forEach((imagePath, index) => {
+    relativePrompt = relativePrompt.replaceAll(supplied[index], `./${names[index]}`);
+    relativePrompt = relativePrompt.replaceAll(imagePath, `./${names[index]}`);
+  });
+  return {
+    prompt: relativePrompt,
+    cwd,
+    allowedTools: [...new Set(names)].map((name) => `Read(./${name})`).join(' '),
+  };
 }
 
 class ClaudeCliTextClient {
@@ -41,16 +81,24 @@ class ClaudeCliTextClient {
     return true;
   }
 
-  async generate({ system, prompt }) {
+  // `imagePaths` (optional) are local image files the prompt refers to. Read is
+  // limited to those exact basenames inside their private temporary directory.
+  // Without images no tool is granted.
+  /** @implements SPEC-GAME-INSIGHT */
+  async generate({ system, prompt, imagePaths = [] }) {
+    const imageAccess = prepareImageAccess(prompt, imagePaths);
     const args = ['-p', '--output-format', 'text'];
     if (this.model) args.push('--model', this.model);
-    const child = this.spawnImpl(this.command, args, {
+    if (imageAccess.allowedTools) args.push('--allowedTools', imageAccess.allowedTools);
+    const spawnOptions = {
       // Windows resolves the CLI through a .cmd shim, which Node only spawns
       // via a shell. Arguments are validated constants; the prompt rides stdin.
       shell: process.platform === 'win32',
       stdio: ['pipe', 'pipe', 'pipe'],
       env: process.env,
-    });
+    };
+    if (imageAccess.cwd) spawnOptions.cwd = imageAccess.cwd;
+    const child = this.spawnImpl(this.command, args, spawnOptions);
 
     return new Promise((resolve, reject) => {
       let stdout = '';
@@ -105,9 +153,9 @@ class ClaudeCliTextClient {
       });
 
       child.stdin.on('error', () => { /* close/error races surface via 'error'/'close'; best-effort */ });
-      child.stdin.end(`${system}\n\n${prompt}`);
+      child.stdin.end(`${system}\n\n${imageAccess.prompt}`);
     });
   }
 }
 
-module.exports = { ClaudeCliTextClient, DEFAULT_TIMEOUT_MS };
+module.exports = { ClaudeCliTextClient, DEFAULT_TIMEOUT_MS, prepareImageAccess };

@@ -1,0 +1,15 @@
+{
+  "name": "game-insight",
+  "description": "ゲーム洞察: 複数プレイヤーの感情曲線を絶対時間の共通軸に載せてホットスポット (盛り上がり/つまずき) と脱落点を決定的に集計し、キャプチャのゲームマーカー・Anatomia のコード位置・画面録画フレームを焦点に添えて LLM 改善提案を派生物として分離する境界。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/(frontend/src/(App\\.jsx|components/(HotspotChart|LocalLayout)\\.jsx|pages/GameInsightPage\\.jsx|styles/localProfile\\.css)|src/(localApp\\.js|services/gameInsight/[^/]+\\.js|local/gameInsight(Routes|Composition)(?:\\.test)?\\.js|services/llm/(anthropicTextClient|claudeCliTextClient|llmTextClient\\.test)\\.js)|spec/feature/game-insight\\.md)$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-GAME-INSIGHT"
+  ],
+  "source": "spec-review"
+}

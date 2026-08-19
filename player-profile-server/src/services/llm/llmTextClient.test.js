@@ -1,7 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const { Writable } = require('node:stream');
+const { AnthropicTextClient } = require('./anthropicTextClient');
 const { ClaudeCliTextClient } = require('./claudeCliTextClient');
 const { createLlmTextClient } = require('./createLlmTextClient');
 
@@ -42,6 +46,67 @@ test('claude-cli client streams the prompt over stdin and returns trimmed stdout
   assert.equal(spawned.command, 'claude');
   assert.deepEqual(spawned.args, ['-p', '--output-format', 'text', '--model', 'claude-opus-5']);
   assert.equal(child.stdin.written, 'SYS\n\nPROMPT');
+});
+
+test('claude-cli client limits Read access to the supplied temporary frames', async () => {
+  let spawned = null;
+  const child = fakeChild();
+  const frameDirectory = path.resolve('temporary-frames');
+  const framePath = path.join(frameDirectory, 'frame-01.jpg');
+  const client = new ClaudeCliTextClient({
+    spawnImpl: (command, args, options) => {
+      spawned = { command, args, options };
+      return child;
+    },
+  });
+
+  const pending = client.generate({ system: 'SYS', prompt: `画像: ${framePath}`, imagePaths: [framePath] });
+  child.stdout.emit('data', 'ok');
+  child.emit('close', 0);
+  await pending;
+
+  assert.deepEqual(spawned.args, [
+    '-p', '--output-format', 'text', '--allowedTools', 'Read(./frame-01.jpg)',
+  ]);
+  assert.equal(spawned.options.cwd, frameDirectory);
+  assert.equal(child.stdin.written, 'SYS\n\n画像: ./frame-01.jpg');
+  assert.doesNotMatch(child.stdin.written, new RegExp(frameDirectory.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+
+  await assert.rejects(
+    client.generate({ system: 's', prompt: 'p', imagePaths: [path.join(frameDirectory, 'secret.txt')] }),
+    (error) => error.code === 'LLM_IMAGE_PATH_INVALID' && error.statusCode === 400
+  );
+});
+
+test('anthropic client sends supplied frames as image blocks', async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-llm-image-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const framePath = path.join(directory, 'frame-01.jpg');
+  await fs.writeFile(framePath, Buffer.from([0xff, 0xd8, 0xff, 0xd9]));
+  let request = null;
+  const client = new AnthropicTextClient({ apiKey: 'test-key', model: 'test-model' });
+  client.client = {
+    beta: {
+      messages: {
+        create: async (input) => {
+          request = input;
+          return { model: 'test-model', stop_reason: 'end_turn', content: [{ type: 'text', text: 'ok' }] };
+        },
+      },
+    },
+  };
+
+  assert.deepEqual(await client.generate({ system: 's', prompt: 'p', imagePaths: [framePath] }), {
+    text: 'ok', model: 'test-model',
+  });
+  assert.equal(request.messages[0].content[0].type, 'image');
+  assert.equal(request.messages[0].content[0].source.media_type, 'image/jpeg');
+  assert.equal(request.messages[0].content[0].source.data, '/9j/2Q==');
+  assert.deepEqual(request.messages[0].content[1], { type: 'text', text: 'p' });
+
+  await client.generate({ system: 's', prompt: `frame: ${framePath}`, imagePaths: [framePath] });
+  assert.equal(request.messages[0].content[1].text, 'frame: [attached image 1]');
+  assert.doesNotMatch(request.messages[0].content[1].text, /volputas-llm-image-/);
 });
 
 test('claude-cli client fails fast when the CLI binary is missing', async () => {
