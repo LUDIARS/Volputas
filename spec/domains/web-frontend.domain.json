@@ -1,0 +1,11 @@
+{
+  "name": "web-frontend",
+  "description": "ブラウザ側の画面。 プロファイル・調査結果の表示と操作。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/frontend/(?:.*/)?[^/]+$"
+    }
+  ]
+}

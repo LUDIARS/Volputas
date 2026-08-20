@@ -6,10 +6,18 @@
   "membership": [
     {
       "pathPattern": "(^|/)player-profile-server/(frontend/src/(components/(CaptureTimelineView|CaptureReplayView|CaptureDesktopPanel|CaptureRecordingUpload|GazeAnalysisControl|GazeCalibrationOverlay|EmotionCurveRecordCard|EmotionCurveEditor)\\.jsx|hooks/useDesktopCapture\\.js|lib/(captureRecording|gazeOverlay)(?:\\.test)?\\.js|lib/gaze/[^/]+\\.js|pages/CaptureSessionPage\\.jsx)|scripts/setup-gaze-model\\.js|src/services/captureSession/[^/]+\\.js|src/services/captureAnalysis/[^/]+\\.js|src/local/(captureSessionComposition|captureSessionRoutes(?:\\.test)?|companionApp(?:\\.test)?|companionListener|companionPage|localContext)\\.js|spec/feature/emotion-capture-companion\\.md)$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/local/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/localApp\\.js$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/desktop/(?:.*/)?[^/]+$"
     }
   ],
   "specRefs": [
     "SPEC-EMOTION-CAPTURE-COMPANION"
-  ],
-  "source": "spec-review"
+  ]
 }

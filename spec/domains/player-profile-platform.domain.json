@@ -1,0 +1,35 @@
+{
+  "name": "player-profile-platform",
+  "description": "プレイヤープロファイルサービスの土台。 HTTP ルート、 ミドルウェア、 モデル、 各種サービス実装、 設定と起動。 個々の調査機能の意味づけは他ドメインが持ち、 ここは共通の器を所有する。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/src/(?:app|config)[^/]*$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/config/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/middleware/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/models/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/routes/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/services/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/scripts/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/[^/]+\\.js$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/migrations/(?:.*/)?[^/]+$"
+    }
+  ]
+}

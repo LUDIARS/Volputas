@@ -5,12 +5,11 @@
   "templateRules": [],
   "membership": [
     {
-      "pathPattern": "(^|/)player-profile-server/src/haster/[^/]+\\.js$"
+      "pathPattern": "(^|/)player-profile-server/src/haster/(?:.*/)?[^/]+$"
     }
   ],
   "specRefs": [
     "SPEC-HASTER-ISOLATION",
     "SPEC-HASTER-PUBLIC-IDENTITY"
-  ],
-  "source": "spec-review"
+  ]
 }

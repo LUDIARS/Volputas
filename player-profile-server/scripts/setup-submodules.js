@@ -10,7 +10,11 @@ const npmCli = resolveNpmCli();
 if (!process.argv.includes('--skip-git-update')) {
   if (isGeneratedDependencyResidue(lapilliRoot, packageRoot)) {
     fs.rmSync(lapilliRoot, { recursive: true, force: true });
-  } else if (fs.existsSync(lapilliRoot) && !fs.existsSync(path.join(packageRoot, 'package.json'))) {
+  } else if (
+    fs.existsSync(lapilliRoot)
+    && !isEmptyDirectory(lapilliRoot)
+    && !fs.existsSync(path.join(packageRoot, 'package.json'))
+  ) {
     throw new Error(
       `Lapilli exists but is incomplete at ${lapilliRoot}; refusing to delete it automatically. `
       + 'Move or remove that directory after preserving any local work, then rerun setup.'
@@ -42,6 +46,10 @@ function isGeneratedDependencyResidue(root, packageDirectory) {
 function hasOnlyEntry(directory, expectedEntry) {
   return fs.readdirSync(directory).length === 1
     && fs.readdirSync(directory)[0] === expectedEntry;
+}
+
+function isEmptyDirectory(directory) {
+  return fs.readdirSync(directory).length === 0;
 }
 
 runNpm(['install', '--include=dev', '--package-lock=false']);

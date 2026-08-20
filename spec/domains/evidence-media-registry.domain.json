@@ -6,10 +6,12 @@
   "membership": [
     {
       "pathPattern": "(^|/)player-profile-server/(spec/data/data-schema\\.md|src/services/evidenceMedia(?:\\.test)?\\.js)$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/corpus/(?:.*/)?[^/]+$"
     }
   ],
   "specRefs": [
     "SPEC-EVIDENCE-MEDIA-REGISTRY"
-  ],
-  "source": "spec-review"
+  ]
 }

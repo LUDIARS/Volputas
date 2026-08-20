@@ -1,0 +1,14 @@
+{
+  "name": "local-survey",
+  "description": "ローカル完結のアンケート。 設問の定義と配布、 回答の受け取りと保管を端末内で完結させる。 公開・共有は別ドメインの判断に委ねる。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/src/localSurvey/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/surveys/(?:.*/)?[^/]+$"
+    }
+  ]
+}

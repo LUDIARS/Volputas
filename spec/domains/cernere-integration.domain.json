@@ -1,0 +1,11 @@
+{
+  "name": "cernere-integration",
+  "description": "Cernere 連携。 project token による認証と、 保護データの参照境界。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/src/integrations/(?:.*/)?[^/]+$"
+    }
+  ]
+}

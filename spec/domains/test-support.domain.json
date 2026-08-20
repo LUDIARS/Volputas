@@ -1,0 +1,14 @@
+{
+  "name": "test-support",
+  "description": "テストの共通土台とフィクスチャ。 個々のテストは検証対象のドメインに属する。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/(?:test|tests)/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)lfs/(?:.*/)?[^/]+$"
+    }
+  ]
+}
