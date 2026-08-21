@@ -1,4 +1,6 @@
 // Shared validation contract for local and authenticated profile evidence.
+const { validateScales } = require('./gameExperienceScales/scaleScores');
+
 function requiredText(value, label, maximum = 200) {
   const normalized = typeof value === 'string' ? value.trim() : '';
   if (!normalized) {
@@ -160,6 +162,9 @@ function validateVoiceInput(body = {}) {
     glabProjectId,
     visibility,
     anonymous,
+    // GEQ (in-game) / PENS answers (gameExperienceScales/scaleDefinitions.js);
+    // null when the impression carries no scale answers.
+    scales: validateScales(body.scales),
   };
 }
 

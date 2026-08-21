@@ -13,6 +13,7 @@ const { GameInsightService } = require('../services/gameInsight/gameInsightServi
 function createGameInsightService({ captureSessionService, llmClient, env = process.env }) {
   return new GameInsightService({
     cohortReader: new CohortReader(),
+    voiceCohortReader: new CohortReader({ collection: 'voices' }),
     insightStore: new ProfileRecordStore('game-insights'),
     captureSessionService,
     anatomiaClient: new AnatomiaClient({ cliPath: env.VOLPUTAS_ANATOMIA_CLI || '' }),

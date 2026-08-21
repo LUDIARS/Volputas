@@ -52,22 +52,32 @@
 
 - ビンごと: 感情価の平均・標準偏差、強さ (arousal) の平均、`playerCoverage` (値を持つプレイヤー数)、
   `agreement` = 1 − 感情価 sd / 2 (0..1、プレイヤー間の一致度)、スタンプ別の**プレイヤー数** (同一プレイヤーの連打は 1)。
-- **ホットスポット**: 強さ系列の z スコア ≥ 1 かつ局所最大、`playerCoverage` ≥ 2 (単一プレイヤー時は 1) のビン。
-  感情価 ≥ 0 なら `hype`、< 0 なら `pain`。加えて、`stress`/`dislike` を打ったプレイヤー数が
+- **順序化** (`game-experience-scales.md` §順序化): プレイヤーごとに全セッション・全ビンを基準にした
+  `valenceZ` / `arousalZ` をビン値と並べて持ち、ビンごとにプレイヤー間平均した `valenceZ` / `arousalZ` と
+  `agreementOrdinal` を出す。声の大きい記録者に平均が引きずられないための前処理。
+- **ホットスポット**: **`arousalZ` 系列** の z スコア ≥ 1 かつ局所最大、`playerCoverage` ≥ 2 (単一プレイヤー時は 1) の
+  ビン (`detectionBasis: "ordinal"`。ordinal が無い古い形、および全員が平坦で z が一様になる場合は
+  生の強さ系列で `"raw"`)。
+  感情価 < 0 または `valenceZ` ≤ −1 (普段より明らかに下) なら `pain`、それ以外は `hype`。加えて、`stress`/`dislike` を打ったプレイヤー数が
   `playerCoverage` の過半のビンも `pain` として採る。`score` = 強さ平均 × (coverage / プレイヤー数)。
   各スポットには位置・種別・score・プレイヤー数・スタンプ内訳・代表コメント (最大 5 件、プレイヤー匿名番号付き)。
+  z は 2 種類あり別名で持つ: `spikeZ` = 検出系列内での突出度 (`detectionBasis` の系列に対する z)、
+  `valenceZ` / `arousalZ` = そのビンの**プレイヤー内 z** (各自の普段との差、ビンの値をそのまま写す)。
 - **脱落点** (`dropoutAnalysis.js`): 時刻軸セッションの `endPosition` から生存曲線 `survival[bin]` =
   その位置までまだ続いているセッションの割合。終了が集中したビン (終了数の多い順、最大 5) を `dropouts` とし、
   各ビンの `sessionCount`、`playerCount`、`exitValence` (終了前 2 ビンの平均感情価) を付ける。
   終了が基準長の末尾ビン (= 最長セッションのゴール) なのは脱落ではなく `completion` として別扱い。
 - 出力は `analysis { referenceLengthSeconds, binCount, playerCount, sessionCount, singlePlayer, bins[], hotspots[],
-  dropouts[], completion, survival[], players[] (匿名番号 ↔ セッション数・種別) }`。
+  dropouts[], completion, survival[], players[] (匿名番号 ↔ セッション数・種別), scales }`。`scales` は全員の感想の
+  GEQ / PENS をプレイヤー内で順序化してから平均した横断集計 (`scaleAggregate.js`、`game-experience-scales.md`
+  §横断集計)。感想に尺度回答が無ければ null。provenance は `hotspot-aggregate-ordinal/v2`。
 
 ## 永続化 (`gameInsightService.js`)
 
 - 派生レコードは `game-insights/<本人 name>/gi-<sha256(title) 先頭 24hex>.json`。1 ゲーム 1 件、再集計は上書き。
-- provenance `{ extractor: "hotspot-aggregate/v1", analyzedAt }`、`sourceRecordIds`、`sourceRevision`
-  (集計が読む入力だけの SHA-256。narrative-arc と同じ流儀で人手編集を検知)。
+- provenance `{ extractor: "hotspot-aggregate-ordinal/v2", analyzedAt }`、`sourceRecordIds`、`sourceRevision`
+  (集計が読む入力だけの SHA-256。narrative-arc と同じ流儀で人手編集を検知)。感情曲線に加えて
+  `analysis.scales` の入力である感想の `scales` 回答も含める (尺度回答の編集も提案を stale にする)。
 - `proposal` (LLM 改善提案) は再集計後も保持し、`proposal.sourceRevision` との不一致で stale 表示。
   提案生成時に revision が違えば `GAME_INSIGHT_STALE` (409)。
 - evidence media レジストリ・Cernere カラムには載せない (ローカル専用の派生物)。

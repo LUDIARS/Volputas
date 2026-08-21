@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { SYSTEM_PROMPT, buildImprovementPrompt } = require('./improvementPrompt');
+const { SYSTEM_PROMPT, buildImprovementPrompt, formatScales } = require('./improvementPrompt');
 
 const analysis = {
   playerCount: 3,
@@ -54,4 +54,27 @@ test('missing context is stated, not invented', () => {
   assert.match(text, /未指定 \(コード位置なし\)/);
   assert.match(text, /キャプチャセッション未指定のため無し/);
   assert.match(text, /画面フレーム: なし/);
+});
+
+test('GEQ / PENS cross-player block and within-player z series appear in the header', () => {
+  assert.equal(formatScales(null), '- GEQ / PENS: 感想に尺度回答なし');
+  const block = formatScales({
+    playerCount: 2,
+    recordCount: 3,
+    families: {
+      geq: { label: 'GEQ (in-game)', range: { min: 0, max: 4 }, subscales: { flow: { label: 'フロー', raw: 3.5, z: 0.71, rank: 0.75, playerCount: 2 } } },
+    },
+  });
+  assert.match(block, /感想 3 件 \/ 2 人/);
+  assert.match(block, /GEQ \(in-game\) \[0\.\.4\]: フロー 3\.5 \(z 0\.71, 2 人\)/);
+  const prompt = buildImprovementPrompt({
+    gameTitle: 'Hot Quest',
+    analysis: { ...analysis, bins: [{ valence: 0.5, arousal: 2, valenceZ: -0.5, arousalZ: 1.2 }], scales: null },
+    focusPoints: [],
+    anatomiaProject: '',
+    captureSessionId: '',
+  });
+  assert.match(prompt, /平均感情価 \(プレイヤー内 z、各自の普段との差\): -0\.50/);
+  assert.match(prompt, /平均強さ \(プレイヤー内 z\): 1\.20/);
+  assert.match(prompt, /感想に尺度回答なし/);
 });

@@ -122,5 +122,5 @@ test('game insight routes list games, aggregate across players and store the LLM
     path.join(repositoryRoot, 'game-insights', config.name, `${insight.id}.json`), 'utf8'
   ));
   assert.equal(stored.proposal.text, '改善ポイント');
-  assert.equal(stored.provenance.extractor, 'hotspot-aggregate/v1');
+  assert.equal(stored.provenance.extractor, 'hotspot-aggregate-ordinal/v2');
 });

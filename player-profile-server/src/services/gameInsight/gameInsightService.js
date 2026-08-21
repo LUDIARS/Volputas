@@ -6,6 +6,7 @@
 // aggregate never needs the LLM, Anatomia or ffmpeg to be configured.
 const { createHash } = require('node:crypto');
 const { aggregateHotspots } = require('./hotspotAggregate');
+const { aggregateScales } = require('./scaleAggregate');
 const { MAXIMUM_GAME_TITLE_LENGTH, normalizeTitle } = require('./cohortReader');
 const {
   attachGameContext,
@@ -15,7 +16,7 @@ const {
 const { SYSTEM_PROMPT, buildImprovementPrompt } = require('./improvementPrompt');
 const { parseJudgmentSections } = require('../emotionJudgment/judgmentSections');
 
-const INSIGHT_EXTRACTOR = 'hotspot-aggregate/v1';
+const INSIGHT_EXTRACTOR = 'hotspot-aggregate-ordinal/v2';
 const INSIGHT_SCHEMA_VERSION = 1;
 
 /** @implements SPEC-GAME-INSIGHT */
@@ -38,8 +39,11 @@ function insightRecordId(gameTitle) {
 }
 
 // Revision of exactly the inputs the aggregate and the prompt consume.
+// `voices` carries the GEQ / PENS answers that feed `analysis.scales`, so an
+// edited scale answer marks an existing proposal stale just like an edited
+// emotion curve does.
 /** @implements SPEC-GAME-INSIGHT */
-function sourceRevision(items) {
+function sourceRevision(items, voices = []) {
   const relevant = items.map(({ playerKey, record }) => ({
     playerKey,
     id: record.id,
@@ -51,13 +55,25 @@ function sourceRevision(items) {
   })).sort((left, right) => compareText(left.playerKey, right.playerKey)
     || compareText(left.id, right.id)
     || compareText(JSON.stringify(left), JSON.stringify(right)));
-  return createHash('sha256').update(JSON.stringify(relevant)).digest('hex');
+  const scaleInputs = voices
+    .filter(({ record }) => record?.scales)
+    .map(({ playerKey, record }) => ({
+      playerKey,
+      id: record.id,
+      gameTitle: record.gameTitle,
+      scales: record.scales,
+    }))
+    .sort((left, right) => compareText(left.playerKey, right.playerKey)
+      || compareText(left.id, right.id)
+      || compareText(JSON.stringify(left), JSON.stringify(right)));
+  return createHash('sha256').update(JSON.stringify({ relevant, scaleInputs })).digest('hex');
 }
 
 /** @implements SPEC-GAME-INSIGHT */
 class GameInsightService {
   constructor({
     cohortReader,
+    voiceCohortReader = null,
     insightStore,
     captureSessionService = null,
     anatomiaClient = null,
@@ -66,6 +82,7 @@ class GameInsightService {
     now = () => new Date(),
   }) {
     this.cohortReader = cohortReader;
+    this.voiceCohortReader = voiceCohortReader;
     this.insightStore = insightStore;
     this.captureSessionService = captureSessionService;
     this.anatomiaClient = anatomiaClient;
@@ -101,6 +118,11 @@ class GameInsightService {
     const title = normalizeTitle(gameTitle);
     const items = await this.sourceItems(context, title);
     const analysis = aggregateHotspots(items);
+    // GEQ / PENS from every player's impressions, standardized within player
+    // before the cross-player average. Reading all voices (not just this game's)
+    // is deliberate: the player's other games are their baseline.
+    const voices = this.voiceCohortReader ? await this.voiceCohortReader.readAll(context) : [];
+    analysis.scales = aggregateScales(voices, title);
     const id = insightRecordId(title);
     const existing = (await this.insightStore.list(context)).find((item) => item.id === id);
     const { record } = await this.insightStore.write({
@@ -110,7 +132,7 @@ class GameInsightService {
         schemaVersion: INSIGHT_SCHEMA_VERSION,
         gameTitle: title,
         sourceRecordIds: items.map(({ record: source }) => source.id).sort(),
-        sourceRevision: sourceRevision(items),
+        sourceRevision: sourceRevision(items, voices),
         provenance: { extractor: INSIGHT_EXTRACTOR, analyzedAt: this.now().toISOString() },
         analysis,
         // Kept across re-analysis; its own sourceRevision flags it as stale.

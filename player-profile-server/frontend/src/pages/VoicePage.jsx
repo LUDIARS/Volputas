@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import ProfileFeatureLayout from '../components/ProfileFeatureLayout';
 import ProfileField from '../components/ProfileField';
+import ExperienceScalesInput from '../components/ExperienceScalesInput';
+import ScaleSummary from '../components/ScaleSummary';
 import { useProfileClient } from '../lib/profileClient';
 import lexicon from '../data/ludus-lexicon.json';
 
@@ -29,6 +31,7 @@ export default function VoicePage() {
   const client = useProfileClient();
   const [form, setForm] = useState(INITIAL_FORM);
   const [mechanicIds, setMechanicIds] = useState([]);
+  const [scales, setScales] = useState(null);
   const [mechanicInput, setMechanicInput] = useState('');
   const [records, setRecords] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -67,10 +70,12 @@ export default function VoicePage() {
         ...form,
         polarity: form.polarity || null,
         mechanicIds,
+        scales,
       });
       setRecords((current) => [result.record, ...current]);
       setForm(INITIAL_FORM);
       setMechanicIds([]);
+      setScales(null);
       setSuccess('ユーザの声を保存しました。');
     } catch (reason) {
       setError(reason.message);
@@ -165,6 +170,7 @@ export default function VoicePage() {
       <ProfileField label="タグ" hint="カンマ区切り（例: 物語, UI, 協力プレイ）">
         <input name="tags" value={form.tags} onChange={update} />
       </ProfileField>
+      <ExperienceScalesInput value={scales} onChange={setScales} />
       <button className="btn-primary" disabled={saving}>{saving ? '保存中…' : '投稿する'}</button>
     </form>
   );
@@ -198,6 +204,7 @@ export default function VoicePage() {
             ))}
             {record.tags?.map((tag) => <span className="tag" key={tag}>{tag}</span>)}
           </div>
+          <ScaleSummary scales={record.scales} />
         </article>
       )}
     />

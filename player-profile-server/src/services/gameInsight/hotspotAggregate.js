@@ -9,6 +9,7 @@
 const { EMOTION_STAMPS } = require('../profileEvidenceSchemas');
 const { buildCohortSessions, nearestBin } = require('./hotspotSeries');
 const { analyzeDropouts } = require('./dropoutAnalysis');
+const { normalizeWithinPlayer } = require('../ordinal/withinPlayer');
 
 const MINIMUM_SESSIONS = 2;
 const HOTSPOT_Z_THRESHOLD = 1;
@@ -58,6 +59,12 @@ function perPlayerBins(sessions, binCount) {
       valence.push(mean(group.map((session) => session.series.valence[bin])));
       arousal.push(mean(group.map((session) => session.series.arousal[bin])));
     }
+    // Ordinal view: the same bins re-expressed against this player's own
+    // distribution over every covered bin of every session (ordinal/withinPlayer).
+    const valencePool = group.flatMap((session) => session.series.valence);
+    const arousalPool = group.flatMap((session) => session.series.arousal);
+    const valenceOrdinal = normalizeWithinPlayer(valence, valencePool);
+    const arousalOrdinal = normalizeWithinPlayer(arousal, arousalPool);
     const stampsByBin = new Map();
     for (const session of group) {
       for (const { bin, stamp } of session.stampedBins) {
@@ -73,6 +80,12 @@ function perPlayerBins(sessions, binCount) {
       modes: [...new Set(group.map((session) => session.mode))].sort(),
       valence,
       arousal,
+      valenceZ: valenceOrdinal.z,
+      arousalZ: arousalOrdinal.z,
+      baseline: {
+        valence: valenceOrdinal.baseline,
+        arousal: arousalOrdinal.baseline,
+      },
       stampsByBin,
       sessions: group,
     });
@@ -101,12 +114,23 @@ function aggregateBins(players, centers) {
       if ([...stamps].some((stamp) => NEGATIVE_STAMPS.has(stamp))) negativePlayers += 1;
     }
     const coverage = valences.filter(Number.isFinite).length;
+    const valenceZs = players.map((player) => player.valenceZ[bin]);
+    const arousalZs = players.map((player) => player.arousalZ[bin]);
+    const meanValenceZ = mean(valenceZs);
+    const valenceZDeviation = deviation(valenceZs, meanValenceZ);
     return {
       bin,
       position: round(center),
       valence: round(meanValence),
       valenceDeviation: round(valenceDeviation),
       arousal: round(mean(arousals)),
+      // Ordinal (within-player standardized) counterparts; what the hotspot
+      // detection actually reads.
+      valenceZ: round(meanValenceZ),
+      arousalZ: round(mean(arousalZs)),
+      // 1 when every player is on the same side of their own usual by the
+      // same amount; a z spread of 2 is full disagreement.
+      agreementOrdinal: valenceZDeviation === null ? null : round(Math.max(0, 1 - valenceZDeviation / 2)),
       playerCoverage: coverage,
       // Valence spans -2..2, so a deviation of 2 means players fully disagree.
       agreement: valenceDeviation === null ? null : round(Math.max(0, 1 - valenceDeviation / 2)),
@@ -153,34 +177,67 @@ function quotesForBin(players, bin, binCount) {
     .map(({ quote: { distance, ...quote } }) => quote);
 }
 
+// Ordinal first (spec/feature/game-experience-scales.md §順序化): the spike
+// search runs on the within-player standardized arousal (`arousalZ`), so a
+// bin is hot when players are above *their own usual* together, not when one
+// loud recorder is loud. Pain is a raw negative valence or a clearly
+// below-usual one. Records whose ordinal series carries no spike information
+// (all null, or flat because every recorder is flat) fall back to the raw
+// arousal so older fixtures and single-session cohorts still resolve.
+/** @implements SPEC-GAME-EXPERIENCE-SCALES */
+function detectionSeries(bins) {
+  const ordinal = bins.map((bin) => bin.arousalZ);
+  // A flat recorder gets z 0 everywhere (by design in ordinal/withinPlayer), so
+  // "some value is finite" is not enough: an all-zero ordinal series carries no
+  // spike information and would suppress every hotspot. Fall back to the raw
+  // arousal unless the ordinal series actually varies.
+  const present = ordinal.filter(Number.isFinite);
+  const varies = present.length > 0 && present.some((value) => value !== present[0]);
+  return varies
+    ? { values: ordinal, basis: 'ordinal' }
+    : { values: bins.map((bin) => bin.arousal), basis: 'raw' };
+}
+
 /** @implements SPEC-GAME-INSIGHT */
 function detectHotspots(bins, players, { binCount, playerCount }) {
   const minimumCoverage = playerCount >= 2 ? 2 : 1;
-  const arousals = bins.map((bin) => bin.arousal);
+  const { values: arousals, basis } = detectionSeries(bins);
   const arousalMean = mean(arousals);
   const arousalDeviation = deviation(arousals, arousalMean);
   const hotspots = [];
   bins.forEach((bin, index) => {
-    if (bin.playerCoverage < minimumCoverage || bin.arousal === null) return;
-    const previous = bins[index - 1]?.arousal ?? -Infinity;
-    const next = bins[index + 1]?.arousal ?? -Infinity;
-    const z = arousalDeviation > 0 ? (bin.arousal - arousalMean) / arousalDeviation : 0;
-    const localMax = bin.arousal >= previous && bin.arousal >= next;
+    const value = arousals[index];
+    // `score` stays on the raw arousal (comparable across games), so a bin
+    // without one cannot be ranked even if its ordinal value exists.
+    if (bin.playerCoverage < minimumCoverage || !Number.isFinite(value) || bin.arousal === null) return;
+    const previous = arousals[index - 1] ?? -Infinity;
+    const next = arousals[index + 1] ?? -Infinity;
+    const z = arousalDeviation > 0 ? (value - arousalMean) / arousalDeviation : 0;
+    const localMax = value >= previous && value >= next;
     const negativeVoters = bin.negativePlayers || 0;
     const stampPain = negativeVoters * 2 > bin.playerCoverage && negativeVoters >= minimumCoverage;
     const arousalSpike = z >= HOTSPOT_Z_THRESHOLD && localMax;
     if (!arousalSpike && !stampPain) return;
-    const kind = (bin.valence !== null && bin.valence < 0) || (!arousalSpike && stampPain) ? 'pain' : 'hype';
+    const rawNegative = bin.valence !== null && bin.valence < 0;
+    const belowUsual = bin.valenceZ !== null && bin.valenceZ !== undefined && bin.valenceZ <= -HOTSPOT_Z_THRESHOLD;
+    const kind = rawNegative || belowUsual || (!arousalSpike && stampPain) ? 'pain' : 'hype';
     hotspots.push({
       bin: bin.bin,
       position: bin.position,
       kind,
       score: round(bin.arousal * (bin.playerCoverage / playerCount)),
-      arousalZ: round(z, 2),
+      // How far this bin stands out inside the detection series (`detectionBasis`
+      // says which one). Distinct from the valenceZ / arousalZ below, which are
+      // the within-player "how far above their own usual" values of the bin.
+      spikeZ: round(z, 2),
+      detectionBasis: basis,
       valence: bin.valence,
+      valenceZ: bin.valenceZ ?? null,
       arousal: bin.arousal,
+      arousalZ: bin.arousalZ ?? null,
       playerCount: bin.playerCoverage,
       agreement: bin.agreement,
+      agreementOrdinal: bin.agreementOrdinal ?? null,
       stampPlayers: bin.stampPlayers,
       reasons: [arousalSpike ? 'arousal-spike' : null, stampPain ? 'negative-stamps' : null].filter(Boolean),
       quotes: quotesForBin(players, bin.bin, binCount),

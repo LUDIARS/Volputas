@@ -12,6 +12,7 @@ const {
 } = require('./textSignals');
 const { aspectTextContributions } = require('./aspectTextContributions');
 const { mapV1Contribution } = require('./v1AxisMapping');
+const { scaleAxisSignals } = require('../gameExperienceScales/scaleContributions');
 
 // 「文字数=内省」 heuristic: compressed per design §3.3 (fullAt 600) and kept
 // inside the engagement compartment only (the v1→v2 mapping already routes
@@ -93,12 +94,17 @@ function voiceContributions(record, sourceKind = 'voice', commentField = 'commen
   const text = [record.comment, ...(record.tags || [])].filter(Boolean).join(' ');
   const aspects = aspectTextContributions(text, { weight: 1.5, source: source(commentField) });
   const social = socialSignal(text, sentiment, source(commentField));
+  // GEQ / PENS subscales map straight onto v2 axes (no v1 detour).
+  const scales = scaleAxisSignals(record.scales).flatMap((signal) => signal.v2.map(([axis, weight]) => entry(
+    axis, signal.value, weight, source('scales'), `${signal.family}.${signal.subscale}`
+  )));
 
   return {
     contributions: [
       ...v1.flatMap(mapV1Contribution),
       ...aspects.contributions,
       ...social.contributions,
+      ...scales,
     ],
     aversionEvidence: [...aspects.aversionEvidence, ...social.aversionEvidence],
   };

@@ -84,3 +84,67 @@ test('unknown imported stamp keys do not enter aggregate objects', () => {
   assert.deepEqual(analysis.bins.at(-1).stampPlayers, {});
   assert.equal(Object.getPrototypeOf(analysis.bins.at(-1).stampPlayers), Object.prototype);
 });
+
+test('ordinal first: a quiet player\'s own peak counts as much as a loud player\'s, and the bins expose z values', () => {
+  const quietCalm = (timeSeconds) => ({ timeSeconds, valence: 0, arousal: 1 });
+  const loudCalm = (timeSeconds) => ({ timeSeconds, valence: 1, arousal: 4 });
+  const items = [
+    // Loud recorder: always 4, peaks at 5 near 50%.
+    { playerKey: 'loud', record: video('l', [loudCalm(30), loudCalm(150), { timeSeconds: 300, valence: 1, arousal: 5 }, loudCalm(450), loudCalm(570)]) },
+    // Quiet recorder: always 1, peaks at 2 near 50% — same moment, smaller raw step.
+    { playerKey: 'quiet', record: video('q', [quietCalm(30), quietCalm(150), { timeSeconds: 300, valence: 0, arousal: 2 }, quietCalm(450), quietCalm(570)]) },
+  ];
+  const analysis = aggregateHotspots(items);
+  const middle = analysis.bins[10];
+  assert.ok(Number.isFinite(middle.arousalZ), 'bins carry a within-player z');
+  assert.ok(middle.arousalZ > 0, `arousalZ ${middle.arousalZ}`);
+  assert.ok(Number.isFinite(middle.valenceZ));
+  assert.ok(middle.agreementOrdinal !== null);
+  const hype = analysis.hotspots.find((spot) => spot.kind === 'hype');
+  assert.ok(hype, 'shared above-usual moment is a hotspot');
+  assert.equal(hype.detectionBasis, 'ordinal');
+  assert.equal(hype.playerCount, 2);
+  assert.ok([9, 10].includes(hype.bin), `bin ${hype.bin}`);
+  assert.equal(typeof hype.valenceZ, 'number');
+  // The z pair a spot carries is the within-player one of its own bin (what the
+  // UI labels 「各自の普段との差」); the spike strength lives under spikeZ.
+  const hypeBin = analysis.bins[hype.bin];
+  assert.equal(hype.valenceZ, hypeBin.valenceZ);
+  assert.equal(hype.arousalZ, hypeBin.arousalZ);
+  assert.ok(Number.isFinite(hype.spikeZ), `spikeZ ${hype.spikeZ}`);
+});
+
+test('a perfectly flat ordinal series falls back to the raw arousal instead of hiding every spike', () => {
+  // Both recorders answer the same arousal in every covered bin except one
+  // shared peak, and each has a single session, so their own baseline is built
+  // from the very bins being scored. Whenever the within-player z collapses to
+  // all-zero, detection must not silently go blind.
+  const flat = (timeSeconds, arousal) => ({ timeSeconds, valence: 0.5, arousal });
+  const items = [
+    { playerKey: 'p1', record: video('a', [flat(300, 3), flat(300, 3)]) },
+    { playerKey: 'p2', record: video('b', [flat(300, 3), flat(300, 3)]) },
+  ];
+  const analysis = aggregateHotspots(items);
+  // A flat player yields z 0 everywhere; the basis must degrade to 'raw'.
+  const bases = new Set(analysis.hotspots.map((spot) => spot.detectionBasis));
+  assert.ok(!bases.has('ordinal'), `flat ordinal must not claim ordinal detection: ${[...bases]}`);
+  // Every reported hotspot must carry a real score, never a null-arousal 0.
+  for (const spot of analysis.hotspots) {
+    assert.ok(Number.isFinite(spot.arousal), `hotspot ${spot.bin} has null arousal`);
+    assert.ok(Number.isFinite(spot.score), `hotspot ${spot.bin} has a non-finite score`);
+  }
+});
+
+test('a moment clearly below a player\'s usual is pain even when the raw valence stays positive', () => {
+  const happy = (timeSeconds) => ({ timeSeconds, valence: 2, arousal: 2 });
+  const items = [
+    { playerKey: 'p1', record: video('a', [happy(30), happy(150), { timeSeconds: 300, valence: 0.5, arousal: 5 }, happy(450), happy(570)]) },
+    { playerKey: 'p2', record: video('b', [happy(30), happy(150), { timeSeconds: 300, valence: 0.5, arousal: 5 }, happy(450), happy(570)]) },
+  ];
+  const analysis = aggregateHotspots(items);
+  const spot = analysis.hotspots.find((item) => [9, 10].includes(item.bin));
+  assert.ok(spot, 'expected a hotspot at the dip');
+  assert.ok(spot.valence > 0, `raw valence ${spot.valence}`);
+  assert.ok(spot.valenceZ <= -1, `valenceZ ${spot.valenceZ}`);
+  assert.equal(spot.kind, 'pain');
+});

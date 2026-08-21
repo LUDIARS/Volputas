@@ -52,7 +52,9 @@ test('game insight aggregates across every player directory and persists a deriv
   assert.deepEqual(record.sourceRecordIds, ['imported-1', 'me-1', 'other-1']);
   assert.equal(record.analysis.playerCount, 3);
   assert.equal(record.analysis.sessionCount, 3);
-  assert.equal(record.provenance.extractor, 'hotspot-aggregate/v1');
+  assert.equal(record.provenance.extractor, 'hotspot-aggregate-ordinal/v2');
+  assert.equal(record.analysis.scales, null, 'no voice reader → no scale aggregate');
+  assert.ok(record.analysis.bins.some((bin) => Number.isFinite(bin.arousalZ)), 'bins carry within-player z');
   assert.equal(record.proposal, null);
   const onDisk = JSON.parse(await fs.readFile(path.join(root, 'game-insights', 'me', `${record.id}.json`), 'utf8'));
   assert.equal(onDisk.sourceRevision, record.sourceRevision);
@@ -199,4 +201,45 @@ test('sourceRevision ignores record order but not entries', () => {
   assert.notEqual(sourceRevision([a, b]), sourceRevision([a, { ...b, record: { ...b.record, entries: [calm(3)] } }]));
   const duplicateId = { playerKey: 'z', record: { id: 'a', entries: [calm(4)] } };
   assert.equal(sourceRevision([a, duplicateId]), sourceRevision([duplicateId, a]));
+});
+
+test('sourceRevision covers the scale answers that feed analysis.scales', () => {
+  const a = { playerKey: 'p', record: { id: 'a', entries: [calm(1)] } };
+  const voice = (scales) => [{ playerKey: 'p', record: { id: 'v1', gameTitle: 'Hot Quest', scales } }];
+  // A changed scale answer must invalidate the stored proposal.
+  assert.notEqual(
+    sourceRevision([a], voice({ geq: { flow_1: 1 } })),
+    sourceRevision([a], voice({ geq: { flow_1: 4 } }))
+  );
+  // Voices without scales contribute nothing, so unrelated impressions do not
+  // churn the revision.
+  assert.equal(
+    sourceRevision([a]),
+    sourceRevision([a], [{ playerKey: 'p', record: { id: 'v2', gameTitle: 'X', comment: 'hi' } }])
+  );
+});
+
+test('scales from every player impression are aggregated ordinal-first into analysis.scales', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-game-insight-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await seedRepository(root);
+  const voices = new ProfileRecordStore('voices');
+  const voice = (id, name, gameTitle, scales) => ({ id, gameTitle, comment: 'c', polarity: 'like', sentiment: 1, respondent: { name }, createdAt: '2026-08-01T00:00:00.000Z', scales });
+  await voices.write({ repositoryRoot: root, name: 'me', data: voice('v1', 'me', 'Hot Quest', { geq: { flow_1: 4, flow_2: 4 } }) });
+  await voices.write({ repositoryRoot: root, name: 'me', data: voice('v2', 'me', 'Another Game', { geq: { flow_1: 2, flow_2: 2 } }) });
+  await voices.write({ repositoryRoot: root, name: 'other', data: voice('v3', 'other', 'Hot Quest', { pens: { autonomy: 6 } }) });
+  const service = new GameInsightService({
+    cohortReader: new CohortReader(),
+    voiceCohortReader: new CohortReader({ collection: 'voices' }),
+    insightStore: new ProfileRecordStore('game-insights'),
+    llmClient: { isConfigured: () => false },
+    now: () => new Date('2026-08-20T00:00:00.000Z'),
+  });
+  const record = await service.analyze({ repositoryRoot: root, name: 'me' }, { gameTitle: 'Hot Quest' });
+  const { scales } = record.analysis;
+  assert.equal(scales.playerCount, 2);
+  assert.equal(scales.recordCount, 2);
+  assert.equal(scales.families.geq.subscales.flow.raw, 4);
+  assert.equal(scales.families.geq.subscales.flow.z, 1, 'Hot Quest is one sd above the usual of that recorder');
+  assert.equal(scales.families.pens.subscales.autonomy.playerCount, 1);
 });

@@ -1,0 +1,14 @@
+{
+  "name": "game-experience-scales",
+  "description": "体験尺度: ゲーム感想 (voices) に GEQ in-game / PENS の回答を持たせ、下位尺度を決定的に採点してペルソナ軸へ寄与させる境界。横断集計の前にプレイヤー内で順序化 (z / 順位) する共通 ordinal モジュールもここに置く。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/(src/services/(gameExperienceScales|ordinal)/[^/]+\\.js|src/services/gameInsight/scaleAggregate(\\.test)?\\.js|frontend/src/(components/(ExperienceScalesInput|ScaleSummary|ScaleAggregateTable)\\.jsx|lib/experienceScales(\\.test)?\\.js)|spec/feature/game-experience-scales\\.md)$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-GAME-EXPERIENCE-SCALES"
+  ]
+}

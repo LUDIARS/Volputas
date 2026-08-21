@@ -57,13 +57,13 @@ class CohortReader {
           record = JSON.parse(await fs.readFile(filePath, 'utf8'));
         } catch (error) {
           throw Object.assign(
-            new Error(`Emotion curve record is not valid JSON: ${filePath}`),
+            new Error(`Cohort record (${this.collection}) is not valid JSON: ${filePath}`),
             { code: 'INVALID_PROFILE_RECORD' }
           );
         }
         if (!record || typeof record !== 'object' || Array.isArray(record)) {
           throw Object.assign(
-            new Error(`Emotion curve record must be a JSON object: ${filePath}`),
+            new Error(`Cohort record (${this.collection}) must be a JSON object: ${filePath}`),
             { code: 'INVALID_PROFILE_RECORD' }
           );
         }

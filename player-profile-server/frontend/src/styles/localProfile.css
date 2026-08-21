@@ -1211,3 +1211,107 @@
   text-align: left;
   vertical-align: top;
 }
+
+/* GEQ / PENS scale input and summaries (game-experience-scales) */
+.scale-block {
+  margin: 0.8rem 0;
+}
+
+.scale-toggle {
+  background: none;
+  border: 1px dashed var(--color-border, #ccc);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.scale-families {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+.scale-family {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.8rem;
+}
+
+.scale-range {
+  font-weight: normal;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.scale-subscale {
+  margin-top: 0.5rem;
+}
+
+.scale-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.25rem 0;
+}
+
+.scale-item-text {
+  font-size: 0.85rem;
+  flex: 1 1 14rem;
+}
+
+.scale-item-steps {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.scale-step {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid var(--color-border, #ccc);
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.scale-step input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.scale-step-active {
+  background: var(--color-accent, #2f6fed);
+  color: #fff;
+  border-color: var(--color-accent, #2f6fed);
+}
+
+.scale-summary {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.scale-summary-family {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.scale-summary-label {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.scale-z-up { color: #1d7a46; }
+.scale-z-down { color: #b23a3a; }

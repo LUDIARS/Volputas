@@ -49,6 +49,21 @@ function formatStampPlayers(counts) {
   return parts.length > 0 ? parts.join(', ') : 'なし';
 }
 
+// GEQ / PENS cross-player block (game-experience-scales.md §横断集計): raw
+// mean on the family range plus the within-player z, so the reader sees both
+// "how high" and "how much above each player's usual".
+/** @implements SPEC-GAME-EXPERIENCE-SCALES */
+function formatScales(scales) {
+  if (!scales) return '- GEQ / PENS: 感想に尺度回答なし';
+  const lines = [`- GEQ / PENS (感想 ${scales.recordCount} 件 / ${scales.playerCount} 人、プレイヤー内 z は各自の他ゲームとの差):`];
+  for (const family of Object.values(scales.families)) {
+    const parts = Object.values(family.subscales)
+      .map((subscale) => `${subscale.label} ${subscale.raw ?? '－'} (z ${subscale.z ?? '－'}, ${subscale.playerCount} 人)`);
+    lines.push(`  - ${family.label} [${family.range.min}..${family.range.max}]: ${parts.join(' / ')}`);
+  }
+  return lines.join('\n');
+}
+
 /** @implements SPEC-GAME-INSIGHT */
 function displayFilePath(value) {
   const normalized = String(value || '').replaceAll('\\', '/');
@@ -114,6 +129,9 @@ function buildImprovementPrompt({ gameTitle, analysis, focusPoints, anatomiaProj
     `- 平均感情価 (0→100%, プレイヤー 1 票): ${formatSeries(analysis.bins.map((bin) => bin.valence))}`,
     `- 平均強さ: ${formatSeries(analysis.bins.map((bin) => bin.arousal))}`,
     `- 生存曲線 (継続中セッション割合): ${formatSeries(analysis.survival, 2)}`,
+    `- 平均感情価 (プレイヤー内 z、各自の普段との差): ${formatSeries(analysis.bins.map((bin) => bin.valenceZ ?? null), 2)}`,
+    `- 平均強さ (プレイヤー内 z): ${formatSeries(analysis.bins.map((bin) => bin.arousalZ ?? null), 2)}`,
+    formatScales(analysis.scales),
     `- Anatomia プロジェクト: ${anatomiaProject || '未指定 (コード位置なし)'}`,
     `- キャプチャセッション: ${captureSessionId || '未指定 (マーカー・画面なし)'}`,
   ].join('\n');
@@ -121,4 +139,4 @@ function buildImprovementPrompt({ gameTitle, analysis, focusPoints, anatomiaProj
   return [header, '## 焦点', focus, OUTPUT_INSTRUCTIONS, DUAL_LENS_INSTRUCTIONS].join('\n\n');
 }
 
-module.exports = { SYSTEM_PROMPT, buildImprovementPrompt, displayFilePath, formatFocus };
+module.exports = { SYSTEM_PROMPT, buildImprovementPrompt, displayFilePath, formatFocus, formatScales };

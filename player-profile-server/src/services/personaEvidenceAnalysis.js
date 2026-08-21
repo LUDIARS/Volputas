@@ -1,4 +1,6 @@
 // Deterministic analysis shared by Git-backed and database-backed modes.
+const { scaleAxisSignals } = require('./gameExperienceScales/scaleContributions');
+
 const AXES = [
   ['exploration', '探索志向'],
   ['mastery', '習熟志向'],
@@ -64,6 +66,10 @@ function addVoiceEvidence(accumulator, record) {
   }
   if (containsAny(terms, ['friend', 'multi', 'guild', 'coop', '友達', '協力', '対戦', '交流'])) {
     add(accumulator, 'social', 0.8, 1.5);
+  }
+  // GEQ / PENS answers, when the impression carries them.
+  for (const signal of scaleAxisSignals(record.scales)) {
+    for (const [axis, weight] of signal.v1) add(accumulator, axis, signal.value, weight);
   }
 }
 

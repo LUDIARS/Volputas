@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { localApi } from '../lib/localApi';
 import { HotspotChart } from '@volputas/charts';
 import { STAMP_BY_ID } from '../lib/emotionStamps';
+import ScaleAggregateTable from '../components/ScaleAggregateTable';
 import JudgmentLensPanel from '../components/JudgmentLensPanel';
 
 // ゲーム洞察 (spec/feature/game-insight.md): 同じゲームを遊んだ全プレイヤー
@@ -192,7 +193,7 @@ export default function GameInsightPage() {
           {analysis.hotspots.length > 0 && (
             <table className="narrative-arc-sessions">
               <thead>
-                <tr><th>位置</th><th>種別</th><th>score</th><th>感情価 / 強さ</th><th>人数</th><th>一致度</th><th>スタンプ</th><th>代表コメント</th></tr>
+                <tr><th>位置</th><th>種別</th><th>score</th><th>感情価 / 強さ</th><th>各自の普段との差 (z)</th><th>人数</th><th>一致度 (生 / 順序)</th><th>スタンプ</th><th>代表コメント</th></tr>
               </thead>
               <tbody>
                 {analysis.hotspots.map((spot) => (
@@ -201,8 +202,9 @@ export default function GameInsightPage() {
                     <td>{KIND_LABEL[spot.kind] || spot.kind}<br /><small>{spot.reasons.join(', ')}</small></td>
                     <td>{number(spot.score)}</td>
                     <td>{number(spot.valence, 1)} / {number(spot.arousal, 1)}</td>
+                    <td>{number(spot.valenceZ, 2)} / {number(spot.arousalZ, 2)}<br /><small>{spot.detectionBasis === 'ordinal' ? '順序化で検出' : '生値で検出'}</small></td>
                     <td>{spot.playerCount}</td>
-                    <td>{number(spot.agreement)}</td>
+                    <td>{number(spot.agreement)} / {number(spot.agreementOrdinal)}</td>
                     <td>{stampSummary(spot.stampPlayers)}</td>
                     <td>{spot.quotes.map((quote, index) => <div key={index}><small>{quote.player}:</small> {quote.comment}</div>)}</td>
                   </tr>
@@ -210,6 +212,8 @@ export default function GameInsightPage() {
               </tbody>
             </table>
           )}
+
+          <ScaleAggregateTable scales={analysis.scales} />
 
           <h3>脱落点</h3>
           {analysis.dropouts.length === 0 && <p className="capture-record-meta">途中で終わった時刻軸セッションはありません (記憶スケッチは脱落統計に入りません)。</p>}
