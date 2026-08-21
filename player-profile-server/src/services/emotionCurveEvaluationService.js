@@ -2,6 +2,7 @@
 // evaluation payload shaping. Storage of the result stays with the caller
 // (local Git store vs Cernere) so both modes share this service.
 const { SYSTEM_PROMPT, buildEvaluationPrompt } = require('./emotionCurveEvaluationPrompt');
+const { parseJudgmentSections } = require('./emotionJudgment/judgmentSections');
 
 class EmotionCurveEvaluationService {
   constructor({ llmClient, now = () => new Date() }) {
@@ -20,10 +21,11 @@ class EmotionCurveEvaluationService {
       prompt,
     });
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
       extractor: 'llm',
       model,
       text,
+      judgments: parseJudgmentSections(text),
       evaluatedAt: this.now().toISOString(),
       personaAnalyzedAt: persona?.analyzedAt ?? null,
       usedGameLog: Boolean(gameLogText),

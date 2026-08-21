@@ -94,9 +94,11 @@
 5. **プロンプト** (`improvementPrompt.js`、純関数) — 集計値 (プレイヤー数・ビン系列・生存曲線) と焦点ごとの
    文脈 (感情・スタンプ・コメント・マーカー・コード位置・フレームパス) を渡し、**数値の再計算はしない**よう指示。
    出力構成: 全体所見 / 焦点ごとの改善ポイント (何が起きているか → 根拠 (感情・マーカー・画面) → 関係コード →
-   改善案 → 確度) / 優先順位 / 追加計測の提案。
-6. 保存: `proposal { schemaVersion: 1, extractor: "llm", model, text, generatedAt, sourceRevision, anatomiaProject,
-   captureSessionId, frameCount, codeLocationCount, focusCount }`。生のマーカー・コード位置・一時ファイルパスは
+   改善案 → 確度) / 優先順位 / 追加計測の提案 / 二流派の判定 (西洋の判定 (機序) / 東洋の判定 (全体観) / 合議、
+   `emotion-judgment-lenses.md`)。
+6. 保存: `proposal { schemaVersion: 2, extractor: "llm", model, text, judgments, generatedAt, sourceRevision,
+   anatomiaProject, captureSessionId, frameCount, codeLocationCount, focusCount }`。`judgments` は `text` を固定見出しで
+   切り出した二流派の判定 (`emotion-judgment-lenses.md` §構造化)。生のマーカー・コード位置・一時ファイルパスは
    `proposal` の構造化フィールドには重複保存しない。
 
 LLM クライアントは既存の `createLlmTextClient` (既定 claude-cli)。`generate({ system, prompt, imagePaths })` —

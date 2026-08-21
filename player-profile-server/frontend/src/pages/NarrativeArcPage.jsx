@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { localApi } from '../lib/localApi';
 import { NarrativeArcChart } from '@volputas/charts';
 import { STAMP_BY_ID } from '../lib/emotionStamps';
+import JudgmentLensPanel from '../components/JudgmentLensPanel';
 
 // ナラティブアーク (spec/feature/narrative-arc.md): 同じプレイヤー (このローカル
 // データの本人) が同じゲームで残した感情曲線を複数まとめ、平均アーク・形状・
@@ -198,6 +199,7 @@ export default function NarrativeArcPage() {
                 {evaluationOutdated && <span className="tag">再集計前の解説</span>}
               </div>
               <pre className="evaluation-text">{current.evaluation.text}</pre>
+              <JudgmentLensPanel judgments={current.evaluation.judgments} />
             </div>
           )}
         </div>

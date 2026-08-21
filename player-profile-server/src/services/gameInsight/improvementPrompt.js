@@ -4,6 +4,7 @@
 // are the evidence; the LLM reads them and writes prose, never re-derives the
 // numbers. Same posture as narrativeArcPrompt.
 const { EMOTION_STAMPS } = require('../profileEvidenceSchemas');
+const { buildDualLensInstructions } = require('../emotionJudgment/judgmentLenses');
 
 const SYSTEM_PROMPT = [
   'あなたはゲームのプレイヤーリサーチアナリスト兼テクニカルディレクターです。',
@@ -21,7 +22,10 @@ const OUTPUT_INSTRUCTIONS = [
   '2. 焦点ごとの改善ポイント — 焦点番号順に「何が起きているか / 根拠 (感情・スタンプ・マーカー・画面) / 関係コード / 改善案 / 確度 (高・中・低)」。',
   '3. 優先順位 — 脱落点と pain を優先し、影響プレイヤー数と確度で並べる。',
   '4. 追加計測の提案 — 判断に足りない証拠 (ゲームマーカーの追加、録画、ログ) を具体的に。',
+  '5. 二流派の判定 — 下の「二流派の判定」の見出しと書式に従い、焦点全体に対して書く。',
 ].join('\n');
+
+const DUAL_LENS_INSTRUCTIONS = buildDualLensInstructions({ subject: 'このゲームの改善 (焦点全体)' });
 
 function percent(position) {
   return `${Math.round(position * 100)}%`;
@@ -114,7 +118,7 @@ function buildImprovementPrompt({ gameTitle, analysis, focusPoints, anatomiaProj
     `- キャプチャセッション: ${captureSessionId || '未指定 (マーカー・画面なし)'}`,
   ].join('\n');
   const focus = focusPoints.map((point) => formatFocus(point, analysis.referenceLengthSeconds)).join('\n\n');
-  return [header, '## 焦点', focus, OUTPUT_INSTRUCTIONS].join('\n\n');
+  return [header, '## 焦点', focus, OUTPUT_INSTRUCTIONS, DUAL_LENS_INSTRUCTIONS].join('\n\n');
 }
 
 module.exports = { SYSTEM_PROMPT, buildImprovementPrompt, displayFilePath, formatFocus };

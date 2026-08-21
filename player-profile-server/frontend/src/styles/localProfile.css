@@ -411,6 +411,47 @@
   word-break: break-word;
 }
 
+.judgment-panel {
+  margin-top: 0.9rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.judgment-lens-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.6rem;
+}
+
+.judgment-lens,
+.judgment-synthesis {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.judgment-lens-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.judgment-lens-hint,
+.judgment-lens-missing {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.judgment-lens-missing {
+  margin: 0;
+}
+
+.tag.agreement-high { background: #d9f2e3; }
+.tag.agreement-mid { background: #fff1cc; }
+.tag.agreement-low { background: #fadbd8; }
+
 .evaluation-llm-notice {
   margin-top: 0.9rem;
   font-size: 0.78rem;

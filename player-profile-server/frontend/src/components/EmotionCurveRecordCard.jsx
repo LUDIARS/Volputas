@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import EmotionCurveEditor from './EmotionCurveEditor';
 import ProfileMedia from './ProfileMedia';
+import JudgmentLensPanel from './JudgmentLensPanel';
 import { STAMP_BY_ID } from '../lib/emotionStamps';
 import { useProfileClient } from '../lib/profileClient';
 import { useRuntimeMode } from '../hooks/useRuntimeMode';
@@ -126,6 +127,7 @@ export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
             {!record.evaluation.personaAnalyzedAt && <span className="tag">ペルソナ未反映</span>}
           </div>
           <pre className="evaluation-text">{record.evaluation.text}</pre>
+          <JudgmentLensPanel judgments={record.evaluation.judgments} />
         </div>
       )}
     </article>

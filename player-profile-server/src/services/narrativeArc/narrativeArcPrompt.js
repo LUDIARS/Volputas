@@ -2,6 +2,7 @@
 // (spec/feature/narrative-arc.md §LLM 解説). The deterministic aggregate is the
 // evidence; the LLM only reads it and writes prose, never re-derives numbers.
 const { EMOTION_STAMPS } = require('../profileEvidenceSchemas');
+const { buildDualLensInstructions } = require('../emotionJudgment/judgmentLenses');
 
 const SYSTEM_PROMPT = [
   'あなたはゲームのプレイヤーリサーチアナリストです。',
@@ -18,7 +19,10 @@ const OUTPUT_INSTRUCTIONS = [
   '3. セッション間の変化 — 回を重ねての傾向 (慣れ・熟達・飽き) と一貫性の解釈。',
   '4. プレイヤー申告アークとの照合 — 申告があれば集計との合致・ズレを述べる。無ければその旨。',
   '5. 開発者への示唆 — このプレイヤーの体験構造から導ける具体的な改善仮説を箇条書きで。',
+  '6. 二流派の判定 — 下の「二流派の判定」の見出しと書式に従い、このプレイヤーのアーク全体に対して書く。',
 ].join('\n');
+
+const DUAL_LENS_INSTRUCTIONS = buildDualLensInstructions({ subject: 'このプレイヤーのナラティブアーク' });
 
 function percent(position) {
   return `${Math.round(position * 100)}%`;
@@ -96,6 +100,8 @@ function buildNarrativeArcPrompt({ gameTitle, analysis, records }) {
     formatEntries(records || []),
     '',
     OUTPUT_INSTRUCTIONS,
+    '',
+    DUAL_LENS_INSTRUCTIONS,
   ];
   return sections.filter((line) => line !== null).join('\n');
 }

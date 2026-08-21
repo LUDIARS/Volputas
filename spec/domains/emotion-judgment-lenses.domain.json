@@ -1,0 +1,14 @@
+{
+  "name": "emotion-judgment-lenses",
+  "description": "二流派の判定: 感情分析の LLM 出力 (ゲーム洞察の改善提案 / ナラティブアーク解説 / 感情曲線評価) に西洋 (単一機序・計測・再現) と東洋 (全体観・経験則・組み合わせ) の判定と合議を必ず取らせ、固定見出しで決定的に切り出して構造化保存・並列表示する横断境界。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/(src/services/emotionJudgment/[^/]+\\.js|frontend/src/components/JudgmentLensPanel\\.jsx|spec/feature/emotion-judgment-lenses\\.md)$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-EMOTION-JUDGMENT-LENSES"
+  ]
+}

@@ -121,6 +121,11 @@ test('evaluate sends the aggregate plus source entries to the LLM and stores the
   assert.equal(evaluated.evaluation.text, '解説テキスト');
   assert.equal(evaluated.evaluation.model, 'test-model');
   assert.equal(evaluated.evaluation.extractor, 'llm');
+  assert.equal(evaluated.evaluation.schemaVersion, 2);
+  assert.equal(evaluated.evaluation.judgments.complete, false);
+  assert.equal(evaluated.evaluation.judgments.western, null);
+  assert.match(generated[0].prompt, /# 二流派の判定/);
+  assert.match(generated[0].prompt, /このプレイヤーのナラティブアークについて/);
   assert.deepEqual(evaluated.evaluation.sourceRecordIds, ['c1', 'c2']);
   assert.equal(evaluated.evaluation.sourceRevision, evaluated.sourceRevision);
   assert.equal(generated[0].system, SYSTEM_PROMPT);

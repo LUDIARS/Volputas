@@ -13,6 +13,7 @@ const {
   selectFocusPoints,
 } = require('./improvementContext');
 const { SYSTEM_PROMPT, buildImprovementPrompt } = require('./improvementPrompt');
+const { parseJudgmentSections } = require('../emotionJudgment/judgmentSections');
 
 const INSIGHT_EXTRACTOR = 'hotspot-aggregate/v1';
 const INSIGHT_SCHEMA_VERSION = 1;
@@ -274,10 +275,11 @@ class GameInsightService {
       }
     );
     const proposal = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       extractor: 'llm',
       model,
       text,
+      judgments: parseJudgmentSections(text),
       generatedAt: this.now().toISOString(),
       sourceRevision: record.sourceRevision,
       anatomiaProject: project || null,

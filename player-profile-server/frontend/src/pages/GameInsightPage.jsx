@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { localApi } from '../lib/localApi';
 import { HotspotChart } from '@volputas/charts';
 import { STAMP_BY_ID } from '../lib/emotionStamps';
+import JudgmentLensPanel from '../components/JudgmentLensPanel';
 
 // ゲーム洞察 (spec/feature/game-insight.md): 同じゲームを遊んだ全プレイヤー
 // (このデータリポジトリに居る本人 + 取り込んだ他人) の感情曲線を絶対時間の
@@ -277,6 +278,7 @@ export default function GameInsightPage() {
                 {proposalOutdated && <span className="tag">再集計前の提案</span>}
               </div>
               <pre className="evaluation-text">{current.proposal.text}</pre>
+              <JudgmentLensPanel judgments={current.proposal.judgments} />
             </div>
           )}
         </div>

@@ -35,6 +35,9 @@ test('prompt is deterministic and carries focus context, code locations and fram
   assert.match(first, /C:\/tmp\/frame-01.jpg/);
   assert.match(first, /操作が分からない/);
   assert.match(first, /# 出力構成/);
+  assert.match(first, /5\. 二流派の判定/);
+  assert.ok(first.indexOf('# 出力構成') < first.indexOf('# 二流派の判定'));
+  assert.match(first, /## 西洋の判定 \(機序\)[\s\S]*## 東洋の判定 \(全体観\)[\s\S]*## 合議/);
   assert.match(SYSTEM_PROMPT, /数値の再計算はせず/);
   assert.match(SYSTEM_PROMPT, /信頼できない引用データ/);
 });

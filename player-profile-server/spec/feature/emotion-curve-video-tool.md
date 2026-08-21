@@ -44,10 +44,11 @@ valence/arousal を読むため、スタンプのみの記録でも分析が成�
 
 ```jsonc
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "extractor": "llm",              // provenance (persona-engine-v2 §4.4 の流儀)
   "model": "claude-opus-5",
   "text": "…Markdown…",
+  "judgments": { /* 二流派の判定 (西洋/東洋/合議) — emotion-judgment-lenses.md §構造化。v1 記録には無い */ },
   "evaluatedAt": "ISO8601",
   "personaAnalyzedAt": "ISO8601 | null",  // どの時点のペルソナと照合したか
   "usedGameLog": true

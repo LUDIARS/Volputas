@@ -63,7 +63,10 @@ test('evaluation service wraps LLM output with provenance metadata', async () =>
       isConfigured: () => true,
       generate: async (input) => {
         calls.push(input);
-        return { text: '## 分析結果', model: 'claude-opus-5' };
+        return {
+          text: '## 分析結果\n## 西洋の判定 (機序)\n- 確度: 高\n## 東洋の判定 (全体観)\n- 確度: 中\n## 合議\n一致度: 中',
+          model: 'claude-opus-5',
+        };
       },
     },
     now: () => new Date('2026-07-27T12:00:00.000Z'),
@@ -78,15 +81,24 @@ test('evaluation service wraps LLM output with provenance metadata', async () =>
   assert.equal(calls.length, 1);
   assert.equal(calls[0].system, SYSTEM_PROMPT);
   assert.match(calls[0].prompt, /boss_defeated t=95/);
-  assert.deepEqual(evaluation, {
-    schemaVersion: 1,
+  assert.match(calls[0].prompt, /# 二流派の判定/);
+  assert.match(calls[0].prompt, /## 西洋の判定 \(機序\)/);
+  assert.match(calls[0].prompt, /## 東洋の判定 \(全体観\)/);
+  assert.match(calls[0].prompt, /## 合議/);
+  const { judgments, ...rest } = evaluation;
+  assert.deepEqual(rest, {
+    schemaVersion: 2,
     extractor: 'llm',
     model: 'claude-opus-5',
-    text: '## 分析結果',
+    text: '## 分析結果\n## 西洋の判定 (機序)\n- 確度: 高\n## 東洋の判定 (全体観)\n- 確度: 中\n## 合議\n一致度: 中',
     evaluatedAt: '2026-07-27T12:00:00.000Z',
     personaAnalyzedAt: PERSONA.analyzedAt,
     usedGameLog: true,
   });
+  assert.equal(judgments.complete, true);
+  assert.equal(judgments.western.confidence, '高');
+  assert.equal(judgments.eastern.confidence, '中');
+  assert.equal(judgments.agreement, '中');
 });
 
 test('evaluation service propagates LLM configuration errors', async () => {

@@ -68,7 +68,10 @@
   `LLM_NOT_CONFIGURED` 503 で fail-fast)。
 - プロンプトは純関数で組み立て (テスト対象)。集計値 (形状・相関・ピーク/谷/終端・一貫性・傾き・
   ビン系列) とセッション別要約、元記録のメモ/スタンプ原文を渡し、**数値の再計算はしない**よう指示。
-- 出力構成: アーク要約 / ピーク・谷・終端 / セッション間の変化 / 申告アークとの照合 / 開発者への示唆。
+- 出力構成: アーク要約 / ピーク・谷・終端 / セッション間の変化 / 申告アークとの照合 / 開発者への示唆 /
+  二流派の判定 (西洋の判定 (機序) / 東洋の判定 (全体観) / 合議、`emotion-judgment-lenses.md`)。
+- 保存: `evaluation { schemaVersion: 2, extractor: "llm", model, text, judgments, evaluatedAt, sourceRecordIds,
+  sourceRevision }`。`judgments` は `text` を固定見出しで切り出した二流派の判定。
 - UI に「集計結果と対象セッションのスタンプ・メモを LLM (Claude) に送信する」旨を常時表示。
 
 ## API (local app、127.0.0.1)

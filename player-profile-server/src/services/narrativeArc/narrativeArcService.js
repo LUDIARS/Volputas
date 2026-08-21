@@ -7,6 +7,7 @@ const { createHash } = require('node:crypto');
 const { buildSessionSeries } = require('./arcSeries');
 const { aggregateArc } = require('./arcAggregate');
 const { SYSTEM_PROMPT, buildNarrativeArcPrompt } = require('./narrativeArcPrompt');
+const { parseJudgmentSections } = require('../emotionJudgment/judgmentSections');
 
 const ARC_EXTRACTOR = 'arc-aggregate/v1';
 const ARC_SCHEMA_VERSION = 1;
@@ -150,10 +151,11 @@ class NarrativeArcService {
     });
     const { text, model } = await this.llmClient.generate({ system: SYSTEM_PROMPT, prompt });
     const evaluation = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       extractor: 'llm',
       model,
       text,
+      judgments: parseJudgmentSections(text),
       evaluatedAt: this.now().toISOString(),
       sourceRecordIds: record.sourceRecordIds,
       sourceRevision: record.sourceRevision,

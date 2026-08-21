@@ -113,7 +113,10 @@ test('propose joins capture markers, Anatomia locations and frames, and detects 
     },
     llmClient: {
       isConfigured: () => true,
-      generate: async (input) => { generated.push(input); return { text: '改善提案', model: 'test-model' }; },
+      generate: async (input) => {
+        generated.push(input);
+        return { text: '改善提案\n## 西洋の判定 (機序)\n- 確度: 高\n## 東洋の判定 (全体観)\n- 確度: 低\n## 合議\n一致度: 低', model: 'test-model' };
+      },
     },
     now: () => new Date('2026-08-20T00:00:00.000Z'),
   });
@@ -133,7 +136,13 @@ test('propose joins capture markers, Anatomia locations and frames, and detects 
   assert.equal(candidates[0].screenRecordingDurationSeconds, 600);
 
   const proposed = await service.propose(context, record.id, { anatomiaProject: 'hot-quest' });
-  assert.equal(proposed.proposal.text, '改善提案');
+  assert.match(proposed.proposal.text, /^改善提案/);
+  assert.equal(proposed.proposal.schemaVersion, 2);
+  assert.equal(proposed.proposal.judgments.complete, true);
+  assert.equal(proposed.proposal.judgments.western.confidence, '高');
+  assert.equal(proposed.proposal.judgments.eastern.confidence, '低');
+  assert.equal(proposed.proposal.judgments.agreement, '低');
+  assert.match(generated[0].prompt, /# 二流派の判定/);
   assert.equal(proposed.proposal.anatomiaProject, 'hot-quest');
   assert.equal(proposed.proposal.captureSessionId, 'cap-1');
   assert.ok(proposed.proposal.focusCount >= 1);
@@ -159,7 +168,7 @@ test('propose joins capture markers, Anatomia locations and frames, and detects 
 
   // Proposal survives re-analysis and a source edit makes it stale.
   const reanalyzed = await service.analyze(context, { gameTitle: 'Hot Quest' });
-  assert.equal(reanalyzed.proposal.text, '改善提案');
+  assert.equal(reanalyzed.proposal.text, proposed.proposal.text);
   const store = new ProfileRecordStore('emotion-curves');
   await store.write({ repositoryRoot: root, name: 'other', data: { ...(await new CohortReader().readGame(context, 'Hot Quest')).find((item) => item.record.id === 'other-1').record, entries: [calm(5)] } });
   await assert.rejects(service.propose(context, record.id, {}), (error) => error.code === 'GAME_INSIGHT_STALE');

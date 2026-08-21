@@ -1,8 +1,10 @@
 // Pure prompt construction for emotion-curve evaluation. No I/O here so the
 // exact prompt is unit-testable and deterministic for a given input.
 const { EMOTION_STAMPS } = require('./profileEvidenceSchemas');
+const { buildDualLensInstructions } = require('./emotionJudgment/judgmentLenses');
 
 const GAME_LOG_EXCERPT_LIMIT = 20000;
+const DUAL_LENS_INSTRUCTIONS = buildDualLensInstructions({ subject: 'このセッションの体験' });
 
 const SYSTEM_PROMPT = [
   'あなたはゲームのプレイヤーリサーチアナリストです。',
@@ -99,7 +101,10 @@ function buildEvaluationPrompt({ record, persona, gameLogText }) {
     '1. **ナラティブアークの分析** — 感情曲線の起伏構造 (立ち上がり・ピーク・谷・終わり方) をプレイ時間の文脈で読み解く。ピーク・エンド則の観点も含める。',
     '2. **スキ/嫌いの言語化** — スタンプとメモから、このプレイヤーが何を好み、何にストレスを感じたかを具体的な時刻を引用して言語化する。メモが無いスタンプは周辺の記録とゲームログから推測し、推測と明示する。',
     '3. **ペルソナとの照合** — ペルソナ分析の傾向と今回の感情曲線が合致する点・意外な点を挙げる。',
-    '4. **開発者への示唆** — この体験の流れを踏まえ、ゲーム側で検討に値する改善仮説を 2〜3 点。'
+    '4. **開発者への示唆** — この体験の流れを踏まえ、ゲーム側で検討に値する改善仮説を 2〜3 点。',
+    '5. **二流派の判定** — 下の「二流派の判定」の見出しと書式に従い、このセッションの体験全体に対して書く。',
+    '',
+    DUAL_LENS_INSTRUCTIONS
   );
 
   return sections.filter((line) => line !== null).join('\n');
