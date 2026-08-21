@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { localApi } from '../lib/localApi';
-import HotspotChart from '../components/HotspotChart';
+import { HotspotChart } from '@volputas/charts';
 import { STAMP_BY_ID } from '../lib/emotionStamps';
 
 // ゲーム洞察 (spec/feature/game-insight.md): 同じゲームを遊んだ全プレイヤー

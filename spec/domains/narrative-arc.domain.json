@@ -6,6 +6,9 @@
   "membership": [
     {
       "pathPattern": "(^|/)player-profile-server/(frontend/src/(components/NarrativeArcChart\\.jsx|pages/NarrativeArcPage\\.jsx)|src/services/narrativeArc/[^/]+\\.js|src/local/narrativeArcRoutes(?:\\.test)?\\.js|spec/feature/narrative-arc\\.md)$"
+    },
+    {
+      "pathPattern": "(^|/)packages/charts/src/NarrativeArcChart\\.jsx$"
     }
   ],
   "specRefs": [

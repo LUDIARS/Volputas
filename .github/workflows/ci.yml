@@ -25,6 +25,7 @@ jobs:
           cache-dependency-path: |
             player-profile-server/package-lock.json
             player-profile-server/frontend/package-lock.json
+            overlay-app/package-lock.json
       - name: Build sentiment-core submodule
         working-directory: player-profile-server
         run: npm run setup:submodules -- --skip-git-update
@@ -43,3 +44,34 @@ jobs:
       - name: Test frontend
         working-directory: player-profile-server/frontend
         run: npm test
+      # Linux job は WebView 側のロジックと共有チャートの取り込みを見る。
+      - name: Install overlay app
+        working-directory: overlay-app
+        run: npm ci
+      - name: Test overlay app
+        working-directory: overlay-app
+        run: npm test
+      - name: Build overlay app
+        working-directory: overlay-app
+        run: npm run build
+
+  overlay-native:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: overlay-app/package-lock.json
+      - name: Prepare native overlay assets
+        working-directory: overlay-app
+        run: |
+          npm ci
+          npm run build
+      - name: Test native overlay
+        working-directory: overlay-app/src-tauri
+        run: cargo test --locked --all-targets
+      - name: Check native overlay
+        working-directory: overlay-app/src-tauri
+        run: cargo check --locked

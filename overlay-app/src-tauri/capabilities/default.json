@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "オーバーレイ本体ウインドウの権限。外部 HTTP もファイル読みも Rust 側のコマンドだけが行うので、WebView には window 制御と opener しか渡さない。",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-set-position",
+    "core:window:allow-set-size",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-start-dragging",
+    "global-shortcut:default",
+    "opener:allow-open-url"
+  ]
+}

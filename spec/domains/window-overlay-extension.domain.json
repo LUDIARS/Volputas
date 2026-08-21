@@ -1,0 +1,23 @@
+{
+  "name": "window-overlay-extension",
+  "description": "ウインドウ表示拡張ツール: 任意アプリのウインドウへ追従するオーバーレイ/ドックパネル、OS 別のウインドウ追従とクリック透過、Markdown とグラフの描画、グローバルホットキーによる感想マーカー投下と local API 連携。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)overlay-app/src-tauri/src/([^/]+|(overlay|content)/[^/]+)\\.rs$"
+    },
+    {
+      "pathPattern": "(^|/)overlay-app/src/((panels|markdown|lib)/[^/]+|App|main)\\.(jsx|js)$"
+    },
+    {
+      "pathPattern": "(^|/)packages/charts/src/[^/]+\\.(jsx|js)$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/(src/(local/overlayRoutes(?:\\.test)?|services/overlay/[^/]+)\\.js|spec/feature/window-overlay-extension\\.md)$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-WINDOW-OVERLAY-EXTENSION"
+  ]
+}

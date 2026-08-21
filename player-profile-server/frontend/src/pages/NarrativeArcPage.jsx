@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { localApi } from '../lib/localApi';
-import NarrativeArcChart from '../components/NarrativeArcChart';
+import { NarrativeArcChart } from '@volputas/charts';
 import { STAMP_BY_ID } from '../lib/emotionStamps';
 
 // ナラティブアーク (spec/feature/narrative-arc.md): 同じプレイヤー (このローカル

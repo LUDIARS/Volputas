@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import RadarChart from '../components/RadarChart';
-import TrendChart from '../components/TrendChart';
+import { RadarChart, TrendChart } from '@volputas/charts';
 import { useProfileClient } from '../lib/profileClient';
 import { useRuntimeMode } from '../hooks/useRuntimeMode';
 import {

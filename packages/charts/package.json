@@ -1,0 +1,15 @@
+{
+  "name": "@volputas/charts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared React SVG charts for the Volputas frontend and the window overlay app",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./styles.css": "./src/styles/charts.css"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

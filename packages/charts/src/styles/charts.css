@@ -1,0 +1,39 @@
+/* Styles owned by the shared chart components. Imported by the Volputas
+   frontend entry and by overlay-app; the chart markup carries no other
+   class names except the host-provided .empty-state. */
+.trend-legend {
+  display: flex;
+  gap: 0.9rem;
+  justify-content: center;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.trend-legend i {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.2rem;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+}
+
+.capture-timeline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.capture-timeline-legend i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+}
+
+.capture-legend-focus { background: var(--color-primary); }
+.capture-legend-affect { background: var(--color-accent); border-top: 1px dashed var(--color-accent); height: 0; }
+.capture-legend-session { background: var(--color-text-muted); }

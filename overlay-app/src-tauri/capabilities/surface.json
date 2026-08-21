@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "info-surface",
+  "description": "情報サーフェスのウインドウ権限。サーフェスは見せるだけの面なので、クリック透過の切り替え・ドラッグ・位置変更を WebView に渡さない (spec 追補 §不変条件 1)。矩形は Rust 側の追従ループだけが動かす。",
+  "windows": ["surface-*"],
+  "permissions": [
+    "core:default",
+    "core:event:default"
+  ]
+}

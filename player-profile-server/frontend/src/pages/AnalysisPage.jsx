@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
-import RadarChart from '../components/RadarChart';
+import { RadarChart } from '@volputas/charts';
 import '../styles/analysis.css';
 
 const PATTERN_LABELS = {

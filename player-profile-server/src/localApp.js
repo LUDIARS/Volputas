@@ -24,6 +24,9 @@ const { createCompanionApp } = require('./local/companionApp');
 const { createNarrativeArcRoutes } = require('./local/narrativeArcRoutes');
 const { NarrativeArcService } = require('./services/narrativeArc/narrativeArcService');
 const { createGameInsightRoutes } = require('./local/gameInsightRoutes');
+const { createOverlayRoutes } = require('./local/overlayRoutes');
+const { OverlayContentService } = require('./services/overlay/overlayContentService');
+const { OverlayMarkdownStore } = require('./services/overlay/overlayMarkdownStore');
 const { createGameInsightService } = require('./local/gameInsightComposition');
 const { ProfileRecordStore } = require('./local/profileRecordStore');
 const {
@@ -51,6 +54,7 @@ function createLocalApp({
   captureAnalysisService,
   narrativeArcService,
   gameInsightService,
+  overlayContentService,
   llmClient,
   companionInfo = () => companionStatus(readCompanionConfig()),
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
@@ -77,6 +81,12 @@ function createLocalApp({
   const resolvedGameInsightService = gameInsightService || createGameInsightService({
     captureSessionService,
     llmClient: resolvedLlmClient,
+  });
+  const resolvedOverlayContentService = overlayContentService || new OverlayContentService({
+    markdownStore: new OverlayMarkdownStore(),
+    captureSessionService,
+    gameInsightService: resolvedGameInsightService,
+    narrativeArcService: resolvedNarrativeArcService,
   });
   const resolvedSurveyPublisher = surveyPublisher || new GitSurveyPublisher(gitCli);
   const resolvedPopulationReportService = populationReportService
@@ -106,6 +116,10 @@ function createLocalApp({
   }));
   app.use('/api/local/game-insights', createGameInsightRoutes({
     gameInsightService: resolvedGameInsightService,
+    configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
+  }));
+  app.use('/api/local/overlay', createOverlayRoutes({
+    overlayContentService: resolvedOverlayContentService,
     configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
   }));
   app.use('/api/local', createLocalRoutes({

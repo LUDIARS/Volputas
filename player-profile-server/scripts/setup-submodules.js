@@ -37,6 +37,9 @@ function isGeneratedDependencyResidue(root, packageDirectory) {
   if (!fs.existsSync(root) || fs.existsSync(path.join(packageDirectory, 'package.json'))) {
     return false;
   }
+  if (fs.readdirSync(root).length === 0) {
+    return true;
+  }
   const packagesDirectory = path.dirname(packageDirectory);
   return hasOnlyEntry(root, path.basename(packagesDirectory))
     && hasOnlyEntry(packagesDirectory, path.basename(packageDirectory))

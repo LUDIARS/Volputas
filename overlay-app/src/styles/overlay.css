@@ -1,0 +1,142 @@
+/* オーバーレイの外観 (spec §配置モード / §クリック透過)。
+   透過ウインドウ前提なので背景は自前で敷く。操作可能状態は枠で明示する。 */
+:root {
+  --color-primary: #4c8dff;
+  --color-accent: #ff8f4c;
+  --color-text: #f2f4f8;
+  --color-text-muted: #9aa4b2;
+  --color-danger: #ff6b6b;
+  --overlay-surface: rgba(18, 20, 26, 0.86);
+  --overlay-border: rgba(255, 255, 255, 0.16);
+}
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  color: var(--color-text);
+  font-family: "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-size: 13px;
+}
+
+.overlay-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--overlay-surface);
+  overflow: hidden;
+}
+
+/* 操作可能状態の明示 (spec §クリック透過)。 */
+.overlay-interactive { border-color: var(--color-primary); }
+.overlay-passthrough { border-color: transparent; }
+.overlay-unbound { border-color: var(--color-danger); }
+
+.overlay-grab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--overlay-border);
+  cursor: grab;
+}
+
+.overlay-grab select,
+.overlay-grab button {
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--color-text);
+  border: 1px solid var(--overlay-border);
+  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+.overlay-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  overflow-y: auto;
+}
+
+.overlay-panel-slot { min-height: 0; }
+
+.overlay-markdown { line-height: 1.5; }
+.overlay-markdown table { border-collapse: collapse; }
+.overlay-markdown th,
+.overlay-markdown td { border: 1px solid var(--overlay-border); padding: 0.2rem 0.4rem; }
+.overlay-link-disabled { color: var(--color-text-muted); text-decoration: line-through; }
+
+.overlay-chart { margin: 0.4rem 0; }
+.overlay-chart figcaption { color: var(--color-text-muted); font-size: 0.75rem; }
+.overlay-chart-loading { color: var(--color-text-muted); }
+
+.overlay-error-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border: 1px solid var(--color-danger);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-danger);
+}
+
+.overlay-markers header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.overlay-live { color: var(--color-primary); }
+.overlay-offline { color: var(--color-text-muted); }
+.overlay-pending { color: var(--color-accent); }
+
+.overlay-marker-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.overlay-marker-buttons button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--overlay-border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text);
+}
+
+.overlay-marker-buttons button small { color: var(--color-text-muted); font-size: 0.65rem; }
+/* local app 未起動時は無効に見せる (投下自体はバッファされる)。 */
+.overlay-marker-buttons .overlay-disabled { opacity: 0.5; }
+
+.overlay-comment { display: flex; gap: 0.3rem; margin-top: 0.35rem; }
+.overlay-comment input { flex: 1; min-width: 0; }
+.overlay-notice { margin: 0.35rem 0 0; font-size: 0.72rem; color: var(--color-text-muted); }
+.overlay-warning { color: var(--color-danger); }
+.empty-state { text-align: center; padding: 1rem; color: var(--color-text-muted); }
+
+/* 情報サーフェス (spec 追補)。見せるだけの面なので、グラブハンドルも
+   操作可能状態の枠も持たない。ポインタイベントは OS 側で貫通させている
+   が、WebView 側でも受けない指定にして経路を二重に塞ぐ。 */
+.overlay-surface {
+  height: 100%;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--overlay-surface);
+  pointer-events: none;
+  user-select: none;
+}
+
+.overlay-surface-loading { background: transparent; }

@@ -6,6 +6,9 @@
   "membership": [
     {
       "pathPattern": "(^|/)player-profile-server/(frontend/src/(App\\.jsx|components/(HotspotChart|LocalLayout)\\.jsx|pages/GameInsightPage\\.jsx|styles/localProfile\\.css)|src/(localApp\\.js|services/gameInsight/[^/]+\\.js|local/gameInsight(Routes|Composition)(?:\\.test)?\\.js|services/llm/(anthropicTextClient|claudeCliTextClient|llmTextClient\\.test)\\.js)|spec/feature/game-insight\\.md)$"
+    },
+    {
+      "pathPattern": "(^|/)packages/charts/src/HotspotChart\\.jsx$"
     }
   ],
   "specRefs": [

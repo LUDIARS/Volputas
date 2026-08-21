@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import '@volputas/charts/styles.css';
 import './styles/global.css';
 import './styles/layout.css';
 
