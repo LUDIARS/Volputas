@@ -15,6 +15,18 @@
 .impression-heading h2 { margin-top: 0.35rem; }
 .impression-muted { color: var(--color-text-muted); }
 .impression-copy { display: grid; gap: 1rem; }
+.discussion-launch-panel { display: grid; gap: 1rem; }
+.discussion-launch-panel button { justify-self: start; }
+.discussion-launch-result {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--color-accent);
+}
+.discussion-launch-result span {
+  color: var(--color-text-muted);
+  font-family: monospace;
+  overflow-wrap: anywhere;
+}
 
 .impression-metrics {
   display: grid;

@@ -54,6 +54,7 @@ const abilityRoutes = require('./routes/ability');
 const delegationRoutes = require('./routes/delegations');
 const impressionRoutes = require('./routes/impressions');
 const impressionReactionRoutes = require('./routes/impressionReactions');
+const { router: impressionDiscussionRoutes } = require('./routes/impressionDiscussions');
 const memoriaRoutes = require('./routes/memoria');
 const corpusManifestRoutes = require('./routes/corpusManifest');
 const { router: personaExportRoutes } = require('./routes/personaExport');
@@ -231,6 +232,7 @@ app.use('/api/v1', abilityRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
 app.use('/api/v1', impressionRoutes);
 app.use('/api/v1', impressionReactionRoutes);
+app.use('/api/v1', impressionDiscussionRoutes);
 app.use('/api/v1/profile-data', profileEvidenceRoutes);
 app.use('/api/personas', personaExportRoutes);
 

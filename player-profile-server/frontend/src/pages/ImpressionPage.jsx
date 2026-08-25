@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import DiscussionLaunchPanel from '../components/DiscussionLaunchPanel';
 import '../styles/impression.css';
 
 const REACTION_LABELS = Object.freeze({
@@ -16,6 +17,7 @@ function formatDuration(milliseconds) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+/** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
 export default function ImpressionPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -176,6 +178,10 @@ export default function ImpressionPage() {
           <div><dt>セッション</dt><dd>{impression.session_id}</dd></div>
         </dl>
       </div>
+
+      {impression.client?.source === 'volputas_web_game_review' && (
+        <DiscussionLaunchPanel key={id} impressionId={id} />
+      )}
 
       <div className="impression-assets">
         {(impression.assets || []).map((asset) => (
