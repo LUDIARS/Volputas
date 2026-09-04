@@ -15,7 +15,7 @@ related:
   - ../../package.json
   - ../../frontend/package.json
   - ../../Dockerfile
-updated: 2026-07-31
+updated: 2026-09-05
 ---
 
 # Build / test toolchain
@@ -27,7 +27,8 @@ updated: 2026-07-31
 
 ## 前提
 
-- **Node.js 22 以上**。backend / frontend 双方の `package.json` の `engines.node` は
+- **Node.js 22 以上**。backend の `package.json` は、sentiment-core のテスト依存である
+  Vite 8 に合わせて `engines.node` を `>=22.12.0` とする。frontend は
   `>=22.0.0`、CI の `actions/setup-node` は `node-version: 22`、実行 image は
   `node:22-alpine`。これらは必ず同じmajorに揃える (CIが実際にshipされるruntimeを
   検証するため)。frontendにも `engines` を置くのは、下のtest scriptがNode 22の
