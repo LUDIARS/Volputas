@@ -18,6 +18,7 @@ test('game insight routes list games, aggregate across players and store the LLM
   };
   const prompts = [];
   const app = createLocalApp({
+    dataRepositoryVisibilityChecker: { assertPrivate: async () => ({ isPrivate: true }) },
     serveFrontend: false,
     configStore: { read: async () => config, write: async (value) => value },
     gitAuthorReader: { read: async () => gitAuthor },

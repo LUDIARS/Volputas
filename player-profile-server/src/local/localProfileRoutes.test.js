@@ -26,6 +26,9 @@ test('local profile routes persist evidence, stream media, and cache persona ana
       write: async (value) => value,
     },
     gitAuthorReader: { read: async () => gitAuthor },
+    dataRepositoryVisibilityChecker: {
+      assertPrivate: async () => ({ isPrivate: true, visibility: 'private' }),
+    },
   });
   const server = app.listen(0, '127.0.0.1');
   t.after(() => new Promise((resolve) => server.close(resolve)));

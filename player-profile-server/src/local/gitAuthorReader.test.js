@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { GitAuthorReader } = require('./gitAuthorReader');
+const { GitAuthorReader, parseGithubOwnerRepo } = require('./gitAuthorReader');
 
 test('reads repository root and Git author using argument-array git calls', async () => {
   const repositoryRoot = path.resolve('Volputas-Data');
@@ -52,4 +52,53 @@ test('rejects a data repository whose origin is not GitHub', async () => {
   await assert.rejects(() => reader.read(path.resolve('data')), {
     code: 'GITHUB_REMOTE_REQUIRED',
   });
+});
+
+test('parseGithubOwnerRepo extracts owner/repo from every accepted remote form', () => {
+  assert.equal(
+    parseGithubOwnerRepo('git@github.com:acme/volputas-data.git'),
+    'acme/volputas-data'
+  );
+  assert.equal(
+    parseGithubOwnerRepo('git@github.com:acme/volputas-data'),
+    'acme/volputas-data'
+  );
+  assert.equal(
+    parseGithubOwnerRepo('ssh://git@github.com/acme/volputas-data.git'),
+    'acme/volputas-data'
+  );
+  assert.equal(
+    parseGithubOwnerRepo('https://github.com/acme/volputas-data.git'),
+    'acme/volputas-data'
+  );
+  assert.equal(
+    parseGithubOwnerRepo('https://github.com/acme/volputas-data'),
+    'acme/volputas-data'
+  );
+});
+
+test('parseGithubOwnerRepo rejects a non-GitHub remote', () => {
+  assert.throws(
+    () => parseGithubOwnerRepo('https://example.test/acme/volputas-data.git'),
+    { code: 'GITHUB_REMOTE_REQUIRED' }
+  );
+});
+
+// The parsed owner/repo is interpolated into the `gh api repos/<owner>/<repo>` path
+// used for the private-visibility check; a remote must never be able to steer that
+// path at another resource or smuggle characters into it.
+test('parseGithubOwnerRepo rejects remotes that could re-point the GitHub API path', () => {
+  for (const remoteUrl of [
+    'https://github.com/../volputas-data',
+    'https://github.com/acme/..',
+    'https://github.com/acme/./volputas-data',
+    'https://github.com/acme/volputas data',
+    'https://github.com/acme/volputas%2fdata',
+  ]) {
+    assert.throws(
+      () => parseGithubOwnerRepo(remoteUrl),
+      { code: 'GITHUB_REMOTE_REQUIRED' },
+      `expected ${remoteUrl} to be rejected`
+    );
+  }
 });

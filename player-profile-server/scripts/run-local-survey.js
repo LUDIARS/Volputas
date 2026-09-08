@@ -3,6 +3,7 @@
 const path = require('node:path');
 const { readAnswersFile } = require('../src/localSurvey/answerFile');
 const { parseLocalSurveyArguments } = require('../src/localSurvey/cliArguments');
+const { safeErrorMessage } = require('../src/localSurvey/cliErrorMessage');
 const { assertPrivateGithubRepository } = require(
   '../src/localSurvey/githubRepositoryVisibility'
 );
@@ -128,13 +129,6 @@ async function main({
     errorOutput.write(`[fatal] Local survey failed: ${safeErrorMessage(error)}\n`);
     return 1;
   }
-}
-
-function safeErrorMessage(error) {
-  if (!error || typeof error.message !== 'string' || error.message.length === 0) {
-    return 'Unexpected error';
-  }
-  return error.message.replace(/[\r\n]+/g, ' ').slice(0, 500);
 }
 
 if (require.main === module) {

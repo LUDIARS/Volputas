@@ -17,16 +17,21 @@ related:
   - ../interface/local-survey-git-workflow.md
   - ../setup/local-okf-survey.md
   - ../data/data-schema.md
-updated: 2026-07-28
+updated: 2026-08-02
 ---
 
 # Local survey test plan
 
 ## Clone setup
 
-- target不存在時にcanonical `VolputasData/main`をsingle-branch cloneする。
+- `config/local-survey.json`が指すrepository/branch (ハードコードされた既定値は
+  持たない) をtarget不存在時にsingle-branch cloneする。
 - 正しい既存cloneは再利用し、内容を削除・上書きしない。
 - 別repository、入れ子repository、remote不一致はfail-fastする。
+- clone直後にprivate visibilityを検証し、public/internalならこの時点で
+  fail-fastする (`setup:survey-data`自身が拒否し、後続コマンドへ進めない)。
+- remote不一致のエラーはoriginのuserinfoを落として出す。tokenを埋め込んだoriginを
+  持つ既存cloneでも、その値がstderrへ現れない。
 - 親Volputasのstatusへclone内容が現れない。
 
 ## Repository validation
@@ -34,6 +39,7 @@ updated: 2026-07-28
 - canonical owner/nameとprivate visibilityだけを受理する。
 - public、internal、別repository、API失敗、不正JSONを拒否する。
 - APIの生出力やcredentialをエラーへ含めない。
+- 検証は`setup:survey-data`のclone直後とlocal survey実行時の両方で行われる。
 
 ## Publish workflow
 

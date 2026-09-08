@@ -41,13 +41,18 @@ OIDC clientを発行してから設定します。`npm start`とDockerイメー�
 既定のVolputasは、Cernere・OAuth・PostgreSQLを使わないローカルツールとして
 Excubitorから起動する。初回起動後にSettingsで次を設定する。
 
-- 任意のGitHubリポジトリをcloneした、データリポジトリの絶対パス
+- 企業ごとに用意した任意のGitHubリポジトリをcloneした、データリポジトリの絶対パス
+  （Volputasは特定リポジトリを既定値として持たない）
 - 回答フォルダに使うName（Git Authorから自動設定）
 
 設定保存時に対象リポジトリの`git config user.name`と`user.email`を検証する。
-標準アンケートが未作成なら`surveys/gamer-preference.json`へ作成し、既存JSONは
-上書きしない。画面はデータリポジトリ内の`surveys/*.json`をすべて読み込み、
-アンケート一覧として表示する。
+データリポジトリは実データを保持するため**private**でなければならず、GitHub CLI
+(`gh`) でvisibilityを検証する。public/internalなリポジトリは設定を保存できず、
+既に保存済みの設定が後からpublicへ変わった場合もその後の処理開始（各APIの利用）を
+fail-fastで拒否する。アンケート定義の正本はデータリポジトリ側の`surveys/*.json`に
+あり、Volputas側は既定のアンケートを書き出さない（1本も読めなければ設定を保存
+しない）。画面はデータリポジトリ内の`surveys/*.json`をすべて読み込み、アンケート
+一覧として表示する。
 
 回答は次の構造で保存する。
 
@@ -72,9 +77,11 @@ Nameはデータリポジトリの`git config user.name`から自動設定する
 
 ## デスクトップ版
 
-Electron版はGit CLIがPATHから実行できることを確認し、選択したVolputasData
-リポジトリの`git config user.name`を回答フォルダのNameへ自動設定する。
-Git AuthorのNameとEmail、GitHubのorigin remoteが不足している場合は設定を保存しない。
+Electron版はGit CLIがPATHから実行できることを確認し、選択したデータリポジトリの
+`git config user.name`を回答フォルダのNameへ自動設定する。Git AuthorのNameと
+Email、GitHubのorigin remoteが不足している場合は設定を保存しない。データ
+リポジトリのvisibility検証にはGitHub CLI (`gh`) も必要（`gh auth login`済みで
+あること）。
 
 ```sh
 cd player-profile-server
@@ -83,11 +90,13 @@ npm run desktop:make
 ```
 
 WindowsではSquirrelインストーラー、macOS/LinuxではZIPを作成する。
-VolputasDataのcloneと設定JSON作成をまとめたサンプルは次に置く。パッケージ版にも
-`resources/setup-samples`として同梱する。
+企業自身の private データリポジトリのcloneと設定JSON作成をまとめたサンプルは
+次に置く。パッケージ版にも`resources/setup-samples`として同梱する。リポジトリURL
+は既定値を持たない必須引数で、スクリプト自身もclone後にvisibilityを検証する
+（`gh`必須）。
 
-- Windows: `desktop/setup-samples/setup-volputas-data.ps1`
-- macOS / Linux: `desktop/setup-samples/setup-volputas-data.sh`
+- Windows: `desktop/setup-samples/setup-volputas-data.ps1 -RepositoryUrl <url>`
+- macOS / Linux: `desktop/setup-samples/setup-volputas-data.sh <url>`
 
 公開GitHub Releasesを更新元として、パッケージ版は起動時と10分ごとに更新を確認する。
 自動更新対象はElectronが対応するWindowsとmacOS。macOSの更新配布には署名が必要。
@@ -145,8 +154,12 @@ GitHub CLIの現在の認証ユーザーを本人として扱う。`LUDIARS/Volp
 **public な template** であり、実運用ではこれをコピーした自分の **private データ
 リポジトリ** を作って `config/local-survey.json` で指定する (回答が push されるのは
 このコピーで、CLI の private visibility guard もコピーに対して働く)。
-`setup:survey-data` は設定されたデータリポジトリを `private/survey-data` へ独立cloneする。
-これはsubmoduleではなく、Volputas本体のgitlinkにも記録されない。
+`setup:survey-data` は `config/local-survey.json` が指すデータリポジトリ
+（ハードコードされた既定値は持たない）を `private/survey-data` へ独立cloneし、
+clone直後にそのリポジトリがprivateであることを検証してfail-fastする
+（`config/local-survey.json` を自分の private コピーへ向け変える前に実行すると、
+public な `LUDIARS/VolputasData` のままこの検証で失敗する）。これはsubmoduleでは
+なく、Volputas本体のgitlinkにも記録されない。
 
 ```bash
 cd player-profile-server

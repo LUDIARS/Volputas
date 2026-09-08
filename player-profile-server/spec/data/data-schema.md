@@ -15,10 +15,11 @@ related:
   - ../plan/local-okf-survey-data.md
   - ../feature/local-okf-survey.md
   - ../interface/local-survey-git-workflow.md
+  - ../interface/local-data-repository-visibility.md
   - ../plan/corpus-survey-integration.md
   - ../feature/corpus-survey-integration.md
   - ../interface/corpus-survey-backend.md
-updated: 2026-07-28
+updated: 2026-07-31
 ---
 
 # Volputas data schema classification
@@ -114,12 +115,28 @@ GitHub identity は `github_user_id`（numeric ID）を安定キーとし、`git
 スナップショットとする。login変更で別人扱いしない。GitHub token、メール、OAuth payload、
 アクセストークン、回答値をログ・commit message・lock fileへ記録しない。
 
-回答を保持する**データリポジトリ (VolputasData template のコピー) は private repository
-でなければならない** (`private: true` かつ `visibility: "private"`。internal も不可)。
+回答・体験データを保持する**データリポジトリ (VolputasData template のコピー、または
+企業が local desktop app 用に用意した任意のリポジトリ) は private repository で
+なければならない** (`private: true` かつ `visibility: "private"`。internal も不可)。
 template である `LUDIARS/VolputasData` 自体は回答を持たないため public でよい。
 個人回答の保持・削除はデータリポジトリの operator の責任とし、template の administrators は
 未送信の local data を保持しない。個人データが誤commitされた場合は参照削除だけで完了とみなさず、履歴書き換え、
 PR/fork/cache、clone・backupまで含めてincident手順へescalateする。
+
+visibility検証はデータリポジトリの持ち主 (Volputas) の責務として実装で維持し、GitHub側の
+設定だけに委ねない: local OKF survey CLI は `src/localSurvey/githubRepositoryVisibility.js`
+の `assertPrivateGithubRepository`、local desktop app (評価データ/persona) は
+`src/local/dataRepositoryVisibility.js` の `DataRepositoryVisibilityChecker` が、それぞれ
+`gh api` でvisibilityを確認する。desktop app側はLocal Settings保存時 (`PUT /api/local/config`)
+と、以降の各local APIが処理を開始する直前 (`configuredContext()`) の両方で検証し、
+publicへ変わった場合も設定保存・処理継続をfail-fastで拒否する。検証結果は短時間
+(5分) だけ再利用し、失敗は再利用しない。プロセス実行中ずっとキャッシュはしない —
+数日開いたままのdesktop appが、途中でpublicへ変わったリポジトリを検証済みとして
+扱い続けないため。
+
+`gh api` へ渡すrepository識別子はremote URLから `owner/repo` を切り出して組み立てる。
+GitHubの名前として妥当な文字種だけを受理し、`.`・`..` などAPI pathを別リソースへ
+向け替え得るsegmentは拒否する (`parseGithubOwnerRepo`)。
 
 Voluptas固有のプロフィール・委任データはサービスDBに保持する。表示名、メール、provider subjectなど
 認証系個人データを委任・claimテーブルへ複製しない。DiscutereへはHMAC仮名IDと本人承認済み派生値だけを渡す。

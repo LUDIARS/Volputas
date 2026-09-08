@@ -3,6 +3,12 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { createLocalApp } = require('../localApp');
 
+// The real checker shells out to `gh`; routes tests stub it as already-verified so
+// they exercise routing/config logic without a network dependency.
+function stubDataRepositoryVisibilityChecker() {
+  return { assertPrivate: async () => ({ isPrivate: true, visibility: 'private' }) };
+}
+
 test('reports Git PATH status and derives the answer folder Name from Git Author', async (t) => {
   const repositoryRoot = path.resolve('VolputasData');
   let savedConfig;
@@ -32,6 +38,7 @@ test('reports Git PATH status and derives the answer folder Name from Git Author
         return gitAuthor;
       },
     },
+    dataRepositoryVisibilityChecker: stubDataRepositoryVisibilityChecker(),
     responseStore: {},
     surveyDefinitionStore: {
       list: async (requestedPath) => {
@@ -73,6 +80,64 @@ test('reports Git PATH status and derives the answer folder Name from Git Author
   });
 });
 
+test('rejects saving Local Settings when the data repository is not private', async (t) => {
+  const repositoryRoot = path.resolve('AcmeData');
+  let configWritten = false;
+  const gitAuthor = {
+    repositoryRoot,
+    name: 'k.mitarai',
+    email: 'author@example.test',
+    remoteUrl: 'https://github.com/acme/game-data.git',
+  };
+  const visibilityCalls = [];
+  const app = createLocalApp({
+    serveFrontend: false,
+    configStore: {
+      read: async () => null,
+      write: async (config) => {
+        configWritten = true;
+        return config;
+      },
+    },
+    gitCli: {
+      inspect: async () => ({ available: true, version: 'git version 2.50.0' }),
+      assertAvailable: async () => ({ available: true, version: 'git version 2.50.0' }),
+    },
+    gitAuthorReader: { read: async () => gitAuthor },
+    dataRepositoryVisibilityChecker: {
+      assertPrivate: async (ownerRepo) => {
+        visibilityCalls.push(ownerRepo);
+        const error = new Error(
+          `The data repository "${ownerRepo}" is not private (visibility: public).`
+        );
+        error.code = 'DATA_REPOSITORY_NOT_PRIVATE';
+        error.statusCode = 422;
+        throw error;
+      },
+    },
+    responseStore: {},
+    surveyDefinitionStore: { list: async () => [] },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  await new Promise((resolve) => server.once('listening', resolve));
+  const { port } = server.address();
+
+  const response = await fetch(`http://127.0.0.1:${port}/api/local/config`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ dataRepositoryPath: repositoryRoot }),
+  });
+  const payload = await response.json();
+
+  assert.equal(response.status, 422);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error.code, 'DATA_REPOSITORY_NOT_PRIVATE');
+  assert.match(payload.error.message, /is not private/);
+  assert.deepEqual(visibilityCalls, ['acme/game-data']);
+  assert.equal(configWritten, false, 'a public repository must never be saved');
+});
+
 test('synchronizes an existing config Name when Git Author changes', async (t) => {
   const repositoryRoot = path.resolve('VolputasData');
   let savedConfig;
@@ -97,6 +162,7 @@ test('synchronizes an existing config Name when Git Author changes', async (t) =
         remoteUrl: 'https://github.com/LUDIARS/VolputasData.git',
       }),
     },
+    dataRepositoryVisibilityChecker: stubDataRepositoryVisibilityChecker(),
   });
   const server = app.listen(0, '127.0.0.1');
   t.after(() => new Promise((resolve) => server.close(resolve)));
@@ -109,6 +175,48 @@ test('synchronizes an existing config Name when Git Author changes', async (t) =
   assert.equal(payload.ok, true);
   assert.equal(payload.data.config.name, 'current-author');
   assert.equal(savedConfig.name, 'current-author');
+});
+
+test('surfaces a configurationError when a stored repository is no longer private', async (t) => {
+  const repositoryRoot = path.resolve('AcmeData');
+  const app = createLocalApp({
+    serveFrontend: false,
+    configStore: {
+      read: async () => ({
+        schemaVersion: 2,
+        dataRepositoryPath: repositoryRoot,
+        name: 'old-author',
+      }),
+      write: async (config) => config,
+    },
+    gitAuthorReader: {
+      read: async () => ({
+        repositoryRoot,
+        name: 'old-author',
+        email: 'author@example.test',
+        remoteUrl: 'https://github.com/acme/game-data.git',
+      }),
+    },
+    dataRepositoryVisibilityChecker: {
+      assertPrivate: async () => {
+        const error = new Error('The data repository "acme/game-data" is not private.');
+        error.code = 'DATA_REPOSITORY_NOT_PRIVATE';
+        throw error;
+      },
+    },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  await new Promise((resolve) => server.once('listening', resolve));
+  const { port } = server.address();
+
+  const payload = await fetch(`http://127.0.0.1:${port}/api/local/config`)
+    .then((response) => response.json());
+
+  assert.equal(payload.ok, true);
+  assert.equal(payload.data.configured, true);
+  assert.equal(payload.data.gitAuthor, null);
+  assert.match(payload.data.configurationError, /is not private/);
 });
 
 test('publishes a local survey response before reporting save success', async (t) => {
@@ -138,6 +246,7 @@ test('publishes a local survey response before reporting save success', async (t
         remoteUrl: 'https://github.com/neco/VolputasData.git',
       }),
     },
+    dataRepositoryVisibilityChecker: stubDataRepositoryVisibilityChecker(),
     responseStore: {
       write: async () => ({
         filePath: responseFilePath,

@@ -51,9 +51,12 @@ gh auth login
 npm --prefix player-profile-server run setup:survey-data
 ```
 
-scriptは`config/local-survey.json`が指すデータリポジトリの`main`を
-`player-profile-server/private/survey-data`へcloneする。submodule登録や親gitlink更新は
-行わない。
+scriptは`config/local-survey.json`が指すデータリポジトリ (ハードコードされた既定値
+は持たない) の`main`を`player-profile-server/private/survey-data`へcloneする。
+submodule登録や親gitlink更新は行わない。clone直後にそのリポジトリのvisibilityが
+privateであることを検証し、public/internalならこの時点でfail-fastする
+(`config/local-survey.json`を自分のprivateコピーへ向け変える前に実行すると、public
+な`LUDIARS/VolputasData`のままここで失敗する)。
 
 ## Verification
 

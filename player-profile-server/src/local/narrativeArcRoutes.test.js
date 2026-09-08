@@ -17,6 +17,7 @@ test('narrative arc routes list games, aggregate sessions and store LLM commenta
   };
   const prompts = [];
   const app = createLocalApp({
+    dataRepositoryVisibilityChecker: { assertPrivate: async () => ({ isPrivate: true }) },
     serveFrontend: false,
     configStore: { read: async () => config, write: async (value) => value },
     gitAuthorReader: { read: async () => gitAuthor },

@@ -95,7 +95,7 @@ export default function LocalSettingsPage() {
 
       <div className="settings-grid local-settings-grid">
         <form className="card" onSubmit={save}>
-          <h3>VolputasData</h3>
+          <h3>データリポジトリ</h3>
           <div className={`git-cli-status ${gitStatus?.available ? 'available' : 'unavailable'}`}>
             <strong>Git CLI</strong>
             <span>
@@ -113,7 +113,7 @@ export default function LocalSettingsPage() {
                 id="data-repository-path"
                 value={form.dataRepositoryPath}
                 onChange={(event) => updateField('dataRepositoryPath', event.target.value)}
-                placeholder="例: E:\Data\VolputasData"
+                placeholder="例: E:\Data\CompanyPlayerData"
                 required
               />
               {window.volputasDesktop && (
@@ -122,6 +122,10 @@ export default function LocalSettingsPage() {
                 </button>
               )}
             </div>
+            <p className="muted">
+              自社が用意した任意のGitHubリポジトリを指定できます。保存時にprivateである
+              ことを検証し、public/internalなリポジトリは保存できません。
+            </p>
           </div>
           <div className="form-group consent-setting">
             <label>

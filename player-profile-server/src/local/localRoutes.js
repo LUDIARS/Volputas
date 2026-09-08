@@ -1,6 +1,7 @@
 const fs = require('node:fs/promises');
 const { Router } = require('express');
 const { AppError } = require('../middleware/errorHandler');
+const { parseGithubOwnerRepo } = require('./gitAuthorReader');
 const {
   validateDataRepositoryPath,
   validateLocalConfig,
@@ -46,6 +47,7 @@ function createLocalRoutes({
   configStore,
   gitCli,
   gitAuthorReader,
+  dataRepositoryVisibilityChecker,
   emotionCurveEvaluator,
   evidenceStores,
   mediaStore,
@@ -70,7 +72,24 @@ function createLocalRoutes({
     }
   });
 
-  const configuredContext = createConfiguredContext({ configStore, gitAuthorReader });
+  const configuredContext = createConfiguredContext({
+    configStore,
+    gitAuthorReader,
+    dataRepositoryVisibilityChecker,
+  });
+  // @implements SPEC-LOCAL-DATA-REPOSITORY-VISIBILITY (Route enforcement interface)
+  //   spec/interface/local-data-repository-visibility.md
+  //
+  // The company's data repository holds real player evidence. A public or internal
+  // repository must never be treated as "configured" — checked both when settings are
+  // saved and again here, the single choke point every local route resolves through
+  // before it is allowed to start reading or writing data. The checker memoizes for a
+  // short TTL rather than for the whole process run, so a repository flipped to public
+  // under a long-lived desktop session is refused within minutes.
+  async function assertPrivateDataRepository(gitAuthor) {
+    const ownerRepo = parseGithubOwnerRepo(gitAuthor.remoteUrl);
+    await dataRepositoryVisibilityChecker.assertPrivate(ownerRepo);
+  }
 
   function collectionRoutes(routePath, store, validate) {
     router.get(routePath, async (_req, res, next) => {
@@ -112,6 +131,7 @@ function createLocalRoutes({
 
       try {
         const gitAuthor = await gitAuthorReader.read(storedConfig.dataRepositoryPath);
+        await assertPrivateDataRepository(gitAuthor);
         const config = storedConfig.name === gitAuthor.name
           ? storedConfig
           : await configStore.write({ ...storedConfig, name: gitAuthor.name });
@@ -137,14 +157,18 @@ function createLocalRoutes({
       await gitCli.assertAvailable();
       const dataRepositoryPath = validateDataRepositoryPath(req.body?.dataRepositoryPath);
       const gitAuthor = await gitAuthorReader.read(dataRepositoryPath);
+      // データリポジトリは企業ごとに用意された個別のGitHubリポジトリ。実データを
+      // 保持するため public/internal を「設定済み」として受け入れず、保存前に
+      // private であることを検証する (fail-fast)。
+      await assertPrivateDataRepository(gitAuthor);
       const candidate = validateLocalConfig({
         dataRepositoryPath,
         name: gitAuthor.name,
         researchExportConsent: req.body?.researchExportConsent === true,
       });
-      // アンケート定義の正本はデータリポジトリ (VolputasData) 側にある。設定を保存する前に
-      // 実際に読めることを確認し、定義が1本も無いディレクトリを「設定済み」として
-      // 受け入れない。ここで既定のアンケートを書き出すと正本がコード側とリポジトリ側の
+      // アンケート定義の正本はデータリポジトリ側にある。設定を保存する前に実際に
+      // 読めることを確認し、定義が1本も無いディレクトリを「設定済み」として受け
+      // 入れない。ここで既定のアンケートを書き出すと正本がコード側とリポジトリ側の
       // 2箇所になり、リポジトリを更新しても古い定義が残り続ける。
       const surveys = await surveyDefinitionStore.list(gitAuthor.repositoryRoot);
       const config = await configStore.write(candidate);

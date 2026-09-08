@@ -26,7 +26,7 @@ function setupScriptsDirectory() {
 function registerDesktopHandlers() {
   ipcMain.handle('desktop:choose-data-repository', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
-      title: 'VolputasDataリポジトリを選択',
+      title: 'データリポジトリを選択',
       properties: ['openDirectory'],
     });
     return result.canceled ? null : result.filePaths[0];

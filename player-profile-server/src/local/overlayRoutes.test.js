@@ -19,6 +19,7 @@ async function withOverlayApp(t, { captureSession = null, prepare } = {}) {
 
   const config = { schemaVersion: 2, dataRepositoryPath: repositoryRoot, name: 'overlay-tester' };
   const app = createLocalApp({
+    dataRepositoryVisibilityChecker: { assertPrivate: async () => ({ isPrivate: true }) },
     serveFrontend: false,
     configStore: { read: async () => config, write: async (value) => value },
     gitAuthorReader: {

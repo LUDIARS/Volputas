@@ -58,7 +58,8 @@ function assertPrivateGithubRepository({
     );
   }
   if (
-    metadata?.fullName !== repository
+    typeof metadata?.fullName !== 'string'
+    || metadata.fullName.toLowerCase() !== repository.toLowerCase()
     || metadata?.private !== true
     || metadata?.visibility !== 'private'
   ) {

@@ -3,8 +3,10 @@
 // (capture sessions) reuse the exact same configuration contract instead of
 // growing a second, drifting copy.
 const { AppError } = require('../middleware/errorHandler');
+const { parseGithubOwnerRepo } = require('./gitAuthorReader');
 
-function createConfiguredContext({ configStore, gitAuthorReader }) {
+// @implements SPEC-LOCAL-DATA-REPOSITORY-VISIBILITY
+function createConfiguredContext({ configStore, gitAuthorReader, dataRepositoryVisibilityChecker }) {
   return async function configuredContext() {
     const storedConfig = await configStore.read();
     if (!storedConfig) {
@@ -15,6 +17,7 @@ function createConfiguredContext({ configStore, gitAuthorReader }) {
       );
     }
     const gitAuthor = await gitAuthorReader.read(storedConfig.dataRepositoryPath);
+    await dataRepositoryVisibilityChecker.assertPrivate(parseGithubOwnerRepo(gitAuthor.remoteUrl));
     const config = storedConfig.name === gitAuthor.name
       ? storedConfig
       : await configStore.write({ ...storedConfig, name: gitAuthor.name });

@@ -27,6 +27,9 @@ test('emotion curve routes accept stamps, game logs, and produce LLM evaluations
       write: async (value) => value,
     },
     gitAuthorReader: { read: async () => gitAuthor },
+    dataRepositoryVisibilityChecker: {
+      assertPrivate: async () => ({ isPrivate: true, visibility: 'private' }),
+    },
     emotionCurveEvaluator: {
       isConfigured: () => true,
       evaluate: async (input) => {

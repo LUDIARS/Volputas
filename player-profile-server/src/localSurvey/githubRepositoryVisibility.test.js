@@ -37,6 +37,24 @@ test('assertPrivateGithubRepository accepts only the canonical private repositor
   ]);
 });
 
+test('assertPrivateGithubRepository accepts GitHub canonical-name casing', () => {
+  const metadata = assertPrivateGithubRepository({
+    cwd: '/work',
+    repository: 'Acme/Volputas-Data',
+    runner: {
+      run: () => ({
+        stdout: JSON.stringify({
+          fullName: 'acme/volputas-data',
+          private: true,
+          visibility: 'private',
+        }),
+      }),
+    },
+  });
+
+  assert.equal(metadata.fullName, 'acme/volputas-data');
+});
+
 test('assertPrivateGithubRepository fails closed for a public repository', () => {
   assert.throws(
     () => assertPrivateGithubRepository({

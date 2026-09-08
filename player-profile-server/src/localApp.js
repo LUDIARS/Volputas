@@ -4,6 +4,7 @@ const path = require('node:path');
 const { LocalConfigStore } = require('./local/localConfigStore');
 const { GitCli } = require('./local/gitCli');
 const { GitAuthorReader } = require('./local/gitAuthorReader');
+const { DataRepositoryVisibilityChecker } = require('./local/dataRepositoryVisibility');
 const { GitSurveyPublisher } = require('./local/gitSurveyPublisher');
 const { LocalResponseStore } = require('./local/localResponseStore');
 const { SurveyDefinitionStore } = require('./local/surveyDefinitionStore');
@@ -42,6 +43,7 @@ function createLocalApp({
   configStore = new LocalConfigStore(),
   gitCli = new GitCli(),
   gitAuthorReader = new GitAuthorReader(),
+  dataRepositoryVisibilityChecker = new DataRepositoryVisibilityChecker(),
   emotionCurveEvaluator,
   evidenceStores = createEvidenceStores(),
   mediaStore = new ProfileMediaStore(),
@@ -89,6 +91,11 @@ function createLocalApp({
     narrativeArcService: resolvedNarrativeArcService,
   });
   const resolvedSurveyPublisher = surveyPublisher || new GitSurveyPublisher(gitCli);
+  const configuredContext = createConfiguredContext({
+    configStore,
+    gitAuthorReader,
+    dataRepositoryVisibilityChecker,
+  });
   const resolvedPopulationReportService = populationReportService
     || new LocalPopulationReportService({
       personaService: resolvedPersonaService,
@@ -107,25 +114,26 @@ function createLocalApp({
     captureAnalysisService: captureAnalysisService
       || createCaptureAnalysisService(captureSessionService),
     emotionCurveStore: evidenceStores['emotion-curves'],
-    configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
+    configuredContext,
     companionInfo,
   }));
   app.use('/api/local/narrative-arcs', createNarrativeArcRoutes({
     narrativeArcService: resolvedNarrativeArcService,
-    configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
+    configuredContext,
   }));
   app.use('/api/local/game-insights', createGameInsightRoutes({
     gameInsightService: resolvedGameInsightService,
-    configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
+    configuredContext,
   }));
   app.use('/api/local/overlay', createOverlayRoutes({
     overlayContentService: resolvedOverlayContentService,
-    configuredContext: createConfiguredContext({ configStore, gitAuthorReader }),
+    configuredContext,
   }));
   app.use('/api/local', createLocalRoutes({
     configStore,
     gitCli,
     gitAuthorReader,
+    dataRepositoryVisibilityChecker,
     emotionCurveEvaluator: resolvedEmotionCurveEvaluator,
     evidenceStores,
     mediaStore,

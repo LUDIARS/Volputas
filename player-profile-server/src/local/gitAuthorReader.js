@@ -1,10 +1,52 @@
 const path = require('node:path');
 const { defaultGitRunner } = require('./gitCli');
 
+// @implements SPEC-LOCAL-DATA-REPOSITORY-VISIBILITY (Remote identification interface)
+//   spec/interface/local-data-repository-visibility.md
+//
+// Capture groups double as the "is this a GitHub remote" test and the owner/repo
+// extraction used by parseGithubOwnerRepo, so the two never drift apart. The segment
+// charset is GitHub's own (letters, digits, `-`, `_`, `.`): the extracted owner/repo
+// is interpolated into a `gh api repos/<owner>/<repo>` path, so anything that could
+// re-point that path (`/`, escapes, whitespace) must not survive parsing.
+const OWNER = '[A-Za-z0-9_.-]+';
+const REPO = '[A-Za-z0-9_.-]+?';
+const GITHUB_REMOTE_PATTERNS = [
+  new RegExp(`^git@github\\.com:(${OWNER})/(${REPO})(?:\\.git)?$`, 'i'),
+  new RegExp(`^ssh://git@github\\.com/(${OWNER})/(${REPO})(?:\\.git)?$`, 'i'),
+  new RegExp(`^https://github\\.com/(${OWNER})/(${REPO})(?:\\.git)?$`, 'i'),
+];
+
+// `.` / `..` pass the charset above but would turn `repos/<owner>/<repo>` into a
+// different GitHub API path once the URL is normalized, so they are not owner/repo
+// names this flow will ever accept.
+const RELATIVE_PATH_SEGMENTS = new Set(['.', '..']);
+
+// Accepting a remote and being able to derive its owner/repo are the same question,
+// so the check is the parse: a remote the visibility check could not address must not
+// be accepted as the data repository in the first place.
 function isGitHubRemote(value) {
-  return /^git@github\.com:[^/]+\/[^/]+(?:\.git)?$/i.test(value)
-    || /^ssh:\/\/git@github\.com\/[^/]+\/[^/]+(?:\.git)?$/i.test(value)
-    || /^https:\/\/github\.com\/[^/]+\/[^/]+(?:\.git)?$/i.test(value);
+  try {
+    parseGithubOwnerRepo(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// The company data repository is identified as "owner/repo" wherever we call the
+// GitHub API (visibility check) or GitHub CLI, independent of which remote URL form
+// (ssh/ssh-url/https) the local clone happens to use.
+function parseGithubOwnerRepo(remoteUrl) {
+  for (const pattern of GITHUB_REMOTE_PATTERNS) {
+    const match = pattern.exec(remoteUrl);
+    if (match && !RELATIVE_PATH_SEGMENTS.has(match[1]) && !RELATIVE_PATH_SEGMENTS.has(match[2])) {
+      return `${match[1]}/${match[2]}`;
+    }
+  }
+  throw Object.assign(new Error('The data repository origin must be a GitHub repository'), {
+    code: 'GITHUB_REMOTE_REQUIRED',
+  });
 }
 
 class GitAuthorReader {
@@ -62,4 +104,9 @@ class GitAuthorReader {
   }
 }
 
-module.exports = { GitAuthorReader, defaultGitRunner, isGitHubRemote };
+module.exports = {
+  GitAuthorReader,
+  defaultGitRunner,
+  isGitHubRemote,
+  parseGithubOwnerRepo,
+};
