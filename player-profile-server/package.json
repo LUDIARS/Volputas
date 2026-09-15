@@ -28,6 +28,7 @@
     "import:timeline": "node scripts/import-timeline.js",
     "export:utterances": "node scripts/export-utterances.js",
     "export:personas": "node scripts/export-personas.js",
+    "import:comment-history": "node scripts/import-comment-history.js",
     "purge:delegation-claims": "node scripts/purge-delegation-claims.js",
     "worker:spectator-media": "node scripts/run-media-worker.js",
     "stack:media:config": "docker compose --env-file .env.media-dev -f compose.media-dev.yml config",
