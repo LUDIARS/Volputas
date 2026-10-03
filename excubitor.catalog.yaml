@@ -24,11 +24,7 @@ services:
       GOOGLE_CALLBACK_URL: http://localhost:8892/auth/callback
       DISCORD_CALLBACK_URL: http://localhost:8892/auth/callback
     required_env: [CERNERE_BASE_URL, VOLPUTAS_URL, VOLPUTAS_DATABASE_URL]
-    infisical:
-      project_id: 19c9e77d-646c-4a0e-a091-b494234953ea
-      environment: dev
-      inject: true
-      include: [VOLPUTAS_DATABASE_URL]
+    # VOLPUTAS_DATABASE_URL などの secret は Excubitor の Vault (WebUI「環境変数」) の volputas 紐付けから注入する。
     requires_secret:
       - service: cernere
         keys: [EXCUBITOR_CERNERE_CLIENT_ID, EXCUBITOR_CERNERE_CLIENT_SECRET]
@@ -81,17 +77,8 @@ services:
       - DISCUTERE_PERSONA_BRIDGE_URL
       - DISCUTERE_PERSONA_BRIDGE_TOKEN
       - DISCUTERE_PERSONA_BRIDGE_ASSERTION_PRIVATE_KEY
-    infisical:
-      project_id: 19c9e77d-646c-4a0e-a091-b494234953ea
-      environment: dev
-      inject: true
-      include:
-        - VOLPUTAS_DATABASE_URL
-        - CERNERE_OIDC_CLIENT_ID
-        - CERNERE_OIDC_CLIENT_SECRET
-        - DISCUTERE_PERSONA_BRIDGE_URL
-        - DISCUTERE_PERSONA_BRIDGE_TOKEN
-        - DISCUTERE_PERSONA_BRIDGE_ASSERTION_PRIVATE_KEY
+    # 上の required_env の secret は Excubitor の Vault の volputas-haster 紐付けから注入する。
+    # HASTER を使うときは、本番と別の値を Vault に登録して紐付ける (本番の値を流用しない)。
     requires_secret:
       - service: cernere
         keys: [EXCUBITOR_CERNERE_CLIENT_ID, EXCUBITOR_CERNERE_CLIENT_SECRET]
