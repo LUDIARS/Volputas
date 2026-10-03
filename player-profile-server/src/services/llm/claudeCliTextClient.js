@@ -1,7 +1,7 @@
 // Claude Code CLI (`claude -p`) backed text generation. This is the default
 // LLM transport: it needs no API key, only a locally authenticated Claude CLI.
 // A missing CLI fails fast at call time (no silent stub fallback).
-const { spawn } = require('node:child_process');
+const { spawnOneShot: spawn, resolveModel } = require('@ludiars/one-shot');
 const path = require('node:path');
 
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
@@ -60,9 +60,7 @@ class ClaudeCliTextClient {
     timeoutMs = DEFAULT_TIMEOUT_MS,
     spawnImpl = spawn,
   } = {}) {
-    // The command line is assembled from these two values only (the prompt goes
-    // through stdin), so restrict them to safe charsets — on Windows the .cmd
-    // shim forces shell spawning.
+    // Retain the existing accepted command and model configuration syntax.
     if (!/^[A-Za-z0-9._\\/:-]+$/.test(command)) {
       throw configurationError(`VOLPUTAS_CLAUDE_CLI contains unsupported characters: ${command}`);
     }
@@ -70,7 +68,7 @@ class ClaudeCliTextClient {
       throw configurationError(`VOLPUTAS_LLM_MODEL contains unsupported characters: ${model}`);
     }
     this.command = command;
-    this.model = model;
+    this.model = resolveModel(model, 'claude');
     this.timeoutMs = timeoutMs;
     this.spawnImpl = spawnImpl;
   }
@@ -91,9 +89,9 @@ class ClaudeCliTextClient {
     if (this.model) args.push('--model', this.model);
     if (imageAccess.allowedTools) args.push('--allowedTools', imageAccess.allowedTools);
     const spawnOptions = {
-      // Windows resolves the CLI through a .cmd shim, which Node only spawns
-      // via a shell. Arguments are validated constants; the prompt rides stdin.
-      shell: process.platform === 'win32',
+      // Lapilli resolves Windows launchers without a shell.
+      shell: false,
+      cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe'],
       env: process.env,
     };

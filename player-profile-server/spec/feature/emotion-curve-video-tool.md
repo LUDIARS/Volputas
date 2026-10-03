@@ -80,7 +80,8 @@ evaluate は都度実行 (再実行で上書き)。ペルソナは保存済み `
     Claude Code CLI を `claude -p --output-format text` で起動し、プロンプトは stdin で渡す。
     API キー不要。CLI 不在なら `LLM_NOT_CONFIGURED` (503) で **fail-fast**
     (RULE_CODE §7.1: 無言スタブ禁止)。コマンドは `VOLPUTAS_CLAUDE_CLI` で差し替え可、
-    モデルは `VOLPUTAS_LLM_MODEL` (未指定なら CLI 側の既定)。timeout 5 分。
+    モデルは `VOLPUTAS_LLM_MODEL` (未指定なら共有起動ライブラリの Claude 既定)。timeout 5 分。
+    起動境界は `shared-one-shot.md` に従う。
   - **`anthropic` (明示 opt-in)** — `src/services/llm/anthropicTextClient.js`。
     `ANTHROPIC_API_KEY` 必須、未設定なら `LLM_NOT_CONFIGURED` (503)。
     モデルは `VOLPUTAS_LLM_MODEL` (既定 `claude-opus-5`)。サーバ側 fallback

@@ -12,6 +12,7 @@
     }
   ],
   "specRefs": [
-    "SPEC-GAME-INSIGHT"
+    "SPEC-GAME-INSIGHT",
+    "SPEC-SHARED-ONE-SHOT"
   ]
 }

@@ -7,6 +7,7 @@ const { EventEmitter } = require('node:events');
 const { Writable } = require('node:stream');
 const { AnthropicTextClient } = require('./anthropicTextClient');
 const { ClaudeCliTextClient } = require('./claudeCliTextClient');
+const { resolveModel } = require('@ludiars/one-shot');
 const { createLlmTextClient } = require('./createLlmTextClient');
 
 function fakeChild() {
@@ -44,6 +45,7 @@ test('claude-cli client streams the prompt over stdin and returns trimmed stdout
 
   assert.deepEqual(result, { text: '評価テキスト', model: 'claude-opus-5' });
   assert.equal(spawned.command, 'claude');
+  assert.equal(spawned.options.shell, false);
   assert.deepEqual(spawned.args, ['-p', '--output-format', 'text', '--model', 'claude-opus-5']);
   assert.equal(child.stdin.written, 'SYS\n\nPROMPT');
 });
@@ -66,7 +68,8 @@ test('claude-cli client limits Read access to the supplied temporary frames', as
   await pending;
 
   assert.deepEqual(spawned.args, [
-    '-p', '--output-format', 'text', '--allowedTools', 'Read(./frame-01.jpg)',
+    '-p', '--output-format', 'text', '--model', resolveModel(undefined, 'claude'),
+    '--allowedTools', 'Read(./frame-01.jpg)',
   ]);
   assert.equal(spawned.options.cwd, frameDirectory);
   assert.equal(child.stdin.written, 'SYS\n\n画像: ./frame-01.jpg');
