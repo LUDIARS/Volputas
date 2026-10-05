@@ -7,6 +7,7 @@ const { getProfileEvidenceStore } = require('../integrations/cernere/createProfi
 const { AppError } = require('../middleware/errorHandler');
 const { buildPersonaExport } = require('./personaExport');
 const { DiscutereDiscussionPublisher } = require('./discutereDiscussionPublisher');
+const { discuterePersonaBridgeBearer } = require('./discuterePersonaBridgeAuth');
 
 const GAME_REVIEW_SOURCE = 'volputas_web_game_review';
 
@@ -26,7 +27,7 @@ function createImpressionDiscussionService({
   pseudoIdSecret = config.pseudoIdSecret,
   publisher = new DiscutereDiscussionPublisher({
     baseUrl: config.discuterePersonaBridge.baseUrl,
-    token: config.discuterePersonaBridge.token,
+    resolveToken: discuterePersonaBridgeBearer(),
   }),
 } = {}) {
   return {

@@ -29,6 +29,7 @@ const identityModel = require('../models/identityModel');
 const userModel = require('../models/userModel');
 const { DiscussionBridgeClient } = require('../services/discussionBridgeClient');
 const { DiscussionImportService } = require('../services/discussionImportService');
+const { discuterePersonaBridgeBearer } = require('../services/discuterePersonaBridgeAuth');
 
 // Keyed by the canonical medium kind; assertCoversEveryMedium turns a forgotten
 // entry into a startup failure instead of a 500 on the first POST.
@@ -63,6 +64,7 @@ function createProfileEvidenceRouter({
       bridgeClient: new DiscussionBridgeClient({
         baseUrl: config.discuterePersonaBridge.baseUrl,
         token: config.discuterePersonaBridge.token,
+        resolveToken: discuterePersonaBridgeBearer(),
         assertionPrivateKey: config.discuterePersonaBridge.assertionPrivateKey,
       }),
       evidenceStore: model,

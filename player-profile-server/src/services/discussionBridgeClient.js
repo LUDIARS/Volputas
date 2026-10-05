@@ -6,6 +6,7 @@ const MAX_CURSOR_LENGTH = 512;
 const PERSONA_ASSERTION_HEADER = 'x-discutere-persona-assertion';
 
 const { DiscussionBridgeAssertionSigner } = require('./discussionBridgeAssertion');
+const { ServiceTokenIssueError } = require('../integrations/cernere/serviceTokenClient');
 
 /** @implements SPEC-DISCUSSION-RETURN-ASSERTION */
 function bridgeError(message, code, statusCode) {
@@ -108,6 +109,7 @@ class DiscussionBridgeClient {
   constructor({
     baseUrl,
     token,
+    resolveToken,
     assertionPrivateKey,
     assertionSigner,
     fetchImpl = fetch,
@@ -129,6 +131,8 @@ class DiscussionBridgeClient {
     }
     this.baseUrl = baseUrl;
     this.token = token;
+    // P4: resolveToken yields a Cernere service token (legacy token as fallback).
+    this.resolveToken = resolveToken || (token ? async () => token : null);
     this.fetchImpl = fetchImpl;
     this.timeoutMs = timeoutMs;
     this.assertionSigner = assertionSigner
@@ -139,7 +143,7 @@ class DiscussionBridgeClient {
 
   /** @implements SPEC-DISCUSSION-RETURN-PAGINATION */
   async listUtterances({ authorId, since = 0 }) {
-    if (!this.baseUrl || !this.token || !this.assertionSigner) {
+    if (!this.baseUrl || !this.resolveToken || !this.assertionSigner) {
       throw bridgeError(
         'Discutere persona bridge is not configured',
         'DISCUTERE_BRIDGE_UNAVAILABLE',
@@ -154,6 +158,7 @@ class DiscussionBridgeClient {
     }
 
     const baseUrl = normalizeBridgeBaseUrl(this.baseUrl);
+    const bearer = await this.#bearer();
     const utterances = [];
     const seenCursors = new Set();
     let cursor = null;
@@ -168,7 +173,7 @@ class DiscussionBridgeClient {
       try {
         response = await this.fetchImpl(url, {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${bearer}`,
             [PERSONA_ASSERTION_HEADER]: assertion,
           },
           redirect: 'error',
@@ -216,6 +221,20 @@ class DiscussionBridgeClient {
       'DISCUTERE_BRIDGE_RESPONSE_INVALID',
       502
     );
+  }
+
+  /** @implements SPEC-AUTH-P4-SERVICE-TOKEN */
+  async #bearer() {
+    try {
+      return await this.resolveToken();
+    } catch (error) {
+      if (!(error instanceof ServiceTokenIssueError)) throw error;
+      throw bridgeError(
+        'Discutere persona bridge is not configured',
+        'DISCUTERE_BRIDGE_UNAVAILABLE',
+        503
+      );
+    }
   }
 }
 

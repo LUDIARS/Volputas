@@ -143,7 +143,10 @@ const config = {
 
   discuterePersonaBridge: {
     baseUrl: process.env.DISCUTERE_PERSONA_BRIDGE_URL || '',
+    // Legacy fixed token: P4 fallback only when Cernere service token issuance fails.
     token: process.env.DISCUTERE_PERSONA_BRIDGE_TOKEN || '',
+    // target_project_key for POST /api/auth/service-token.
+    cernereProjectKey: process.env.DISCUTERE_CERNERE_PROJECT_KEY?.trim() || 'discutere',
     assertionPrivateKey: process.env.DISCUTERE_PERSONA_BRIDGE_ASSERTION_PRIVATE_KEY || '',
   },
 

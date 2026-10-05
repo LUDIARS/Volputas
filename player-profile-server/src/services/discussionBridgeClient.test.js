@@ -223,3 +223,44 @@ test('discussion bridge follows opaque cursors with a fresh assertion per page',
     requests[1].options.headers[PERSONA_ASSERTION_HEADER]
   );
 });
+
+function stubSigner() {
+  return { signForAuthor: () => 'payload.signature' };
+}
+
+test('discussion bridge client sends the resolved Cernere service token in the existing bearer header', async () => {
+  let authorization;
+  let resolved = 0;
+  const client = new DiscussionBridgeClient({
+    baseUrl: 'http://127.0.0.1:9999/',
+    token: 'legacy-fixed-token',
+    resolveToken: async () => {
+      resolved += 1;
+      return 'v4.public.service-token';
+    },
+    assertionSigner: stubSigner(),
+    fetchImpl: async (_url, options) => {
+      authorization = options.headers.Authorization;
+      return { ok: true, json: async () => ({ ok: true, utterances: [], nextCursor: null }) };
+    },
+  });
+  await client.listUtterances({ authorId: '123456789012345678' });
+  assert.equal(authorization, 'Bearer v4.public.service-token');
+  assert.equal(resolved, 1);
+});
+
+test('discussion bridge client maps service token issuance failure without fallback to 503', async () => {
+  const { ServiceTokenIssueError } = require('../integrations/cernere/serviceTokenClient');
+  const client = new DiscussionBridgeClient({
+    baseUrl: 'http://127.0.0.1:9999/',
+    resolveToken: async () => {
+      throw new ServiceTokenIssueError('not_configured');
+    },
+    assertionSigner: stubSigner(),
+    fetchImpl: async () => assert.fail('must not contact Di without a credential'),
+  });
+  await assert.rejects(client.listUtterances({ authorId: '123456789012345678' }), {
+    code: 'DISCUTERE_BRIDGE_UNAVAILABLE',
+    statusCode: 503,
+  });
+});

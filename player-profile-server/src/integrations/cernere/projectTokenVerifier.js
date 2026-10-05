@@ -21,15 +21,29 @@ const projectClaimsSchema = z.object({
   jti: z.string().min(1),
 }).passthrough();
 
+// Service-context token (auth-plane consolidation P4). `aud` is the callee's
+// storage_slug and `sub` the caller's; receivers must not branch on `sub`.
+const serviceClaimsSchema = z.object({
+  kind: z.literal('service'),
+  sub: z.string().min(1),
+  aud: z.string().min(1),
+  scope: z.array(z.string()),
+  iat: z.string().datetime(),
+  exp: z.string().datetime(),
+  jti: z.string().min(1),
+}).passthrough();
+
 class CernereProjectTokenVerifier {
   constructor({
     audience,
     keyProvider,
+    claimsSchema = projectClaimsSchema,
     now = Date.now,
     refreshCooldownMs = DEFAULT_REFRESH_COOLDOWN_MS,
   }) {
     this.audience = audience;
     this.keyProvider = keyProvider;
+    this.claimsSchema = claimsSchema;
     this.now = now;
     this.refreshCooldownMs = refreshCooldownMs;
     this.lastForcedRefreshAt = null;
@@ -65,7 +79,7 @@ class CernereProjectTokenVerifier {
           complete: true,
           audience: this.audience,
         });
-        const claims = projectClaimsSchema.safeParse(verified.payload);
+        const claims = this.claimsSchema.safeParse(verified.payload);
         if (claims.success && claims.data.aud === this.audience) {
           return { claims: claims.data, signatureMismatch: false };
         }
@@ -89,5 +103,6 @@ class CernereProjectTokenVerifier {
 
 module.exports = {
   CernereProjectTokenVerifier,
+  serviceClaimsSchema,
   VOLUPTAS_PROJECT_KEY,
 };

@@ -1,5 +1,8 @@
 const { createHash } = require('node:crypto');
 const { normalizeBridgeBaseUrl } = require('./discussionBridgeClient');
+const { ServiceTokenIssueError } = require('../integrations/cernere/serviceTokenClient');
+
+const MIN_LEGACY_TOKEN_LENGTH = 32;
 
 /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
 function publicationError(message, code, statusCode) {
@@ -23,24 +26,23 @@ function validSessionId(value) {
 
 class DiscutereDiscussionPublisher {
   /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
-  constructor({ baseUrl, token, fetchImpl = fetch, timeoutMs = 15_000 }) {
+  constructor({ baseUrl, token, resolveToken, fetchImpl = fetch, timeoutMs = 15_000 }) {
     this.baseUrl = baseUrl;
-    this.token = token;
+    // P4: resolveToken yields a Cernere service token (legacy token as fallback).
+    this.resolveToken = resolveToken
+      || (typeof token === 'string' && token.length >= MIN_LEGACY_TOKEN_LENGTH
+        ? async () => token
+        : null);
     this.fetchImpl = fetchImpl;
     this.timeoutMs = timeoutMs;
   }
 
   /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
   async publish({ persona, review }) {
-    if (!this.baseUrl || typeof this.token !== 'string' || this.token.length < 32) {
-      throw publicationError(
-        'Discutere persona bridge is not configured',
-        'DISCUTERE_DISCUSSION_UNAVAILABLE',
-        503
-      );
-    }
+    if (!this.baseUrl || !this.resolveToken) throw this.#unavailable();
     const personaId = discuterePersonaId(persona?.pseudoId);
-    const imported = await this.#post('api/admin/personas/import', { personas: [persona] });
+    const bearer = await this.#bearer();
+    const imported = await this.#post('api/admin/personas/import', { personas: [persona] }, bearer);
     if (imported.ok !== true || imported.imported !== 1 || imported.skipped !== 0) {
       throw publicationError(
         'Discutere rejected the Voluptas persona',
@@ -61,7 +63,7 @@ class DiscutereDiscussionPublisher {
       flow: 'discussion',
       tags: [],
       personaIds: [personaId],
-    });
+    }, bearer);
     if (discussion.ok !== true || !validSessionId(discussion.sessionId)) {
       throw publicationError(
         'Discutere returned an invalid discussion response',
@@ -76,7 +78,31 @@ class DiscutereDiscussionPublisher {
   }
 
   /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
-  async #post(pathname, body) {
+  #unavailable() {
+    return publicationError(
+      'Discutere persona bridge is not configured',
+      'DISCUTERE_DISCUSSION_UNAVAILABLE',
+      503
+    );
+  }
+
+  /** @implements SPEC-AUTH-P4-SERVICE-TOKEN */
+  async #bearer() {
+    let bearer;
+    try {
+      bearer = await this.resolveToken();
+    } catch (error) {
+      if (error instanceof ServiceTokenIssueError) throw this.#unavailable();
+      throw error;
+    }
+    if (typeof bearer !== 'string' || bearer.length < MIN_LEGACY_TOKEN_LENGTH) {
+      throw this.#unavailable();
+    }
+    return bearer;
+  }
+
+  /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+  async #post(pathname, body, bearer) {
     const baseUrl = normalizeBridgeBaseUrl(this.baseUrl);
     const url = new URL(pathname, baseUrl);
     let response;
@@ -85,7 +111,7 @@ class DiscutereDiscussionPublisher {
         method: 'POST',
         headers: {
           Accept: 'application/json',
-          Authorization: `Bearer ${this.token}`,
+          Authorization: `Bearer ${bearer}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),

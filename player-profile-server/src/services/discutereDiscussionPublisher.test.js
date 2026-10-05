@@ -80,3 +80,34 @@ test('fails closed when the shared bridge credential is too short', async () => 
     { code: 'DISCUTERE_DISCUSSION_UNAVAILABLE', statusCode: 503 }
   );
 });
+
+test('publisher sends the resolved Cernere service token on both bridge requests', async () => {
+  const { ServiceTokenIssueError } = require('../integrations/cernere/serviceTokenClient');
+  const headers = [];
+  const serviceToken = `v4.public.${'s'.repeat(40)}`;
+  const publisher = new DiscutereDiscussionPublisher({
+    baseUrl: 'http://127.0.0.1:3000/',
+    resolveToken: async () => serviceToken,
+    fetchImpl: async (_url, options) => {
+      headers.push(options.headers.Authorization);
+      const payload = headers.length === 1
+        ? { ok: true, imported: 1, skipped: 0 }
+        : { ok: true, sessionId: SESSION_ID, review: false };
+      return new Response(JSON.stringify(payload), { status: 200 });
+    },
+  });
+  await publisher.publish({ persona: PERSONA, review: { gameTitle: 'Game', rating: 4, text: 'text' } });
+  assert.deepEqual(headers, [`Bearer ${serviceToken}`, `Bearer ${serviceToken}`]);
+
+  const unavailable = new DiscutereDiscussionPublisher({
+    baseUrl: 'http://127.0.0.1:3000/',
+    resolveToken: async () => {
+      throw new ServiceTokenIssueError('network');
+    },
+    fetchImpl: async () => assert.fail('fetch must not run'),
+  });
+  await assert.rejects(
+    () => unavailable.publish({ persona: PERSONA, review: { gameTitle: 'Game', rating: 4, text: 'text' } }),
+    { code: 'DISCUTERE_DISCUSSION_UNAVAILABLE', statusCode: 503 }
+  );
+});
