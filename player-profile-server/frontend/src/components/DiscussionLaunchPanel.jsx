@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
 
-/** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+/** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
 export default function DiscussionLaunchPanel({ impressionId }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
 
-  /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+  /** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
   async function launch() {
     setBusy(true);
     setError('');

@@ -48,7 +48,7 @@ async function createMainWindow() {
     minWidth: 900,
     minHeight: 620,
     show: false,
-    title: 'Volputas',
+    title: 'Voluptas',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -110,8 +110,8 @@ if (squirrelStartup) {
   app.quit();
 } else {
   bootstrap().catch((error) => {
-    process.stderr.write(`Volputas desktop failed: ${error.stack || error.message}\n`);
-    dialog.showErrorBox('Volputasを起動できません', error.message);
+    process.stderr.write(`Voluptas desktop failed: ${error.stack || error.message}\n`);
+    dialog.showErrorBox('Voluptasを起動できません', error.message);
     shutdownOwnedResources();
     app.quit();
   });

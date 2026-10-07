@@ -2,7 +2,7 @@
 
 > Spec ID: `SPEC-WINDOW-OVERLAY-EXTENSION`
 >
-> 状態: 設計 (2026-08-21)。neco 指示「Volputas のサポートツール (ウインドウに取り付いて感想を拾うもの)
+> 状態: 設計 (2026-08-21)。neco 指示「Voluptas のサポートツール (ウインドウに取り付いて感想を拾うもの)
 > を改修して『ウインドウ表示拡張ツール』にする。MAUI 的なマルチプラットフォームで、Markdown と
 > グラフが書ける技術スタック」。
 > 前身: `emotion-capture-companion.md` (`SPEC-EMOTION-CAPTURE-COMPANION`)。
@@ -10,7 +10,7 @@
 
 ## 目的
 
-これまでの感情キャプチャ・コンパニオンは「Volputas 本体のウインドウの中」でしかキャプチャ操作が
+これまでの感情キャプチャ・コンパニオンは「Voluptas 本体のウインドウの中」でしかキャプチャ操作が
 できず、拾えるのも感情キャプチャ由来の感想 (マーカー・音声・視線) に限られていた。
 
 本仕様はこれを **任意のアプリケーションウインドウに追従して情報を重ねる汎用オーバーレイ**へ
@@ -44,7 +44,7 @@
 | Markdown | `react-markdown` + `remark-gfm` (WebView 側) |
 | グラフ | 既存 React チャート実装 (`HotspotChart` / `NarrativeArcChart` / `TrendChart` / `RadarChart`) を共有パッケージ化して再利用 |
 | 他ウインドウの追従 | Rust 側の OS 別実装 (§追従) |
-| 既存資産 | フロントは既存 Volputas と同じ React 19 + Vite。ロジック・スタイルをそのまま持ち込める |
+| 既存資産 | フロントは既存 Voluptas と同じ React 19 + Vite。ロジック・スタイルをそのまま持ち込める |
 
 .NET MAUI を採らない理由: デスクトップ Linux 非対応、他ウインドウ追従オーバーレイは
 Win32/AppKit interop を全面自作、既存 React 資産が使えない。Electron を続けない理由:
@@ -68,7 +68,7 @@ overlay-app/                        新規 (リポジトリルート)
       hotkey.rs                     グローバルホットキー → マーカー投下
       content/
         markdown_source.rs          ファイル監視 + 読み出し
-        api_client.rs               Volputas local API クライアント
+        api_client.rs               Voluptas local API クライアント
     tauri.conf.json
   src/                              WebView フロント (React 19 + Vite)
     panels/MarkdownPanel.jsx
@@ -86,11 +86,11 @@ packages/charts/                    共有チャート (本体フロントと ov
 `overlay-app` と `player-profile-server/frontend` は `packages/charts` を Vite alias で
 source のまま取り込む。file: 依存にすると両 lockfile の再生成が要るだけで、得るものが無い。
 
-`overlay-app` は Volputas local app (127.0.0.1) のクライアントであり、プロフィール DB へ
+`overlay-app` は Voluptas local app (127.0.0.1) のクライアントであり、プロフィール DB へ
 直接は触らない。local app が起動していなくても Markdown / グラフ表示は単独で動く
 (感想投下だけが無効化される)。
 
-local app の origin は Excubitor / ProcessMap が `VOLPUTAS_LOCAL_URL` として注入する。
+local app の origin は Excubitor / ProcessMap が `VOLUPTAS_LOCAL_URL` として注入する。
 固定ポートへの fallback は持たず、未設定または loopback 以外の origin なら起動時に失敗する。
 
 ## ウインドウ追従
@@ -154,7 +154,7 @@ Markdown 内のフェンスドブロックで宣言する。
 - `type`: `hotspot` | `narrative-arc` | `trend` | `radar` | `series`
 - `source`: `inline` (データ直書き) / `api` (local app) / `file` (JSON)
 - `api.path` は `/api/local/overlay/` 配下だけを許可し、他の local API や外部 origin は読まない。
-- 実装は既存 React チャートコンポーネントを `packages/charts` として切り出し、Volputas 本体
+- 実装は既存 React チャートコンポーネントを `packages/charts` として切り出し、Voluptas 本体
   フロントと overlay-app の双方から import する。**チャートの実装は二重に持たない。**
 - `mermaid` フェンスも受け付ける (構成図・フロー用)。
 - 未知の `type`・スキーマ不一致は、パネルを壊さずブロック位置にエラーカードを出す。
@@ -210,7 +210,7 @@ CORS は足さない: WebView からではなく `content/api_client.rs` (Rust �
 
 ## 既存ツールとの関係
 
-- Volputas 本体の Electron シェル (`player-profile-server/desktop/`) は**そのまま残す**。
+- Voluptas 本体の Electron シェル (`player-profile-server/desktop/`) は**そのまま残す**。
   データ管理・感情曲線編集・ナラティブアークの閲覧はこれまでどおり本体 UI で行う。
 - 移すのは「プレイ中に画面の脇で使うもの」だけ: 感想マーカー投下と、プレイ中に見たい参照情報。
 - 既存 `CaptureDesktopPanel` の録画・視線・キャリブレーションは本体 UI に残す

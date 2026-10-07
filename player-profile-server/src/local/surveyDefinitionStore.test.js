@@ -32,7 +32,7 @@ async function writeSurveys(repositoryRoot, surveys) {
 }
 
 test('reads every survey definition from the data repository', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-surveys-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-surveys-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const store = new SurveyDefinitionStore();
 
@@ -59,7 +59,7 @@ test('reads every survey definition from the data repository', async (t) => {
 });
 
 test('an empty or missing survey directory fails instead of seeding a bundled default', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-surveys-empty-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-surveys-empty-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const store = new SurveyDefinitionStore();
 
@@ -70,7 +70,7 @@ test('an empty or missing survey directory fails instead of seeding a bundled de
 });
 
 test('a survey whose filename does not match its id is rejected', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-surveys-mismatch-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-surveys-mismatch-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const store = new SurveyDefinitionStore();
 

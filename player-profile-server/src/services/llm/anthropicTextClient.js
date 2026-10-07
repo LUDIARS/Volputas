@@ -53,7 +53,7 @@ async function buildUserContent(prompt, imagePaths) {
 class AnthropicTextClient {
   constructor({
     apiKey = process.env.ANTHROPIC_API_KEY,
-    model = process.env.VOLPUTAS_LLM_MODEL || DEFAULT_MODEL,
+    model = process.env.VOLUPTAS_LLM_MODEL || DEFAULT_MODEL,
   } = {}) {
     this.apiKey = apiKey;
     this.model = model;

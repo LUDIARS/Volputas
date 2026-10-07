@@ -6,7 +6,7 @@ const path = require('node:path');
 const { WhisperSttClient } = require('./sttClient');
 
 async function wavFixture(t) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-stt-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-stt-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const wavPath = path.join(directory, 'capture.wav');
   await fs.writeFile(wavPath, Buffer.from('RIFF-fake'));

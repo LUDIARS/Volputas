@@ -1,8 +1,8 @@
 {
-  "name": "volputas-overlay-app",
+  "name": "voluptas-overlay-app",
   "version": "1.0.0",
   "private": true,
-  "description": "Volputas window overlay extension (Tauri v2 + React 19)",
+  "description": "Voluptas window overlay extension (Tauri v2 + React 19)",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -3,7 +3,7 @@ const { CernereServiceTokenClient } = require('../integrations/cernere/serviceTo
 const { createServiceBearerResolver } = require('../integrations/cernere/serviceBearerResolver');
 
 // Discutere authorizes the bridge with the `persona-bridge:write` scope that
-// Cernere derives from Volputas' service_scopes declaration.
+// Cernere derives from Voluptas' service_scopes declaration.
 
 let sharedResolver = null;
 

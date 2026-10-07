@@ -32,7 +32,7 @@ updated: 2026-08-02
   fail-fastする (`setup:survey-data`自身が拒否し、後続コマンドへ進めない)。
 - remote不一致のエラーはoriginのuserinfoを落として出す。tokenを埋め込んだoriginを
   持つ既存cloneでも、その値がstderrへ現れない。
-- 親Volputasのstatusへclone内容が現れない。
+- 親Voluptasのstatusへclone内容が現れない。
 
 ## Repository validation
 

@@ -8,7 +8,7 @@ const COMPANION_PAGE_HTML = /* html */ `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Volputas Capture Companion</title>
+<title>Voluptas Capture Companion</title>
 <style>
   :root { color-scheme: light dark; }
   body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 16px;
@@ -32,10 +32,10 @@ const COMPANION_PAGE_HTML = /* html */ `<!doctype html>
 </style>
 </head>
 <body>
-<h1>Volputas Capture Companion</h1>
+<h1>Voluptas Capture Companion</h1>
 
 <div id="join-card" class="card">
-  <p class="muted">デスクトップの Volputas に表示されたペアリングコードを入力してください。</p>
+  <p class="muted">デスクトップの Voluptas に表示されたペアリングコードを入力してください。</p>
   <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
   <button id="join">接続する</button>
   <p id="join-error" class="error"></p>
@@ -118,7 +118,7 @@ const COMPANION_PAGE_HTML = /* html */ `<!doctype html>
     $('audio-card').classList.remove('hidden');
     if (!window.isSecureContext) {
       $('audio-support').textContent = 'このページは HTTP で開かれているため、iPhone のマイクは'
-        + '使えません (secure context 必須)。音声キャプチャには HTTPS 設定 (VOLPUTAS_COMPANION_TLS_*)'
+        + '使えません (secure context 必須)。音声キャプチャには HTTPS 設定 (VOLUPTAS_COMPANION_TLS_*)'
         + ' が必要です。マーカー記録はこのまま使えます。';
       return;
     }

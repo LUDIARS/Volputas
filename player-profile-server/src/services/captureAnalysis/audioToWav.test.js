@@ -47,7 +47,7 @@ test('a missing ffmpeg binary is a 503 with an actionable message', async () => 
   await assert.rejects(converter.withWav('input.webm', async () => {}), (error) => {
     assert.equal(error.code, 'FFMPEG_NOT_AVAILABLE');
     assert.equal(error.statusCode, 503);
-    assert.match(error.message, /VOLPUTAS_FFMPEG/);
+    assert.match(error.message, /VOLUPTAS_FFMPEG/);
     return true;
   });
 });

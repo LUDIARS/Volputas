@@ -82,7 +82,7 @@ test('claude-cli client limits Read access to the supplied temporary frames', as
 });
 
 test('anthropic client sends supplied frames as image blocks', async (t) => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-llm-image-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-llm-image-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const framePath = path.join(directory, 'frame-01.jpg');
   await fs.writeFile(framePath, Buffer.from([0xff, 0xd8, 0xff, 0xd9]));
@@ -109,7 +109,7 @@ test('anthropic client sends supplied frames as image blocks', async (t) => {
 
   await client.generate({ system: 's', prompt: `frame: ${framePath}`, imagePaths: [framePath] });
   assert.equal(request.messages[0].content[1].text, 'frame: [attached image 1]');
-  assert.doesNotMatch(request.messages[0].content[1].text, /volputas-llm-image-/);
+  assert.doesNotMatch(request.messages[0].content[1].text, /voluptas-llm-image-/);
 });
 
 test('claude-cli client fails fast when the CLI binary is missing', async () => {
@@ -151,11 +151,11 @@ test('createLlmTextClient defaults to claude-cli and rejects unknown backends', 
   const defaultClient = createLlmTextClient({ env: {} });
   assert.equal(defaultClient.constructor.name, 'ClaudeCliTextClient');
 
-  const anthropic = createLlmTextClient({ env: { VOLPUTAS_LLM_BACKEND: 'anthropic' } });
+  const anthropic = createLlmTextClient({ env: { VOLUPTAS_LLM_BACKEND: 'anthropic' } });
   assert.equal(anthropic.constructor.name, 'AnthropicTextClient');
 
   assert.throws(
-    () => createLlmTextClient({ env: { VOLPUTAS_LLM_BACKEND: 'mock' } }),
+    () => createLlmTextClient({ env: { VOLUPTAS_LLM_BACKEND: 'mock' } }),
     (error) => error.code === 'LLM_CONFIG_INVALID'
   );
 });

@@ -25,7 +25,7 @@ function groupRecords(records) {
 }
 
 function buildHistoryPersonas(input, { secret, youtubeApprovalReference, minComments = 10, now = Date.now() }) {
-  if (!secret) throw new Error('VOLPUTAS_PSEUDO_ID_SECRET is required');
+  if (!secret) throw new Error('VOLUPTAS_PSEUDO_ID_SECRET is required');
   if (!Number.isSafeInteger(minComments) || minComments < 1) throw new Error('minComments must be a positive integer');
   const snapshot = parseHistorySnapshot(input, now);
   const hasYoutube = snapshot.records.some(row => row.source !== 'steam');

@@ -6,7 +6,7 @@ const path = require('node:path');
 const { createLocalApp } = require('../localApp');
 
 async function withOverlayApp(t, { captureSession = null, prepare } = {}) {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-overlay-routes-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-overlay-routes-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   await fs.mkdir(path.join(repositoryRoot, 'overlay-docs'), { recursive: true });
   await fs.writeFile(
@@ -98,7 +98,7 @@ test('overlay markdown refuses traversal and reports a missing document', async 
 });
 
 test('overlay markdown refuses a symlink that escapes the document root', async (t) => {
-  const outsideRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-overlay-outside-'));
+  const outsideRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-overlay-outside-'));
   t.after(() => fs.rm(outsideRoot, { recursive: true, force: true }));
   const outsideFile = path.join(outsideRoot, 'private.md');
   await fs.writeFile(outsideFile, 'must not be served', 'utf8');

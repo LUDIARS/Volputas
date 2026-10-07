@@ -6,7 +6,7 @@ const path = require('node:path');
 const { GazeSampleLog } = require('./gazeSampleLog');
 
 async function temporaryContext(t) {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-gaze-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-gaze-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   return { repositoryRoot, name: 'tester', sessionId: 'session-1' };
 }

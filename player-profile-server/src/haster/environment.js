@@ -2,7 +2,7 @@ const HASTER_ENVIRONMENT = 'HASTER';
 
 // @implements SPEC-HASTER-ISOLATION
 function isHasterEnvironment(env = process.env) {
-  return env.VOLPUTAS_ENVIRONMENT === HASTER_ENVIRONMENT;
+  return env.VOLUPTAS_ENVIRONMENT === HASTER_ENVIRONMENT;
 }
 
 // @implements SPEC-HASTER-ISOLATION

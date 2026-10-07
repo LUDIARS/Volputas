@@ -42,7 +42,7 @@ function createGlabSurveyRouter({
     }
   });
 
-  // 以降 2 本は管理者専用。 設問の正本は Volputas なので、 登録も公開切替も
+  // 以降 2 本は管理者専用。 設問の正本は Voluptas なので、 登録も公開切替も
   // ここで受ける (GLAB は画面と中継だけを持つ)。
   router.post('/', adminMiddleware, async (req, res, next) => {
     try {

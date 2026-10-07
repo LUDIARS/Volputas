@@ -9,7 +9,7 @@ Actio: `actio:cb2b3c10-4326-4b0b-a747-5be2dd987ca7`
 P4 の間は送り側・受け側とも **新旧両方** を扱う。固定トークンの撤去は P5 (別 PR)。
 ヘッダは従来の固定トークンと同じものを使う (どちらも `Authorization: Bearer`)。
 
-## 送り: Volputas → Discutere persona bridge
+## 送り: Voluptas → Discutere persona bridge
 
 対象は `DiscussionBridgeClient` (`GET /api/persona-bridge/utterances`) と
 `DiscutereDiscussionPublisher` (`POST /api/admin/personas/import`, `POST /api/flow/start`)。
@@ -26,7 +26,7 @@ P4 の間は送り側・受け側とも **新旧両方** を扱う。固定ト�
    `DISCUTERE_PERSONA_BRIDGE_TOKEN` が設定されていればそれで送る。理由コードだけを 1 行 warn する。
    どちらも無ければ 503 (`DISCUTERE_BRIDGE_UNAVAILABLE` / `DISCUTERE_DISCUSSION_UNAVAILABLE`)。
 
-Cernere 側では Volputas の `service_scopes` に `persona-bridge:write` を宣言する必要がある。
+Cernere 側では Voluptas の `service_scopes` に `persona-bridge:write` を宣言する必要がある。
 
 ## 受け: persona export (`/api/personas/*`)
 
@@ -34,11 +34,11 @@ Cernere 側では Volputas の `service_scopes` に `persona-bridge:write` を�
 
 - `v4.public.` で始まる: Cernere service token として検証する。
   公開鍵は `/.well-known/cernere-public-key` (既存 `CernerePublicKeyProvider`)。
-  `kind === "service"`、`exp`、`aud === "volputas"` (Volputas の storage_slug)、
+  `kind === "service"`、`exp`、`aud === "volputas"` (Voluptas の storage_slug)、
   scope `persona-export:read` を照合する。呼出元 (`sub`) では分岐しない。
   不正なら 401 `PERSONA_EXPORT_UNAUTHORIZED`、scope 不足なら 403 `PERSONA_EXPORT_FORBIDDEN`。
   この経路は固定トークン未設定でも使える。
-- それ以外: 従来どおり `VOLPUTAS_PERSONA_EXPORT_TOKEN` と timing-safe 比較する。
+- それ以外: 従来どおり `VOLUPTAS_PERSONA_EXPORT_TOKEN` と timing-safe 比較する。
   未設定なら 503、不一致・ヘッダ無しは 401。HASTER の公開固定値
   (`haster-public-persona-export-token-v1`) の扱いは変えない。
 
@@ -48,4 +48,4 @@ Cernere 側では Discutere の `service_scopes` に `persona-export:read` を�
 ## P5 で消すもの
 
 - `DISCUTERE_PERSONA_BRIDGE_TOKEN` と送り側のフォールバック (`serviceBearerResolver.js`)
-- `VOLPUTAS_PERSONA_EXPORT_TOKEN` と受け側の固定トークン照合 (`personaExportAuth.js`)
+- `VOLUPTAS_PERSONA_EXPORT_TOKEN` と受け側の固定トークン照合 (`personaExportAuth.js`)

@@ -5,6 +5,7 @@ const {
   InvalidCernereTokenError,
 } = require('./cernereErrors');
 
+// Cernere 側の project key は旧綴りのまま登録されている。変えると token 検証が通らなくなる。
 const VOLUPTAS_PROJECT_KEY = 'volputas';
 const DEFAULT_REFRESH_COOLDOWN_MS = 30_000;
 const SIGNATURE_FAILURE_CODE = 'ERR_PASETO_VERIFICATION_FAILED';
@@ -51,7 +52,7 @@ class CernereProjectTokenVerifier {
 
   async verify(token) {
     if (!this.audience) {
-      throw new CernereConfigurationError('VOLPUTAS_AUDIENCE is required for Corpus integration');
+      throw new CernereConfigurationError('VOLUPTAS_AUDIENCE is required for Corpus integration');
     }
     if (typeof token !== 'string' || !token.startsWith('v4.public.')) {
       throw new InvalidCernereTokenError();

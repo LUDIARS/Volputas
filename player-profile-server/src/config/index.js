@@ -1,3 +1,4 @@
+require('./legacyEnvAliases').applyLegacyEnvAliases();
 const path = require('node:path');
 const { normalizeOptionalBaseUrl } = require('./baseUrl');
 const {
@@ -32,10 +33,10 @@ function positiveInteger(value, fallback) {
 
 // @implements SPEC-HASTER-ISOLATION
 function databaseConfig(env) {
-  if (env.VOLPUTAS_DATABASE_URL?.trim()) {
+  if (env.VOLUPTAS_DATABASE_URL?.trim()) {
     const connectionString = isHasterEnvironment(env)
-      ? deriveHasterDatabaseUrl(env.VOLPUTAS_DATABASE_URL.trim())
-      : env.VOLPUTAS_DATABASE_URL.trim();
+      ? deriveHasterDatabaseUrl(env.VOLUPTAS_DATABASE_URL.trim())
+      : env.VOLUPTAS_DATABASE_URL.trim();
     return {
       connectionString,
       max: parseInt(env.DB_POOL_MAX || '20', 10),
@@ -66,13 +67,13 @@ const config = {
     baseUrl: normalizeOptionalBaseUrl(process.env.CERNERE_BASE_URL, 'CERNERE_BASE_URL'),
     projectClientId: process.env.CERNERE_PROJECT_CLIENT_ID?.trim() || '',
     projectClientSecret: process.env.CERNERE_PROJECT_CLIENT_SECRET || '',
-    // audience は「この Volputas 自身の URL」。Excubitor は catalog の provides から
-    // VOLPUTAS_URL を全サービスへ配っており、自分自身にも同じ値が届く。二重に持つと
+    // audience は「この Voluptas 自身の URL」。Excubitor は catalog の provides から
+    // VOLUPTAS_URL を全サービスへ配っており、自分自身にも同じ値が届く。二重に持つと
     // 片方だけ変えたときに aud 不一致で全 token が弾かれるので、既定はそこから導く。
-    // VOLPUTAS_AUDIENCE は Excubitor 管理外で動かす場合の明示上書きとして残す。
+    // VOLUPTAS_AUDIENCE は Excubitor 管理外で動かす場合の明示上書きとして残す。
     audience: normalizeOptionalBaseUrl(
-      process.env.VOLPUTAS_AUDIENCE?.trim() || process.env.VOLPUTAS_URL,
-      'VOLPUTAS_AUDIENCE',
+      process.env.VOLUPTAS_AUDIENCE?.trim() || process.env.VOLUPTAS_URL,
+      'VOLUPTAS_AUDIENCE',
     ),
   },
 
@@ -86,7 +87,7 @@ const config = {
 
   // @implements SPEC-HASTER-PUBLIC-IDENTITY
   pseudoIdSecret: hasterPublicFixtureValue(
-    process.env.VOLPUTAS_PSEUDO_ID_SECRET || process.env.VOLUPTAS_PSEUDO_ID_SECRET,
+    process.env.VOLUPTAS_PSEUDO_ID_SECRET,
     hasterEnabled,
     HASTER_PUBLIC_TEST_PSEUDO_ID_SECRET
   ),
@@ -95,7 +96,7 @@ const config = {
     // Dedicated inbound project credential for Di. Do not reuse Cernere's
     // outbound project client secret or a user access token.
     token: hasterPublicFixtureValue(
-      process.env.VOLPUTAS_PERSONA_EXPORT_TOKEN,
+      process.env.VOLUPTAS_PERSONA_EXPORT_TOKEN,
       hasterEnabled,
       HASTER_PUBLIC_TEST_PERSONA_EXPORT_TOKEN
     ),
@@ -132,7 +133,7 @@ const config = {
   },
 
   profileMedia: {
-    root: process.env.VOLPUTAS_MEDIA_ROOT
+    root: process.env.VOLUPTAS_MEDIA_ROOT
       || path.resolve(__dirname, '../../data/profile-media'),
   },
 

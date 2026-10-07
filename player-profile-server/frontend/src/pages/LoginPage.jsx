@@ -53,7 +53,7 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card card">
         <div className="login-header">
-          <h1>Volputas</h1>
+          <h1>Voluptas</h1>
           <p>Cernereアカウントでオンラインモードへログイン</p>
         </div>
 

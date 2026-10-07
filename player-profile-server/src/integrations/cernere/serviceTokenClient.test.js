@@ -20,8 +20,8 @@ function issuedResponse(token = 'v4.public.mock-issued', expiresIn = 900) {
 function clientWith(fetchImpl, overrides = {}) {
   return new CernereServiceTokenClient({
     baseUrl: 'https://cernere.test/',
-    clientId: 'volputas-client',
-    clientSecret: 'volputas-secret',
+    clientId: 'voluptas-client',
+    clientSecret: 'voluptas-secret',
     targetProjectKey: 'discutere',
     fetchImpl,
     ...overrides,
@@ -40,8 +40,8 @@ test('issues a service token from Cernere with client credentials and the target
   assert.equal(requested.options.method, 'POST');
   assert.equal(requested.options.redirect, 'error');
   assert.deepEqual(requested.body, {
-    client_id: 'volputas-client',
-    client_secret: 'volputas-secret',
+    client_id: 'voluptas-client',
+    client_secret: 'voluptas-secret',
     target_project_key: 'discutere',
   });
 });
@@ -87,7 +87,7 @@ test('reports a reason code for each issuance failure without calling Cernere wh
     await assert.rejects(client.getToken(), (error) => {
       assert.ok(error instanceof ServiceTokenIssueError);
       assert.equal(error.reason, reason);
-      assert.doesNotMatch(error.message, /volputas-secret/);
+      assert.doesNotMatch(error.message, /voluptas-secret/);
       return true;
     });
   }

@@ -2,7 +2,7 @@
 //
 // 権限の正本は Cernere の users.role で、 project token の role クレームとして
 // 届く。 GLAB 側にも管理者判定 (Corpus の adminIds) はあるが、 それは画面を
-// 出すかどうかの判断でしかない。 GLAB を迂回して Volputas を直接叩かれても
+// 出すかどうかの判断でしかない。 GLAB を迂回して Voluptas を直接叩かれても
 // 書けないよう、 サーバ側はトークンのクレームだけで判定する。
 const ADMIN_ROLES = Object.freeze(new Set(['admin']));
 

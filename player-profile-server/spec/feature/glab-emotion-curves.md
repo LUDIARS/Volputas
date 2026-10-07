@@ -19,8 +19,8 @@ updated: 2026-08-09
 
 # GLAB から感情曲線を取る
 
-感情曲線 (動画を見ながら時刻付きでスタンプを打ち、LLM に評価させる) は Volputas
-自前フロントにしか口が無かった。自前フロントは Volputas のローカル JWT で動くが、
+感情曲線 (動画を見ながら時刻付きでスタンプを打ち、LLM に評価させる) は Voluptas
+自前フロントにしか口が無かった。自前フロントは Voluptas のローカル JWT で動くが、
 GLAB から届くのは Cernere project token だけなので、GLAB からは届かない。
 
 GLAB 経由の口を `/api/v1/integrations/glab/evidence` に分けて生やす。認可規則
@@ -28,7 +28,7 @@ GLAB 経由の口を `/api/v1/integrations/glab/evidence` に分けて生やす�
 
 ## ローカル user id と owner id
 
-自前フロント経路は Volputas ローカルの `users.id` で動き、証跡ストアの内部で
+自前フロント経路は Voluptas ローカルの `users.id` で動き、証跡ストアの内部で
 Cernere の owner id へ解決している。GLAB 経路が持っているのは owner id そのもので、
 ローカル `users` 行が無いこともある。
 

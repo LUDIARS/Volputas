@@ -92,8 +92,8 @@ test('parseGithubOwnerRepo rejects remotes that could re-point the GitHub API pa
     'https://github.com/../volputas-data',
     'https://github.com/acme/..',
     'https://github.com/acme/./volputas-data',
-    'https://github.com/acme/volputas data',
-    'https://github.com/acme/volputas%2fdata',
+    'https://github.com/acme/voluptas data',
+    'https://github.com/acme/voluptas%2fdata',
   ]) {
     assert.throws(
       () => parseGithubOwnerRepo(remoteUrl),

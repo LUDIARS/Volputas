@@ -141,7 +141,7 @@ analyzePersonaV2 合流 → evidence カウント → UI ページ → nav → �
 
 | 項目 | 内容 |
 |---|---|
-| Cernere `comparison_records` カラム | T9 の online 比較が動くために Cernere 側 managed project スキーマへカラム追加 (Cernere リポの migration。`volputas_profile_evidence_schema` 系列)。T10/T11/T12/T15 のカラムも同時に (`card_sort_records`, `annotation_records`, `pitch_records`, `voice_memo_records`) |
+| Cernere `comparison_records` カラム | T9 の online 比較が動くために Cernere 側 managed project スキーマへカラム追加 (Cernere リポの migration。`voluptas_profile_evidence_schema` 系列)。T10/T11/T12/T15 のカラムも同時に (`card_sort_records`, `annotation_records`, `pitch_records`, `voice_memo_records`) |
 | steam_app_meta lazy fetch (§3.2.1) | Steam 取込時に storefront `appdetails` を lazy fetch し appid→genres をキャッシュ (local: データリポ `steam/app-meta.json` / online: 新テーブル)。取得失敗はスキップ。`steamContributions` は `appMeta` 引数を既に受ける |
 | online 履歴テーブル (§2) | `persona_analysis_history` (追記 only) + OnlinePersonaService.analyze で insert + 履歴 API。フロントの personaHistory() の online 分岐を外す |
 | ludus-lexicon overlay | `frontend/src/data/ludus-lexicon.local.json` を読んでマージするローダ (§3.5 利用側オーバーレイ) |

@@ -1,7 +1,7 @@
 param(
   [string]$RepositoryUrl = '',
   [string]$TargetPath = (Join-Path $env:USERPROFILE 'VolputasData'),
-  [string]$ConfigPath = (Join-Path $env:LOCALAPPDATA 'Volputas\local-config.json')
+  [string]$ConfigPath = (Join-Path $env:LOCALAPPDATA 'Voluptas\local-config.json')
 )
 
 $ErrorActionPreference = 'Stop'

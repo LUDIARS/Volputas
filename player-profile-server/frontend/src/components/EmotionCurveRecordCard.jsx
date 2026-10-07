@@ -32,7 +32,7 @@ export default function EmotionCurveRecordCard({ record, onRecordUpdated }) {
       setShowEvaluation(true);
     } catch (reason) {
       setError(reason.code === 'LLM_NOT_CONFIGURED'
-        ? 'AI 評価を実行できません。サーバで Claude CLI (claude) を使えるようにするか、VOLPUTAS_LLM_BACKEND=anthropic と ANTHROPIC_API_KEY を設定してください。'
+        ? 'AI 評価を実行できません。サーバで Claude CLI (claude) を使えるようにするか、VOLUPTAS_LLM_BACKEND=anthropic と ANTHROPIC_API_KEY を設定してください。'
         : reason.message);
     } finally {
       setEvaluating(false);

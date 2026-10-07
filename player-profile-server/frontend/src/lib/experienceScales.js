@@ -1,7 +1,7 @@
 // UI-side GEQ / PENS catalog. Must stay aligned with
 // src/services/gameExperienceScales/scaleDefinitions.js (ids, ranges, item
 // order). GEQ in-game: 7 components x 2 items on 0..4; PENS: 5 subscales, one
-// Volputas-worded item each on 1..7.
+// Voluptas-worded item each on 1..7.
 export const SCALE_FAMILIES = [
   {
     id: 'geq',

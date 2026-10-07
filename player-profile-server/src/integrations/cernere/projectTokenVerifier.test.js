@@ -22,7 +22,7 @@ async function signedToken(privateKey, overrides = {}) {
     kind: 'user_for_project',
     role: 'general',
     displayName: 'Test User',
-    aud: 'http://volputas.test',
+    aud: 'http://voluptas.test',
     iat: new Date(now).toISOString(),
     exp: new Date(now + 60_000).toISOString(),
     jti: 'test-jti',
@@ -37,10 +37,10 @@ function providerFor(key) {
   };
 }
 
-test('verifies a real Cernere user-for-Volputas PASETO', async () => {
+test('verifies a real Cernere user-for-Voluptas PASETO', async () => {
   const { privateKey, publicKey } = generateKeyPairSync('ed25519');
   const verifier = new CernereProjectTokenVerifier({
-    audience: 'http://volputas.test',
+    audience: 'http://voluptas.test',
     keyProvider: providerFor(rawPublicKey(publicKey)),
   });
 
@@ -52,7 +52,7 @@ test('verifies a real Cernere user-for-Volputas PASETO', async () => {
 test('rejects a token for another audience or project', async () => {
   const { privateKey, publicKey } = generateKeyPairSync('ed25519');
   const verifier = new CernereProjectTokenVerifier({
-    audience: 'http://volputas.test',
+    audience: 'http://voluptas.test',
     keyProvider: providerFor(rawPublicKey(publicKey)),
   });
 
@@ -72,7 +72,7 @@ test('rejects a token for another audience or project', async () => {
 
 test('does not accept a non-PASETO bearer value', async () => {
   const verifier = new CernereProjectTokenVerifier({
-    audience: 'http://volputas.test',
+    audience: 'http://voluptas.test',
     keyProvider: providerFor(Buffer.alloc(32)),
   });
   await assert.rejects(verifier.verify('jwt-like-value'), InvalidCernereTokenError);
@@ -82,7 +82,7 @@ test('rejects expired and incorrectly signed PASETO values', async () => {
   const current = generateKeyPairSync('ed25519');
   const other = generateKeyPairSync('ed25519');
   const verifier = new CernereProjectTokenVerifier({
-    audience: 'http://volputas.test',
+    audience: 'http://voluptas.test',
     keyProvider: providerFor(rawPublicKey(current.publicKey)),
   });
   const past = Date.now() - 60_000;
@@ -105,7 +105,7 @@ test('refreshes a cached key set once after signature verification fails', async
   const current = generateKeyPairSync('ed25519');
   const calls = [];
   const verifier = new CernereProjectTokenVerifier({
-    audience: 'http://volputas.test',
+    audience: 'http://voluptas.test',
     keyProvider: {
       hasUsableCache: () => true,
       async getKeys(options = {}) {
@@ -129,7 +129,7 @@ test('does not refresh cached keys for valid signatures with rejected claims', a
   const { privateKey, publicKey } = generateKeyPairSync('ed25519');
   const calls = [];
   const verifier = new CernereProjectTokenVerifier({
-    audience: 'http://volputas.test',
+    audience: 'http://voluptas.test',
     keyProvider: {
       hasUsableCache: () => true,
       async getKeys(options = {}) {
@@ -162,7 +162,7 @@ test('rate-limits forced refreshes for repeated signature failures', async () =>
   const calls = [];
   let now = 1_000;
   const verifier = new CernereProjectTokenVerifier({
-    audience: 'http://volputas.test',
+    audience: 'http://voluptas.test',
     now: () => now,
     refreshCooldownMs: 100,
     keyProvider: {

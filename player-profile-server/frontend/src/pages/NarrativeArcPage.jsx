@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { localApi } from '../lib/localApi';
-import { NarrativeArcChart } from '@volputas/charts';
+import { NarrativeArcChart } from '@voluptas/charts';
 import { STAMP_BY_ID } from '../lib/emotionStamps';
 import JudgmentLensPanel from '../components/JudgmentLensPanel';
 
@@ -84,7 +84,7 @@ export default function NarrativeArcPage() {
       await reload();
     } catch (reason) {
       if (reason.code === 'LLM_NOT_CONFIGURED') {
-        setError('AI 解説を実行できません。サーバで Claude CLI (claude) を使えるようにするか、VOLPUTAS_LLM_BACKEND=anthropic と ANTHROPIC_API_KEY を設定してください。');
+        setError('AI 解説を実行できません。サーバで Claude CLI (claude) を使えるようにするか、VOLUPTAS_LLM_BACKEND=anthropic と ANTHROPIC_API_KEY を設定してください。');
       } else if (reason.code === 'NARRATIVE_ARC_STALE') {
         setError('元の感情曲線が変更されています。先に「再集計」を実行してください。');
       } else {

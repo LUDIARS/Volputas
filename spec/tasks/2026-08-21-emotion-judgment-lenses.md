@@ -9,7 +9,7 @@ spec_links:
   - player-profile-server/spec/feature/narrative-arc.md
   - player-profile-server/spec/feature/emotion-curve-video-tool.md
 ---
-# Volputas 感情分析 LLM に東洋/西洋の二流派判定を取らせる (neco 指示 2026-08-21)
+# Voluptas 感情分析 LLM に東洋/西洋の二流派判定を取らせる (neco 指示 2026-08-21)
 
 ## 指示 (原文)
 AIノート「面白さの東洋医学と西洋医学」を加味した上で、AI の感情分析の手法に東洋的と西洋的の判断を取るようにする。

@@ -10,8 +10,8 @@ const {
   validateSurveyDefinitionUpdate,
 } = require('../corpus/surveyDefinitionContract');
 const {
-  createVolputasSurveyResponseStore,
-} = require('../integrations/cernere/createVolputasSurveyResponseStore');
+  createVoluptasSurveyResponseStore,
+} = require('../integrations/cernere/createVoluptasSurveyResponseStore');
 const {
   SurveyContractError,
   normalizeSurvey,
@@ -45,7 +45,7 @@ function managedView(row) {
 function createGlabSurveyService({
   surveyRepository = surveyModel,
   gameRepository = gameModel,
-  responseStore = createVolputasSurveyResponseStore(),
+  responseStore = createVoluptasSurveyResponseStore(),
 } = {}) {
   // 紐付け先を確かめずに保存すると、 FK 違反が 500 になるか、 ゲームを消した
   // 後の SET NULL で「どのゲームのアンケートか分からない」行が残る。

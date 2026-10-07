@@ -24,7 +24,7 @@ updated: 2026-07-31
 
 ## User story
 
-利用者として、Volputas serverやPostgreSQLを起動せずにアンケートへ回答し、
+利用者として、Voluptas serverやPostgreSQLを起動せずにアンケートへ回答し、
 回答を自分だけがアクセスできる場所へ残したい。
 
 ## Preconditions

@@ -32,14 +32,14 @@ class WhisperSttClient {
       throw sttError(
         503,
         'STT_NOT_CONFIGURED',
-        'Set VOLPUTAS_STT_URL to the local whisper server (see the Excubitor catalog) to enable transcription'
+        'Set VOLUPTAS_STT_URL to the local whisper server (see the Excubitor catalog) to enable transcription'
       );
     }
     let url;
     try {
       url = new URL(this.baseUrl);
     } catch {
-      throw sttError(503, 'STT_URL_INVALID', 'VOLPUTAS_STT_URL must be a valid local HTTP URL');
+      throw sttError(503, 'STT_URL_INVALID', 'VOLUPTAS_STT_URL must be a valid local HTTP URL');
     }
     if (
       !['http:', 'https:'].includes(url.protocol)
@@ -50,7 +50,7 @@ class WhisperSttClient {
       throw sttError(
         503,
         'STT_URL_INVALID',
-        'VOLPUTAS_STT_URL must point to a loopback HTTP server without credentials'
+        'VOLUPTAS_STT_URL must point to a loopback HTTP server without credentials'
       );
     }
   }

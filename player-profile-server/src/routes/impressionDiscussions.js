@@ -3,13 +3,13 @@ const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const { createImpressionDiscussionService } = require('../services/impressionDiscussionService');
 
-/** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+/** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
 function createImpressionDiscussionRouter({
   service = createImpressionDiscussionService(),
 } = {}) {
   const router = Router();
   router.use(authenticate);
-  /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+  /** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
   async function startDiscussion(req, res, next) {
     try {
       const result = await service.start({ impressionId: req.params.id, userId: req.user.id });

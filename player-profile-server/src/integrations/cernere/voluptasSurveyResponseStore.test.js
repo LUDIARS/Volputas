@@ -7,8 +7,8 @@ const {
   POSTGRES_INTEGER_MAX,
 } = require('../../corpus/surveyContract');
 const {
-  VolputasSurveyResponseStore,
-} = require('./volputasSurveyResponseStore');
+  VoluptasSurveyResponseStore,
+} = require('./voluptasSurveyResponseStore');
 
 const USER_ID = '66e242b5-2f18-4463-b7f0-c0f12d818a20';
 const SURVEY_ID = 'd2c6aca2-e754-4e4a-9f2b-270c85b989e5';
@@ -28,11 +28,11 @@ function harness() {
   return {
     calls,
     responses,
-    store: new VolputasSurveyResponseStore(projectClient),
+    store: new VoluptasSurveyResponseStore(projectClient),
   };
 }
 
-test('uses only the Volputas project survey commands with normalized payloads', async () => {
+test('uses only the Voluptas project survey commands with normalized payloads', async () => {
   const { calls, responses, store } = harness();
   responses.push(
     { answeredSurveyIds: [SURVEY_ID] },

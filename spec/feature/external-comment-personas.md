@@ -23,7 +23,7 @@ ID 不明、期限切れ、不正な期間、取得前のライブ発言は受�
 登録ユーザーの SID と混同しない。元ID・名前・コメント本文・URLは出力しない。
 
 YouTubeを含む入力には、運用者が用途の承認を確認したうえで
-`VOLPUTAS_YOUTUBE_DERIVED_APPROVAL_REFERENCE` を設定する。
+`VOLUPTAS_YOUTUBE_DERIVED_APPROVAL_REFERENCE` を設定する。
 文字列を設定するだけでYouTubeの承認を取得したことにはならない。
 承認未確認の段階ではYouTubeデータからの生成を実行しない。
 Steamのみのsnapshotは別途処理できる。
@@ -34,7 +34,7 @@ Steamのみのsnapshotは別途処理できる。
 npm run import:comment-history -- <private-snapshot.json> <personas.jsonl> 10
 ```
 
-`VOLPUTAS_PSEUDO_ID_SECRET` 必須。結果JSONLは Di の
+`VOLUPTAS_PSEUDO_ID_SECRET` 必須。結果JSONLは Di の
 `npm run persona:import -- --input <personas.jsonl>` に渡す。
 Di側の期限管理対応と同時に導入する。元snapshotとJSONLは expiresAt までに削除する。
 本コマンドは raw履歴や生成出力をサービスDBに自動保存しない。

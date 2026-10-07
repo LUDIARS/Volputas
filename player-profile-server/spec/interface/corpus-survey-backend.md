@@ -104,7 +104,7 @@ UTF-16 surrogateを拒否する。
 ## Project-token validation
 
 - Cernere `/.well-known/cernere-public-key`のEd25519公開鍵だけを利用する。
-- `VOLPUTAS_AUDIENCE`と`aud`を完全一致検証する。
+- `VOLUPTAS_AUDIENCE`と`aud`を完全一致検証する。
 - `kind=user_for_project`、`projectKey=volputas`、UUID `sub`を要求する。
 - 公開鍵は最大10分cacheし、同時refreshはsingle-flightにする。
 - `CERNERE_BASE_URL`はHTTPSを必須とし、HTTPは明示的なloopback hostだけ許可する。

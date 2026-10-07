@@ -1,7 +1,7 @@
 [package]
 name = "volputas-overlay"
 version = "1.0.0"
-description = "Volputas window overlay extension"
+description = "Voluptas window overlay extension"
 authors = ["LUDIARS"]
 edition = "2021"
 rust-version = "1.77"

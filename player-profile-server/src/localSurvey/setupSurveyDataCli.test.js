@@ -21,7 +21,7 @@ function captureStream() {
 // Without realpathSync here, assertExistingClone would compare two spellings of the
 // same directory and report a nested repository on those platforms.
 function createExistingClone(t, originUrl) {
-  const created = fs.mkdtempSync(path.join(os.tmpdir(), 'volputas-setup-survey-data-'));
+  const created = fs.mkdtempSync(path.join(os.tmpdir(), 'voluptas-setup-survey-data-'));
   t.after(() => fs.rmSync(created, { recursive: true, force: true }));
   const target = fs.realpathSync(created);
   execFileSync('git', ['init', target], { windowsHide: true, stdio: 'ignore' });

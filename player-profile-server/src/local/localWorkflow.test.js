@@ -55,7 +55,7 @@ function sampleAnswer(question) {
 }
 
 test('local workflow reads the repository survey JSON and writes a Git-attributed response', async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-workflow-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-workflow-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const repositoryPath = path.join(root, 'Volputas-Data');
   await fs.mkdir(repositoryPath);

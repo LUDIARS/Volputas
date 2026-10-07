@@ -7,7 +7,7 @@ const { createLocalApp } = require('../localApp');
 const { ProfileRecordStore } = require('./profileRecordStore');
 
 test('game insight routes list games, aggregate across players and store the LLM proposal', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-game-insight-routes-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-game-insight-routes-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const config = { schemaVersion: 2, dataRepositoryPath: repositoryRoot, name: 'insight-tester' };
   const gitAuthor = {

@@ -6,7 +6,7 @@ const path = require('node:path');
 const { createLocalApp } = require('../localApp');
 
 test('emotion curve routes accept stamps, game logs, and produce LLM evaluations', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-emotion-eval-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-emotion-eval-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const config = {
     schemaVersion: 2,

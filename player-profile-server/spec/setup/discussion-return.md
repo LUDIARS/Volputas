@@ -2,9 +2,9 @@
 
 ## 前提
 
-- Volputas ユーザーが Discord OIDC で認証済みであること
+- Voluptas ユーザーが Discord OIDC で認証済みであること
 - Settings で「自分の Discutere / Discord 発言をペルソナ分析に取り込む」を明示的に有効化すること
-- Volputas backend に次を設定すること
+- Voluptas backend に次を設定すること
 
 ```dotenv
 DISCUTERE_PERSONA_BRIDGE_URL=https://discutere.example
@@ -22,11 +22,11 @@ Di には対応する Ed25519 公開鍵 (SPKI DER base64url) を
 ## 取込
 
 認証済みユーザーが Settings の「Di 議論ログを今すぐ取込」を実行すると、
-Volputas は次のユーザー API を呼ぶ。
+Voluptas は次のユーザー API を呼ぶ。
 
 ```text
 POST /api/v1/profile-data/discussion-voices/sync
-Authorization: Bearer <Volputas user access token>
+Authorization: Bearer <Voluptas user access token>
 ```
 
 backend は同意と OIDC 検証済み Discord identity を再確認してから、専用 project token と、

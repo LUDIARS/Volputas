@@ -6,7 +6,7 @@ const path = require('node:path');
 const { CohortReader } = require('./cohortReader');
 
 test('cohort reader rejects non-object imported JSON records', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-cohort-reader-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-cohort-reader-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const directory = path.join(repositoryRoot, 'emotion-curves', 'imported');
   await fs.mkdir(directory, { recursive: true });

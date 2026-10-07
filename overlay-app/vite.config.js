@@ -12,8 +12,8 @@ export default defineConfig({
   clearScreen: false,
   resolve: {
     alias: {
-      '@volputas/charts/styles.css': `${chartsRoot}/src/styles/charts.css`,
-      '@volputas/charts': `${chartsRoot}/src/index.js`,
+      '@voluptas/charts/styles.css': `${chartsRoot}/src/styles/charts.css`,
+      '@voluptas/charts': `${chartsRoot}/src/index.js`,
     },
   },
   server: {

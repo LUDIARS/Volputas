@@ -51,7 +51,7 @@ class FrameExtractor {
       child.on('error', (error) => {
         if (error.code === 'ENOENT') {
           finish(frameError(503, 'FFMPEG_NOT_AVAILABLE',
-            `ffmpeg was not found (${this.ffmpegPath}); install it or set VOLPUTAS_FFMPEG`));
+            `ffmpeg was not found (${this.ffmpegPath}); install it or set VOLUPTAS_FFMPEG`));
           return;
         }
         finish(frameError(500, 'FFMPEG_SPAWN_FAILED', error.message));
@@ -70,7 +70,7 @@ class FrameExtractor {
    * whose extraction fails are skipped (reported in the returned `skipped`).
    */
   async withFrames(videoPath, secondsList, use) {
-    const directory = path.join(this.temporaryDirectory, `volputas-frames-${randomUUID()}`);
+    const directory = path.join(this.temporaryDirectory, `voluptas-frames-${randomUUID()}`);
     await fs.mkdir(directory, { recursive: true });
     try {
       const frames = [];

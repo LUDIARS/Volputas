@@ -58,7 +58,7 @@ test('CLI entrypoint accepts no runtime argument and renders help', async () => 
   try {
     const exitCode = await main();
     assert.equal(exitCode, 0);
-    assert.match(output, /Volputas local OKF survey/);
+    assert.match(output, /Voluptas local OKF survey/);
   } finally {
     process.argv = originalArgv;
     process.stdout.write = originalStdoutWrite;

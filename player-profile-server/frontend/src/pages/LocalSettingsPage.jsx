@@ -67,13 +67,13 @@ export default function LocalSettingsPage() {
   }
 
   async function chooseRepository() {
-    const selectedPath = await window.volputasDesktop?.chooseDataRepository();
+    const selectedPath = await window.voluptasDesktop?.chooseDataRepository();
     if (selectedPath) updateField('dataRepositoryPath', selectedPath);
   }
 
   async function openSetupScripts() {
     try {
-      const result = await window.volputasDesktop?.openSetupScripts();
+      const result = await window.voluptasDesktop?.openSetupScripts();
       if (result) setError(result);
     } catch (requestError) {
       setError(requestError.message);
@@ -116,7 +116,7 @@ export default function LocalSettingsPage() {
                 placeholder="例: E:\Data\CompanyPlayerData"
                 required
               />
-              {window.volputasDesktop && (
+              {window.voluptasDesktop && (
                 <button type="button" className="btn-outline" onClick={chooseRepository}>
                   選択
                 </button>
@@ -148,7 +148,7 @@ export default function LocalSettingsPage() {
           >
             {saving ? '保存中...' : '設定を保存'}
           </button>
-          {window.volputasDesktop && (
+          {window.voluptasDesktop && (
             <button type="button" className="btn-outline setup-script-button" onClick={openSetupScripts}>
               VolputasDataセットアップスクリプトを開く
             </button>

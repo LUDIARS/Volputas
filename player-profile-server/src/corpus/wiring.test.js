@@ -44,7 +44,7 @@ test('mounts the manifest and protected GLAB survey backend routes', () => {
   );
 });
 
-test('keeps frontend build ownership out of the Volputas backend component', () => {
+test('keeps frontend build ownership out of the Voluptas backend component', () => {
   const catalog = readFileSync(
     resolve(repositoryRoot, 'excubitor.catalog.yaml'),
     'utf8',

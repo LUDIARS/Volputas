@@ -13,15 +13,15 @@ Public fixture facts:
 - Research-export consent: enabled
 - Discussion-import consent: enabled
 
-The ID and token are intentionally public and provide no security. The token is accepted only by the dedicated `volputas-haster` service. Startup fails when HASTER uses `NODE_ENV=production`, a non-loopback frontend or issuer, or a database without the `_haster` suffix.
+The ID and token are intentionally public and provide no security. The token is accepted only by the dedicated `voluptas-haster` service. Startup fails when HASTER uses `NODE_ENV=production`, a non-loopback frontend or issuer, or a database without the `_haster` suffix.
 
-HASTER derives its database name from `VOLPUTAS_DATABASE_URL` by appending `_haster`, so its fixture user and evidence never enter the normal Volputas database.
+HASTER derives its database name from `VOLUPTAS_DATABASE_URL` by appending `_haster`, so its fixture user and evidence never enter the normal Voluptas database.
 
 ## Contract clauses
 
 ### SPEC-HASTER-ISOLATION
 
-HASTER is enabled only by the exact `VOLPUTAS_ENVIRONMENT=HASTER` marker. Its database name is derived with an `_haster` suffix. Startup must fail under `NODE_ENV=production`, for a non-loopback frontend or issuer, or when the effective database lacks that suffix. HASTER binds its HTTP listener to loopback. The Excubitor service is local-only, non-autostart, and runs from the main project folder.
+HASTER is enabled only by the exact `VOLUPTAS_ENVIRONMENT=HASTER` marker. Its database name is derived with an `_haster` suffix. Startup must fail under `NODE_ENV=production`, for a non-loopback frontend or issuer, or when the effective database lacks that suffix. HASTER binds its HTTP listener to loopback. The Excubitor service is local-only, non-autostart, and runs from the main project folder.
 
 ### SPEC-HASTER-PUBLIC-IDENTITY
 

@@ -55,17 +55,17 @@ function prepareImageAccess(prompt, imagePaths) {
 
 class ClaudeCliTextClient {
   constructor({
-    command = process.env.VOLPUTAS_CLAUDE_CLI || 'claude',
-    model = process.env.VOLPUTAS_LLM_MODEL || '',
+    command = process.env.VOLUPTAS_CLAUDE_CLI || 'claude',
+    model = process.env.VOLUPTAS_LLM_MODEL || '',
     timeoutMs = DEFAULT_TIMEOUT_MS,
     spawnImpl = spawn,
   } = {}) {
     // Retain the existing accepted command and model configuration syntax.
     if (!/^[A-Za-z0-9._\\/:-]+$/.test(command)) {
-      throw configurationError(`VOLPUTAS_CLAUDE_CLI contains unsupported characters: ${command}`);
+      throw configurationError(`VOLUPTAS_CLAUDE_CLI contains unsupported characters: ${command}`);
     }
     if (model && !/^[A-Za-z0-9._-]+$/.test(model)) {
-      throw configurationError(`VOLPUTAS_LLM_MODEL contains unsupported characters: ${model}`);
+      throw configurationError(`VOLUPTAS_LLM_MODEL contains unsupported characters: ${model}`);
     }
     this.command = command;
     this.model = resolveModel(model, 'claude');
@@ -125,7 +125,7 @@ class ClaudeCliTextClient {
       child.on('error', (error) => {
         if (error.code === 'ENOENT') {
           finish(configurationError(
-            `Claude CLI (${this.command}) not found — install Claude Code or set VOLPUTAS_LLM_BACKEND=anthropic with ANTHROPIC_API_KEY`
+            `Claude CLI (${this.command}) not found — install Claude Code or set VOLUPTAS_LLM_BACKEND=anthropic with ANTHROPIC_API_KEY`
           ));
           return;
         }

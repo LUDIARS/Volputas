@@ -1,8 +1,9 @@
+require('../src/config/legacyEnvAliases');
 // Places the local gaze-estimation runtime under frontend/public/mediapipe so
 // the app serves it itself (spec/feature/emotion-capture-companion.md
 // §視線推定): the MediaPipe Tasks Vision WASM files are copied out of
 // node_modules, the Face Landmarker model is downloaded once (Google's public
-// model bucket) or copied from VOLPUTAS_GAZE_MODEL_PATH. Nothing here runs at
+// model bucket) or copied from VOLUPTAS_GAZE_MODEL_PATH. Nothing here runs at
 // analysis time; the browser only ever talks to the local server.
 const fs = require('node:fs');
 const fsPromises = require('node:fs/promises');
@@ -27,10 +28,10 @@ function secureModelUrl(value) {
   try {
     url = new URL(value);
   } catch {
-    throw new Error('VOLPUTAS_GAZE_MODEL_URL must be a valid HTTPS URL');
+    throw new Error('VOLUPTAS_GAZE_MODEL_URL must be a valid HTTPS URL');
   }
   if (url.protocol !== 'https:') {
-    throw new Error('VOLPUTAS_GAZE_MODEL_URL must use HTTPS');
+    throw new Error('VOLUPTAS_GAZE_MODEL_URL must use HTTPS');
   }
   return url;
 }
@@ -60,13 +61,13 @@ async function placeModel({ force }) {
   }
   await fsPromises.mkdir(targetRoot, { recursive: true });
   const temporary = `${modelTarget}.download`;
-  const localPath = process.env.VOLPUTAS_GAZE_MODEL_PATH;
+  const localPath = process.env.VOLUPTAS_GAZE_MODEL_PATH;
   let installed = false;
   try {
     if (localPath) {
       await fsPromises.copyFile(localPath, temporary);
     } else {
-      const url = secureModelUrl(process.env.VOLPUTAS_GAZE_MODEL_URL || DEFAULT_MODEL_URL);
+      const url = secureModelUrl(process.env.VOLUPTAS_GAZE_MODEL_URL || DEFAULT_MODEL_URL);
       // Configured URLs may contain signed query parameters; never print them.
       process.stdout.write('downloading gaze model from configured HTTPS source\n');
       // A model redirect changes the artifact trust boundary. Require callers

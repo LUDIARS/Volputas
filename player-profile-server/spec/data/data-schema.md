@@ -1,7 +1,7 @@
 ---
 type: data
-title: "Volputas data schema classification"
-description: "Volputas のデータごとの権威ソース、保存先、保護境界を定義する。local回答とCorpus回答のidentity domainを分離する。"
+title: "Voluptas data schema classification"
+description: "Voluptas のデータごとの権威ソース、保存先、保護境界を定義する。local回答とCorpus回答のidentity domainを分離する。"
 service: volputas
 domain: persistence
 tags:
@@ -22,7 +22,7 @@ related:
 updated: 2026-07-31
 ---
 
-# Volputas data schema classification
+# Voluptas data schema classification
 
 | データ名 | 種類 | 権威ソース | 保存先 | 保護要否 | 保護方法 |
 |---|---|---|---|---|---|
@@ -74,7 +74,7 @@ local/online のルート登録、両 persona service の `readSources`、Cerner
 validator や store の map は `assertCoversEveryMedium` で起動時に検査され、
 取り残しは初回リクエストの 500 ではなく起動失敗になる。
 
-Cernere 側のカラム宣言 (`040_volputas_profile_evidence_schema.sql`) と `column` は一致して
+Cernere 側のカラム宣言 (`040_voluptas_profile_evidence_schema.sql`) と `column` は一致して
 いなければならない。`managed_project.set_user_data` は宣言外のカラムを黙って捨て、
 1 つも一致しなければ `No valid columns to update` を返すため、**宣言漏れはその媒体を
 online モードで静かに全滅させる**。
@@ -96,7 +96,7 @@ guard もコピーに対して働く (template 自体は public のままでよ�
 
 ローカルモードで新規に収集した回答は
 利用者のlocal filesystemだけを正本とし、remote commit/pushを行わない。
-親Volputasはclone directory全体をignoreし、VolputasDataも回答・体験データpathをignoreする。
+親Voluptasはclone directory全体をignoreし、VolputasDataも回答・体験データpathをignoreする。
 PostgreSQLへ暗黙に二重書き込みしない。将来、分析用importerを追加する場合は、
 明示同意と入力fingerprintを持つ再生成可能な互換投影として別途設計する。
 
@@ -123,7 +123,7 @@ template である `LUDIARS/VolputasData` 自体は回答を持たないため p
 未送信の local data を保持しない。個人データが誤commitされた場合は参照削除だけで完了とみなさず、履歴書き換え、
 PR/fork/cache、clone・backupまで含めてincident手順へescalateする。
 
-visibility検証はデータリポジトリの持ち主 (Volputas) の責務として実装で維持し、GitHub側の
+visibility検証はデータリポジトリの持ち主 (Voluptas) の責務として実装で維持し、GitHub側の
 設定だけに委ねない: local OKF survey CLI は `src/localSurvey/githubRepositoryVisibility.js`
 の `assertPrivateGithubRepository`、local desktop app (評価データ/persona) は
 `src/local/dataRepositoryVisibility.js` の `DataRepositoryVisibilityChecker` が、それぞれ

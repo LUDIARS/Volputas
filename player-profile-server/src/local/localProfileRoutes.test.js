@@ -6,7 +6,7 @@ const path = require('node:path');
 const { createLocalApp } = require('../localApp');
 
 test('local profile routes persist evidence, stream media, and cache persona analysis', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-profile-routes-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-profile-routes-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const config = {
     schemaVersion: 2,

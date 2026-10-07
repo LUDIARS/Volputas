@@ -8,10 +8,10 @@ spec_links:
   - player-profile-server/spec/feature/narrative-arc.md
   - player-profile-server/spec/feature/emotion-capture-companion.md
 ---
-# Volputas ゲーム洞察: 複数プレイヤーのホットスポット/脱落点 + Anatomia × 動画の改善提案 (neco 指示 2026-08-20)
+# Voluptas ゲーム洞察: 複数プレイヤーのホットスポット/脱落点 + Anatomia × 動画の改善提案 (neco 指示 2026-08-20)
 
 ## 指示 (原文)
-1. Volputas で感情分析点を置いたあと、Anatomia と動画でゲームを解析して改善ポイントを提案できるようにする
+1. Voluptas で感情分析点を置いたあと、Anatomia と動画でゲームを解析して改善ポイントを提案できるようにする
 2. プレイヤーごとの感情分析を合わせてホットスポットや脱落点を統計的に出せるようにする
 
 ## 対応表
@@ -37,7 +37,7 @@ spec_links:
 - Anatomia: `game-insight` ドメインが新規ファイルを覆う
 
 ## 残作業 (この PR の外)
-- 実機確認: 複数プレイヤーの感情曲線を取り込んだデータリポジトリで集計 → 画面録画付きキャプチャ + `VOLPUTAS_ANATOMIA_CLI`
+- 実機確認: 複数プレイヤーの感情曲線を取り込んだデータリポジトリで集計 → 画面録画付きキャプチャ + `VOLUPTAS_ANATOMIA_CLI`
   を設定して提案生成 (Claude CLI のフレーム限定 `Read` または Anthropic image block で画像を参照できるか)
 - 章・ステージ単位の進行軸 (ゲームマーカーが揃ってから)
 - 他プレイヤーの感情曲線を取り込む手順 (現状は手動コピー。GLAB 経路からの取り込みは別 spec)

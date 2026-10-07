@@ -4,12 +4,12 @@ const { ServiceTokenIssueError } = require('../integrations/cernere/serviceToken
 
 const MIN_LEGACY_TOKEN_LENGTH = 32;
 
-/** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+/** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
 function publicationError(message, code, statusCode) {
   return Object.assign(new Error(message), { code, statusCode });
 }
 
-/** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+/** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
 function discuterePersonaId(pseudoId) {
   if (typeof pseudoId !== 'string' || !/^ext:voluptas:[0-9a-f]{16}$/.test(pseudoId)) {
     throw new TypeError('Voluptas persona pseudoId is invalid');
@@ -18,14 +18,14 @@ function discuterePersonaId(pseudoId) {
   return `persona:voluptas:${digest}`;
 }
 
-/** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+/** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
 function validSessionId(value) {
   return typeof value === 'string'
     && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 class DiscutereDiscussionPublisher {
-  /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+  /** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
   constructor({ baseUrl, token, resolveToken, fetchImpl = fetch, timeoutMs = 15_000 }) {
     this.baseUrl = baseUrl;
     // P4: resolveToken yields a Cernere service token (legacy token as fallback).
@@ -37,7 +37,7 @@ class DiscutereDiscussionPublisher {
     this.timeoutMs = timeoutMs;
   }
 
-  /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+  /** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
   async publish({ persona, review }) {
     if (!this.baseUrl || !this.resolveToken) throw this.#unavailable();
     const personaId = discuterePersonaId(persona?.pseudoId);
@@ -77,7 +77,7 @@ class DiscutereDiscussionPublisher {
     };
   }
 
-  /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+  /** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
   #unavailable() {
     return publicationError(
       'Discutere persona bridge is not configured',
@@ -101,7 +101,7 @@ class DiscutereDiscussionPublisher {
     return bearer;
   }
 
-  /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+  /** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
   async #post(pathname, body, bearer) {
     const baseUrl = normalizeBridgeBaseUrl(this.baseUrl);
     const url = new URL(pathname, baseUrl);

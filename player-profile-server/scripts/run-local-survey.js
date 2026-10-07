@@ -1,4 +1,5 @@
 'use strict';
+require('../src/config/legacyEnvAliases');
 
 const path = require('node:path');
 const { readAnswersFile } = require('../src/localSurvey/answerFile');
@@ -18,7 +19,7 @@ const SURVEY_ID_LIST = SURVEY_DEFINITIONS
   .map((entry) => entry.definition.SURVEY_ID)
   .join(', ');
 
-const USAGE = `Volputas local OKF survey
+const USAGE = `Voluptas local OKF survey
 
 Usage:
   npm run survey:local

@@ -19,7 +19,7 @@ function isSafeAnswerOwnerName(value) {
 
 function defaultConfigPath() {
   const baseDirectory = process.env.LOCALAPPDATA || path.join(os.homedir(), '.config');
-  return path.join(baseDirectory, 'Volputas', 'local-config.json');
+  return path.join(baseDirectory, 'Voluptas', 'local-config.json');
 }
 
 function validateDataRepositoryPath(value) {
@@ -57,7 +57,7 @@ function validateLocalConfig(value) {
 }
 
 class LocalConfigStore {
-  constructor(configPath = process.env.VOLPUTAS_LOCAL_CONFIG_PATH || defaultConfigPath()) {
+  constructor(configPath = process.env.VOLUPTAS_LOCAL_CONFIG_PATH || defaultConfigPath()) {
     this.configPath = path.resolve(configPath);
   }
 

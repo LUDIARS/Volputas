@@ -28,7 +28,7 @@ async function readGameLogExcerpt(filePath) {
 
 // 感情曲線を GLAB から扱うための service。
 //
-// 自前フロント向けの routes/profileEvidence は Volputas のローカル user id で
+// 自前フロント向けの routes/profileEvidence は Voluptas のローカル user id で
 // 動くが、 GLAB から届くのは Cernere の user id だけで、 ローカル users 行が
 // 無いこともある。 owner id をそのまま使う経路をここに分けて、 既存経路の
 // 認可規則 (所有チェックと媒体種別の対応) は同じものを使い回す。

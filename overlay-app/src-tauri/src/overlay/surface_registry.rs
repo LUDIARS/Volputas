@@ -178,7 +178,7 @@ impl SurfaceRegistry {
     fn create_window(&self, app: &AppHandle, id: &str) -> Result<(), String> {
         let url = WebviewUrl::App(format!("index.html?surface={id}").into());
         let window = WebviewWindowBuilder::new(app, id, url)
-            .title("Volputas Info Surface")
+            .title("Voluptas Info Surface")
             .decorations(false)
             .transparent(true)
             .always_on_top(true)

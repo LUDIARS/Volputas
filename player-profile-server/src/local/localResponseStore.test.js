@@ -35,7 +35,7 @@ test('requires complete answers that follow the survey definition', () => {
 });
 
 test('stores responses below answers/Name with Git author metadata', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-responses-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-responses-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const store = new LocalResponseStore(() => new Date('2026-07-25T00:00:00.000Z'));
 

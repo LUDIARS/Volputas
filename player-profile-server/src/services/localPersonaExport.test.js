@@ -20,7 +20,7 @@ function personaAnalysis() {
 }
 
 async function setup(t, consent) {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-export-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-export-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const name = 'PrivateName';
   const analysisDirectory = path.join(repositoryRoot, 'analysis', name);

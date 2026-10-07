@@ -43,7 +43,7 @@ test('rejects oversized and duplicate asset kinds', () => {
   assert.throws(() => validateImpressionInput(duplicate), /only one screenshot/);
 });
 
-test('allows a long local video only for the Volputas web review flow', () => {
+test('allows a long local video only for the Voluptas web review flow', () => {
   const webReview = validInput();
   webReview.client.source = 'volputas_web_review';
   webReview.assets = [{

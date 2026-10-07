@@ -1,4 +1,4 @@
-// Volputas ウインドウ表示拡張ツール (spec/feature/window-overlay-extension.md)。
+// Voluptas ウインドウ表示拡張ツール (spec/feature/window-overlay-extension.md)。
 // 起動・プラグイン登録・状態の組み立てだけを持ち、中身は各モジュールへ。
 // @implements SPEC-WINDOW-OVERLAY-EXTENSION
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -71,5 +71,5 @@ fn main() {
             commands::overlay_save_profile,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running the Volputas overlay");
+        .expect("error while running the Voluptas overlay");
 }

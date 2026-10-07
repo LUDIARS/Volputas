@@ -45,7 +45,7 @@ function assertPrivateGithubRepository({
     ).stdout;
   } catch {
     throw new GithubRepositoryVisibilityError(
-      'Unable to verify the private Volputas data repository.'
+      'Unable to verify the private Voluptas data repository.'
     );
   }
 
@@ -64,7 +64,7 @@ function assertPrivateGithubRepository({
     || metadata?.visibility !== 'private'
   ) {
     throw new GithubRepositoryVisibilityError(
-      'The configured Volputas data repository is not the expected private repository.'
+      'The configured Voluptas data repository is not the expected private repository.'
     );
   }
 

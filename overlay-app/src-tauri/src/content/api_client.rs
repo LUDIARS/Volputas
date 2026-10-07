@@ -1,4 +1,4 @@
-//! Volputas local app (127.0.0.1) のクライアント (spec §配置 api_client.rs)。
+//! Voluptas local app (127.0.0.1) のクライアント (spec §配置 api_client.rs)。
 //!
 //! HTTP は Rust 側だけが話す。WebView から直接叩かないので、local app に
 //! CORS を足す必要がなく、127.0.0.1 バインドの既存境界をそのまま使える。
@@ -6,7 +6,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-const LOCAL_URL_ENVIRONMENT: &str = "VOLPUTAS_LOCAL_URL";
+const LOCAL_URL_ENVIRONMENT: &str = "VOLUPTAS_LOCAL_URL";
+/// 旧綴り。Excubitor が新しい綴りで配るようになるまで読む。
+const LEGACY_LOCAL_URL_ENVIRONMENT: &str = "VOLPUTAS_LOCAL_URL";
 const OVERLAY_API_PREFIX: &str = "/api/local/overlay/";
 const OVERLAY_STATUS_PATH: &str = "/api/local/overlay/status";
 const MARKER_PATH: &str = "/api/local/capture-sessions/active/markers";
@@ -56,6 +58,7 @@ impl ApiClient {
     /// 黙って接続すると別サービスを誤認するため、未設定は起動時に失敗させる。
     pub fn from_environment() -> Result<Self, String> {
         let base_url = std::env::var(LOCAL_URL_ENVIRONMENT)
+            .or_else(|_| std::env::var(LEGACY_LOCAL_URL_ENVIRONMENT))
             .map_err(|_| format!("{LOCAL_URL_ENVIRONMENT} must be set by Excubitor"))?;
         Self::with_base_url(&base_url)
     }

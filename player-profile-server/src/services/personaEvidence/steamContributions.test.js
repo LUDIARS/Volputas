@@ -105,7 +105,7 @@ const path = require('node:path');
 const { appendAnalysisHistory, readAnalysisHistorySeries } = require('./analysisHistory');
 
 test('analysis history series returns per-axis scores from v2 snapshots', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-history-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-history-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const context = { repositoryRoot, name: 'trend-tester' };
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { localApi } from '../lib/localApi';
-import { HotspotChart } from '@volputas/charts';
+import { HotspotChart } from '@voluptas/charts';
 import { STAMP_BY_ID } from '../lib/emotionStamps';
 import ScaleAggregateTable from '../components/ScaleAggregateTable';
 import JudgmentLensPanel from '../components/JudgmentLensPanel';
@@ -113,9 +113,9 @@ export default function GameInsightPage() {
       await reload();
     } catch (reason) {
       if (reason.code === 'LLM_NOT_CONFIGURED') {
-        setError('AI 提案を実行できません。サーバで Claude CLI (claude) を使えるようにするか、VOLPUTAS_LLM_BACKEND=anthropic と ANTHROPIC_API_KEY を設定してください。');
+        setError('AI 提案を実行できません。サーバで Claude CLI (claude) を使えるようにするか、VOLUPTAS_LLM_BACKEND=anthropic と ANTHROPIC_API_KEY を設定してください。');
       } else if (reason.code === 'ANATOMIA_NOT_CONFIGURED') {
-        setError('Anatomia CLI が設定されていません。サーバの VOLPUTAS_ANATOMIA_CLI に anatomia.mjs の絶対パスを設定するか、プロジェクト名を空にして実行してください。');
+        setError('Anatomia CLI が設定されていません。サーバの VOLUPTAS_ANATOMIA_CLI に anatomia.mjs の絶対パスを設定するか、プロジェクト名を空にして実行してください。');
       } else if (reason.code === 'GAME_INSIGHT_STALE') {
         setError('元の感情曲線が変更されています。先に「再集計」を実行してください。');
       } else {
@@ -247,7 +247,7 @@ export default function GameInsightPage() {
                 placeholder="例: my-game (事前に anatomia project add / analyze 済み)"
                 disabled={!status?.anatomia?.configured}
               />
-              {!status?.anatomia?.configured && <small>サーバに VOLPUTAS_ANATOMIA_CLI が未設定のためコード位置は付きません。</small>}
+              {!status?.anatomia?.configured && <small>サーバに VOLUPTAS_ANATOMIA_CLI が未設定のためコード位置は付きません。</small>}
             </label>
             <label className="profile-field">
               <span>キャプチャセッション (任意: ゲームマーカーと画面フレームの出所)</span>

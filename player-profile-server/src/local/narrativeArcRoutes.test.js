@@ -6,7 +6,7 @@ const path = require('node:path');
 const { createLocalApp } = require('../localApp');
 
 test('narrative arc routes list games, aggregate sessions and store LLM commentary', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-narrative-arc-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-narrative-arc-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const config = { schemaVersion: 2, dataRepositoryPath: repositoryRoot, name: 'arc-tester' };
   const gitAuthor = {

@@ -88,7 +88,7 @@ function clientHarness({ requestTimeoutMs } = {}) {
     clientSecret: 'client-secret',
     openState: 1,
     ...(requestTimeoutMs ? { requestTimeoutMs } : {}),
-    requestId: () => 'volputas-request-1',
+    requestId: () => 'voluptas-request-1',
     fetchImpl: async (url, init) => {
       loginRequest = { url, init };
       return Response.json({ accessToken: 'project-token' });
@@ -136,7 +136,7 @@ test('logs in, authenticates by WebSocket subprotocol, and correlates responses'
   assert.equal(socket.url, 'wss://cernere.test/base/ws/project');
 
   const request = socket.sent.find((message) => message.type === 'module_request');
-  assert.equal(request.request_id, 'volputas-request-1');
+  assert.equal(request.request_id, 'voluptas-request-1');
   socket.emit('message', JSON.stringify({
     type: 'module_response',
     request_id: request.request_id,
@@ -176,7 +176,7 @@ test('rejects correlated server errors and pending work when the socket closes',
 
   socket.emit('message', JSON.stringify({
     type: 'error',
-    request_id: 'volputas-request-1',
+    request_id: 'voluptas-request-1',
     code: 'command_error',
     message: 'must not be reflected',
   }));

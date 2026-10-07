@@ -6,7 +6,7 @@ function configuration(overrides = {}) {
   return {
     cernere: {
       baseUrl: 'https://cernere.example.test',
-      projectClientId: 'volputas-client',
+      projectClientId: 'voluptas-client',
       projectClientSecret: 'project-secret',
       ...overrides.cernere,
     },
@@ -14,7 +14,7 @@ function configuration(overrides = {}) {
       cernere: {
         clientId: 'oidc-client',
         clientSecret: 'oidc-secret',
-        callbackUrl: 'https://volputas.example.test/auth/callback',
+        callbackUrl: 'https://voluptas.example.test/auth/callback',
         ...overrides.oauth,
       },
     },

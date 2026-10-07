@@ -30,7 +30,7 @@ updated: 2026-08-02
 
 1. `config/local-survey.json`の`dataRepository.expectedRemoteUrl`が指すリポジトリの
    `dataRepository.baseBranch`を`player-profile-server/private/survey-data`
-   (`dataRepository.path`、`VOLPUTAS_SURVEY_DATA_DIR`で上書き可) へ独立cloneする。
+   (`dataRepository.path`、`VOLUPTAS_SURVEY_DATA_DIR`で上書き可) へ独立cloneする。
    ハードコードされた既定リポジトリは持たない — 設定を自分の private コピーへ
    向け変えなければ、shipされた`LUDIARS/VolputasData`のまま次のvisibility検証で
    fail-fastする。
@@ -85,5 +85,5 @@ dirty path衝突、atomic write失敗は明示エラーにする。回答値、�
 CLI entry pointが出力する`[fatal] …`は1行に収める (`src/localSurvey/cliErrorMessage.js`の
 `safeErrorMessage`)。改行を潰して長さを制限し、tool生出力でterminalを流さない。
 エラーへremote URLを含める場合はuserinfo (`https://user:token@…`) を落としてから出す。
-既存cloneのoriginはVolputas側の設定と違い任意の値を持ち得るため、そのまま出すと
+既存cloneのoriginはVoluptas側の設定と違い任意の値を持ち得るため、そのまま出すと
 tokenがstderrへ出る。

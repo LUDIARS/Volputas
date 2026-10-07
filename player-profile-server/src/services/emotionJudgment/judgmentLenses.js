@@ -1,5 +1,5 @@
 // The two schools of "why is this fun" that every emotion-analysis prompt in
-// Volputas must answer through (spec/feature/emotion-judgment-lenses.md).
+// Voluptas must answer through (spec/feature/emotion-judgment-lenses.md).
 //
 // - western (機序): the single-mechanism reading. Name the theory, cite the
 //   measured numbers, stay reproducible — and admit it only sees what was

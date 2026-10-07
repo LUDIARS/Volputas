@@ -3,16 +3,16 @@ const {
   CernereProjectSocketClient,
 } = require('./projectSocketClient');
 const {
-  VolputasSurveyResponseStore,
-} = require('./volputasSurveyResponseStore');
+  VoluptasSurveyResponseStore,
+} = require('./voluptasSurveyResponseStore');
 
-function createVolputasSurveyResponseStore() {
+function createVoluptasSurveyResponseStore() {
   const client = new CernereProjectSocketClient({
     baseUrl: config.cernere.baseUrl,
     clientId: config.cernere.projectClientId,
     clientSecret: config.cernere.projectClientSecret,
   });
-  return new VolputasSurveyResponseStore(client);
+  return new VoluptasSurveyResponseStore(client);
 }
 
-module.exports = { createVolputasSurveyResponseStore };
+module.exports = { createVoluptasSurveyResponseStore };

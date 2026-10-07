@@ -1,3 +1,4 @@
+require('../src/config/legacyEnvAliases');
 const config = require('../src/config');
 const { LocalConfigStore } = require('../src/local/localConfigStore');
 const { exportLocalPersona } = require('../src/services/localPersonaExport');

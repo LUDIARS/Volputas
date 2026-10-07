@@ -23,9 +23,9 @@ updated: 2026-07-28
 
 ## 設計宣言
 
-Volputasのローカルアンケートは、HTTP server、JWT、PostgreSQLを必要としない。
+Voluptasのローカルアンケートは、HTTP server、JWT、PostgreSQLを必要としない。
 公開定義と匿名サンプルの正本は独立リポジトリ`LUDIARS/VolputasData`とする。
-Volputas本体はこのリポジトリをsubmoduleにせず、明示的なsetup scriptで
+Voluptas本体はこのリポジトリをsubmoduleにせず、明示的なsetup scriptで
 `player-profile-server/private/survey-data`へcloneする。
 
 ## データ境界
@@ -34,7 +34,7 @@ Volputas本体はこのリポジトリをsubmoduleにせず、明示的なsetup 
 - ローカル限定: 回答、プレイ記録、感想、感情曲線、media、persona分析。
 - 禁止: token、email、OAuth payload、raw profile、識別可能な個人データのcommit。
 
-独立cloneとその全内容は親Volputasの`.gitignore`対象とする。データリポジトリ側も
+独立cloneとその全内容は親Voluptasの`.gitignore`対象とする。データリポジトリ側も
 local-only pathをignoreし、二重の誤stage防止境界を持つ。
 
 ## Git契約

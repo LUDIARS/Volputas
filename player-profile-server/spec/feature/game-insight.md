@@ -2,7 +2,7 @@
 
 > Spec ID: `SPEC-GAME-INSIGHT`
 >
-> 状態: 実装 (2026-08-20)。neco 指示「Volputas で感情分析点を置いたあと、Anatomia と動画でゲームを解析して
+> 状態: 実装 (2026-08-20)。neco 指示「Voluptas で感情分析点を置いたあと、Anatomia と動画でゲームを解析して
 > 改善ポイントを提案できるようにする」「プレイヤーごとの感情分析を合わせてホットスポットや脱落点を
 > 統計的に出せるようにする」の設計。
 > 関連: `narrative-arc.md` (同一プレイヤー × 同一ゲームの集約。本 spec はその**プレイヤー横断**版)、
@@ -92,7 +92,7 @@
    (`event` / `note` とラベル) と、anchors から線形補間した `gameClockMs` を付ける (`improvementContext.js`、純関数)。
 3. **Anatomia** — `anatomiaProject` があれば、焦点ごとに `context --project <p> --task "<ゲーム名> <マーカー label>
    <スタンプ語>"` を実行し、`exemplars` (関数名・ファイル・行) と `existingDomains` を採る。ラベル中の識別子らしい
-   トークン (`[A-Za-z_][A-Za-z0-9_]{2,}`) は `find --symbol --json` でも引く。CLI は `VOLPUTAS_ANATOMIA_CLI`
+   トークン (`[A-Za-z_][A-Za-z0-9_]{2,}`) は `find --symbol --json` でも引く。CLI は `VOLUPTAS_ANATOMIA_CLI`
    (anatomia.mjs の絶対パス) を `node` で spawn (shell 非経由、引数は検証済み文字列のみ)。未設定で
    `anatomiaProject` を指定したら `ANATOMIA_NOT_CONFIGURED` (503)。project 名は `^[A-Za-z0-9._-]+$`。
 4. **動画フレーム** — セッションに `screenRecording` があり ffmpeg が使えるなら、焦点ごとに 1 フレーム

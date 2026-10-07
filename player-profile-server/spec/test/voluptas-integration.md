@@ -5,7 +5,7 @@ Critical paths are protected by deterministic Node tests for one-shot OAuth stat
 `npm run export:personas` writes `exports/personas.jsonl` in the configured local data repository. Consent defaults off, producing zero lines. With explicit consent, every v2 line has an `ext:voluptas:<HMAC>` `pseudoId`, confidence-low-or-better preference axes, sanitized aversions and mechanic reactions, and `exportSpecVersion: 2`. Display names, emails, Name, provider IDs, provenance record IDs, survey answers, and free text are excluded.
 
 Online export is `GET /api/personas/export`, protected by the dedicated
-`VOLPUTAS_PERSONA_EXPORT_TOKEN` project credential and paged with
+`VOLUPTAS_PERSONA_EXPORT_TOKEN` project credential and paged with
 `X-Next-Cursor`. It selects only non-deleted users whose
 `research_export_consent` is true.
 

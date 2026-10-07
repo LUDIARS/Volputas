@@ -36,7 +36,7 @@ class AudioToWavConverter {
           reject(conversionError(
             503,
             'FFMPEG_NOT_AVAILABLE',
-            `ffmpeg was not found (${this.ffmpegPath}); install it or set VOLPUTAS_FFMPEG`
+            `ffmpeg was not found (${this.ffmpegPath}); install it or set VOLUPTAS_FFMPEG`
           ));
           return;
         }
@@ -62,7 +62,7 @@ class AudioToWavConverter {
    */
   /** @implements SPEC-EMOTION-CAPTURE-COMPANION */
   async withWav(inputPath, use) {
-    const wavPath = path.join(this.temporaryDirectory, `volputas-capture-${randomUUID()}.wav`);
+    const wavPath = path.join(this.temporaryDirectory, `voluptas-capture-${randomUUID()}.wav`);
     try {
       await this.runFfmpeg([
         '-hide_banner', '-nostdin', '-y',

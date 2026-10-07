@@ -22,7 +22,7 @@ updated: 2026-08-02
 
 # Local data repository visibility guard
 
-Volputasは特定のデータリポジトリを既定値として持たない。企業は自社が用意した任意の
+Voluptasは特定のデータリポジトリを既定値として持たない。企業は自社が用意した任意の
 GitHubリポジトリをLocal Settingsで指定する。そのリポジトリは実データ (evidence、
 persona、アンケート回答) を保持するため**private**でなければならない。この文書は
 その検証を担うinterfaceの契約を定める。
@@ -77,7 +77,7 @@ persona、アンケート回答) を保持するため**private**でなければ
 
 `frontend/src/pages/LocalSettingsPage.jsx` / `desktop/main.js`
 
-- Local Settingsは、データリポジトリが「Volputasが指定する特定のリポジトリ」ではなく
+- Local Settingsは、データリポジトリが「Voluptasが指定する特定のリポジトリ」ではなく
   「自社が用意した任意のGitHubリポジトリ」であることを明示する。製品名 (`VolputasData`)
   を見出し・placeholder・ディレクトリ選択dialogのタイトルへ既定値として出さない。
 - 保存前にprivate visibilityを検証し、public/internalは保存できないことを入力欄の近くで

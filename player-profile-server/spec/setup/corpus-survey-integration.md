@@ -29,20 +29,20 @@ updated: 2026-07-24
 | name | source | secret | purpose |
 |---|---|---:|---|
 | `CERNERE_BASE_URL` | Excubitor topology | no | Cernere REST/WS base URL |
-| `VOLPUTAS_AUDIENCE` | Excubitor service URL | no | PASETO `aud`の完全一致値 |
+| `VOLUPTAS_AUDIENCE` | Excubitor service URL | no | PASETO `aud`の完全一致値 |
 | `CERNERE_PROJECT_CLIENT_ID` | Excubitor launch credential | yes | Voluptas project login |
 | `CERNERE_PROJECT_CLIENT_SECRET` | Excubitor launch credential | yes | Voluptas project login |
-| `VOLPUTAS_DATABASE_URL` | Infisical | yes | Voluptas PostgreSQL |
+| `VOLUPTAS_DATABASE_URL` | Infisical | yes | Voluptas PostgreSQL |
 
 project credentialは`excubitor.catalog.yaml`の`cernere_launch_credentials`から起動ごとに注入される。
 repository、`.env`、logへ実値を保存しない。
 
 ## Frontend
 
-Corpus用frontendはGLAB repositoryの`plugins/volputas/`でbuildされる。Voluptas backendの
+Corpus用frontendはGLAB repositoryの`plugins/voluptas/`でbuildされる。Voluptas backendの
 build/startはVoluptas standalone React packageをbuildまたは配信しない。
 
-GLABはExcubitor topologyから`VOLPUTAS_URL`を受け取り、未設定時だけ明示的なdegraded panelを
+GLABはExcubitor topologyから`VOLUPTAS_URL`を受け取り、未設定時だけ明示的なdegraded panelを
 表示する。
 
 ## Migration

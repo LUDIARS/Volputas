@@ -10,18 +10,18 @@ const os = require('node:os');
 // Returns null when the companion is not configured (a genuine opt-out), and
 // throws when it is configured incorrectly.
 function readCompanionConfig(env = process.env) {
-  const rawPort = env.VOLPUTAS_COMPANION_PORT;
+  const rawPort = env.VOLUPTAS_COMPANION_PORT;
   if (rawPort === undefined || rawPort === '') return null;
   const port = Number(rawPort);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error('VOLPUTAS_COMPANION_PORT must be a valid TCP port');
+    throw new Error('VOLUPTAS_COMPANION_PORT must be a valid TCP port');
   }
-  const host = env.VOLPUTAS_COMPANION_HOST || '0.0.0.0';
-  const certFile = env.VOLPUTAS_COMPANION_TLS_CERT_FILE || '';
-  const keyFile = env.VOLPUTAS_COMPANION_TLS_KEY_FILE || '';
+  const host = env.VOLUPTAS_COMPANION_HOST || '0.0.0.0';
+  const certFile = env.VOLUPTAS_COMPANION_TLS_CERT_FILE || '';
+  const keyFile = env.VOLUPTAS_COMPANION_TLS_KEY_FILE || '';
   if ((certFile === '') !== (keyFile === '')) {
     throw new Error(
-      'VOLPUTAS_COMPANION_TLS_CERT_FILE and VOLPUTAS_COMPANION_TLS_KEY_FILE must be set together'
+      'VOLUPTAS_COMPANION_TLS_CERT_FILE and VOLUPTAS_COMPANION_TLS_KEY_FILE must be set together'
     );
   }
   if (certFile === '' && !['127.0.0.1', '::1', 'localhost'].includes(host)) {

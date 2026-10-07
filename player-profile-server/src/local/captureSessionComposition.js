@@ -27,8 +27,8 @@ function createCaptureSessionService() {
 function createCaptureAnalysisService(captureSessionService, env = process.env) {
   return new CaptureAnalysisService({
     captureSessionService,
-    sttClient: new WhisperSttClient({ baseUrl: env.VOLPUTAS_STT_URL || '' }),
-    wavConverter: new AudioToWavConverter({ ffmpegPath: env.VOLPUTAS_FFMPEG || 'ffmpeg' }),
+    sttClient: new WhisperSttClient({ baseUrl: env.VOLUPTAS_STT_URL || '' }),
+    wavConverter: new AudioToWavConverter({ ffmpegPath: env.VOLUPTAS_FFMPEG || 'ffmpeg' }),
   });
 }
 

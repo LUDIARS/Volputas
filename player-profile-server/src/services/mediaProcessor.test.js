@@ -30,7 +30,7 @@ test('rejects decompression-bomb dimensions before conversion', () => {
   );
 });
 
-test('selects the long-video limit only for Volputas web reviews', () => {
+test('selects the long-video limit only for Voluptas web reviews', () => {
   assert.equal(
     processor().maximumVideoDurationMs({ client: { source: 'volputas_web_review' } }),
     2 * 60 * 60 * 1000

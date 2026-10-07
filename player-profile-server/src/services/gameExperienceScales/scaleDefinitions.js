@@ -7,7 +7,7 @@
 //
 // PENS — Player Experience of Need Satisfaction (Ryan, Rigby & Przybylski
 // 2006). Five subscales on 1..7. The published PENS items are proprietary, so
-// the wording here is Volputas' own one-item paraphrase per subscale; the
+// the wording here is Voluptas' own one-item paraphrase per subscale; the
 // subscale *names* and the 1..7 range follow the original so results stay
 // comparable at the subscale level.
 //

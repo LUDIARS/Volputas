@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { CORPUS_SERVICE_MANIFEST } = require('./manifest');
 
-test('declares the Volputas backend without owning a Corpus frontend panel', () => {
+test('declares the Voluptas backend without owning a Corpus frontend panel', () => {
   assert.equal(CORPUS_SERVICE_MANIFEST.service, 'volputas');
   assert.equal(CORPUS_SERVICE_MANIFEST.corpusApi, 1);
   assert.equal(CORPUS_SERVICE_MANIFEST.health, '/health');

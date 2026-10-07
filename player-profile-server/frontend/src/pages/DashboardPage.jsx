@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
-import { RadarChart } from '@volputas/charts';
+import { RadarChart } from '@voluptas/charts';
 import '../styles/dashboard.css';
 
 export default function DashboardPage() {

@@ -1,4 +1,4 @@
-# Volputas
+# Voluptas
 
 ゲームアンケート、ゲームプレイ情報、ユーザの声、動画上の感情曲線、ペルソナ分析を
 扱うプレイヤーリサーチツールです。同じReact UIを、Git-backedのローカルモードと
@@ -14,7 +14,7 @@ Cernere認証を使うオンラインモードで利用できます。既定のE
 
 オンラインでは、アンケート回答、ゲームプレイ情報、ユーザの声、感情曲線、
 ペルソナ分析、メディア参照情報をCernereが所有します。スクリーンショットと動画の
-バイト列だけは、巨大なバイナリをJSONへ格納しないためVolputasの保護ストレージへ置き、
+バイト列だけは、巨大なバイナリをJSONへ格納しないためVoluptasの保護ストレージへ置き、
 Cernere側の所有者・種別・サイズ・参照情報を通さない限り取得できません。
 
 オンライン起動に必要な設定は次のとおりです。
@@ -25,24 +25,24 @@ CERNERE_PROJECT_CLIENT_ID=...
 CERNERE_PROJECT_CLIENT_SECRET=...
 CERNERE_OIDC_CLIENT_ID=...
 CERNERE_OIDC_CLIENT_SECRET=...
-CERNERE_OIDC_CALLBACK_URL=https://volputas.example.com/auth/callback
-FRONTEND_URL=https://volputas.example.com
+CERNERE_OIDC_CALLBACK_URL=https://voluptas.example.com/auth/callback
+FRONTEND_URL=https://voluptas.example.com
 AUTH_SOURCES=cernere
-VOLPUTAS_MEDIA_ROOT=/var/lib/volputas/profile-media
+VOLUPTAS_MEDIA_ROOT=/var/lib/voluptas/profile-media
 ```
 
 Cernere側へ`migrations/036_volputas_survey_responses.sql`と
-`037_volputas_profile_evidence_schema.sql`を適用し、Volputas用project credentialsと
+`037_voluptas_profile_evidence_schema.sql`を適用し、Voluptas用project credentialsと
 OIDC clientを発行してから設定します。`npm start`とDockerイメージは共通React UIも
 ビルド・配信します。
 
 ## ローカル専用アンケート
 
-既定のVolputasは、Cernere・OAuth・PostgreSQLを使わないローカルツールとして
+既定のVoluptasは、Cernere・OAuth・PostgreSQLを使わないローカルツールとして
 Excubitorから起動する。初回起動後にSettingsで次を設定する。
 
 - 企業ごとに用意した任意のGitHubリポジトリをcloneした、データリポジトリの絶対パス
-  （Volputasは特定リポジトリを既定値として持たない）
+  （Voluptasは特定リポジトリを既定値として持たない）
 - 回答フォルダに使うName（Git Authorから自動設定）
 
 設定保存時に対象リポジトリの`git config user.name`と`user.email`を検証する。
@@ -50,7 +50,7 @@ Excubitorから起動する。初回起動後にSettingsで次を設定する。
 (`gh`) でvisibilityを検証する。public/internalなリポジトリは設定を保存できず、
 既に保存済みの設定が後からpublicへ変わった場合もその後の処理開始（各APIの利用）を
 fail-fastで拒否する。アンケート定義の正本はデータリポジトリ側の`surveys/*.json`に
-あり、Volputas側は既定のアンケートを書き出さない（1本も読めなければ設定を保存
+あり、Voluptas側は既定のアンケートを書き出さない（1本も読めなければ設定を保存
 しない）。画面はデータリポジトリ内の`surveys/*.json`をすべて読み込み、アンケート
 一覧として表示する。
 
@@ -149,7 +149,7 @@ worktree、複製folder、直接の`npm run dev`からサービスを起動し�
 
 ### DBなしでアンケートに回答する
 
-ローカル経路はVolputas serverを起動しない。Node.js 22、Git、GitHub CLIが必要で、
+ローカル経路はVoluptas serverを起動しない。Node.js 22、Git、GitHub CLIが必要で、
 GitHub CLIの現在の認証ユーザーを本人として扱う。`LUDIARS/VolputasData` は
 **public な template** であり、実運用ではこれをコピーした自分の **private データ
 リポジトリ** を作って `config/local-survey.json` で指定する (回答が push されるのは
@@ -159,7 +159,7 @@ GitHub CLIの現在の認証ユーザーを本人として扱う。`LUDIARS/Volp
 clone直後にそのリポジトリがprivateであることを検証してfail-fastする
 （`config/local-survey.json` を自分の private コピーへ向け変える前に実行すると、
 public な `LUDIARS/VolputasData` のままこの検証で失敗する）。これはsubmoduleでは
-なく、Volputas本体のgitlinkにも記録されない。
+なく、Voluptas本体のgitlinkにも記録されない。
 
 ```bash
 cd player-profile-server
@@ -192,17 +192,17 @@ npm run dev       # Vite開発サーバー起動
 
 Voluptas backendとfrontendは別package・別buildである。ExcubitorのVoluptas backend componentは
 frontendをbuild/serveしない。Corpus上のレビューUIはGLAB plugin pack
-`plugins/volputas/`が所有し、Voluptasには
+`plugins/voluptas/`が所有し、Voluptasには
 `/api/v1/integrations/glab/surveys`だけで接続する。standalone React frontendは
 Voluptas単体利用向けに独立して残す。
 
 ### Corpus / GLAB
 
 Voluptasは認証不要の`/.well-known/corpus-service.json`を公開する。GLAB connectorは
-Excubitor topologyの`VOLPUTAS_URL`からbackendへ接続し、Cernere user access tokenを
+Excubitor topologyの`VOLUPTAS_URL`からbackendへ接続し、Cernere user access tokenを
 `projectKey=volputas`の短命PASETOへ交換して転送する。
 
-Voluptas側では`CERNERE_BASE_URL`と`VOLPUTAS_AUDIENCE`を公開設定として使い、
+Voluptas側では`CERNERE_BASE_URL`と`VOLUPTAS_AUDIENCE`を公開設定として使い、
 `CERNERE_PROJECT_CLIENT_ID` / `CERNERE_PROJECT_CLIENT_SECRET`はExcubitorが起動ごとに
 注入する。実credentialを`.env`やrepositoryへ保存しない。詳細は
 [Corpus survey integration](./player-profile-server/spec/feature/corpus-survey-integration.md)を参照。
@@ -271,7 +271,7 @@ player-profile-server/
 
 - **viewer reaction timeline** — 動画内時刻付きコメントを30秒ビンへ集約し、ビートごとの意図一致度とDesignGapを算出
 - **ゲームレビュー** — 開発作品・市販作品を共通のsession/impression形式で5段階評価・投稿
-- **動画レビュー** — Volputas 単体で録画済み動画をアップロードし、本人が「ここ良かった／ここ悪かった／コメント」を再生位置へ記録
+- **動画レビュー** — Voluptas 単体で録画済み動画をアップロードし、本人が「ここ良かった／ここ悪かった／コメント」を再生位置へ記録
 
 投稿・署名URL・media worker の運用は
 [player-profile-server/SPECTATOR_MEDIA.md](./player-profile-server/SPECTATOR_MEDIA.md) を参照。

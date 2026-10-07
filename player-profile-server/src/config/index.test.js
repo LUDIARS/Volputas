@@ -2,10 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const CONFIG_ENVIRONMENT_KEYS = [
-  'VOLPUTAS_ENVIRONMENT',
-  'VOLPUTAS_PERSONA_EXPORT_TOKEN',
-  'VOLPUTAS_PSEUDO_ID_SECRET',
+  'VOLUPTAS_ENVIRONMENT',
+  'VOLUPTAS_PERSONA_EXPORT_TOKEN',
   'VOLUPTAS_PSEUDO_ID_SECRET',
+  'VOLPUTAS_PSEUDO_ID_SECRET',
 ];
 
 function loadConfig(environment) {
@@ -28,7 +28,7 @@ function loadConfig(environment) {
 }
 
 test('HASTER config uses public bridge fixtures only when values are absent', () => {
-  const config = loadConfig({ VOLPUTAS_ENVIRONMENT: 'HASTER' });
+  const config = loadConfig({ VOLUPTAS_ENVIRONMENT: 'HASTER' });
 
   assert.equal(config.personaExport.token, 'haster-public-persona-export-token-v1');
   assert.equal(config.pseudoIdSecret, 'haster-public-pseudo-id-secret-v1');
@@ -36,10 +36,10 @@ test('HASTER config uses public bridge fixtures only when values are absent', ()
 
 test('bridge config prefers canonical explicit values and has no non-HASTER fallback', () => {
   const configured = loadConfig({
-    VOLPUTAS_ENVIRONMENT: 'HASTER',
-    VOLPUTAS_PERSONA_EXPORT_TOKEN: 'configured-persona-token',
-    VOLPUTAS_PSEUDO_ID_SECRET: 'canonical-secret',
-    VOLUPTAS_PSEUDO_ID_SECRET: 'legacy-secret',
+    VOLUPTAS_ENVIRONMENT: 'HASTER',
+    VOLUPTAS_PERSONA_EXPORT_TOKEN: 'configured-persona-token',
+    VOLUPTAS_PSEUDO_ID_SECRET: 'canonical-secret',
+    VOLPUTAS_PSEUDO_ID_SECRET: 'legacy-secret',
   });
   const unconfigured = loadConfig({});
 

@@ -1,6 +1,6 @@
 # Voluptas game review → Discutere persona discussion
 
-> Spec ID: `SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION`
+> Spec ID: `SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION`
 
 ## Goal
 

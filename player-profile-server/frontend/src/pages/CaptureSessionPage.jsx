@@ -193,7 +193,7 @@ export default function CaptureSessionPage() {
 
       {analysisStatus && !analysisStatus.stt.configured && (
         <div className="capture-companion-note">
-          ローカル感情分析 (文字起こし) には VOLPUTAS_STT_URL に whisper-stt サーバの
+          ローカル感情分析 (文字起こし) には VOLUPTAS_STT_URL に whisper-stt サーバの
           URL を設定してください。設定するまで分析ボタンは失敗します
           (視線・マーカーのタイムラインはそのまま使えます)。
         </div>
@@ -202,7 +202,7 @@ export default function CaptureSessionPage() {
       {companion && !companion.enabled && (
         <div className="capture-companion-note">
           iPhone コンパニオン用の待ち受けは無効です。有効にするには
-          <code> VOLPUTAS_COMPANION_PORT </code> と TLS 証明書・秘密鍵を設定して
+          <code> VOLUPTAS_COMPANION_PORT </code> と TLS 証明書・秘密鍵を設定して
           再起動してください (この PC の録画は設定なしで使えます)。
         </div>
       )}

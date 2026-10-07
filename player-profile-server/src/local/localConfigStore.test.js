@@ -42,7 +42,7 @@ test('migrates the legacy githubName setting to Name', () => {
 });
 
 test('writes and reads local configuration atomically', async (t) => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-config-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-config-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const store = new LocalConfigStore(path.join(directory, 'config.json'));
   const expected = {

@@ -215,7 +215,10 @@ impl ProfileStore {
 
 /// 保存先。環境変数で差し替えられるようにして、テストと開発を楽にする。
 pub fn default_directory(app_config_dir: Option<PathBuf>) -> PathBuf {
-    if let Some(directory) = std::env::var_os("VOLPUTAS_OVERLAY_PROFILES") {
+    // 旧綴り VOLPUTAS_OVERLAY_PROFILES も読む。
+    if let Some(directory) = std::env::var_os("VOLUPTAS_OVERLAY_PROFILES")
+        .or_else(|| std::env::var_os("VOLPUTAS_OVERLAY_PROFILES"))
+    {
         return PathBuf::from(directory);
     }
     app_config_dir
@@ -228,7 +231,7 @@ mod tests {
     use super::*;
 
     fn temp_directory(name: &str) -> PathBuf {
-        let directory = std::env::temp_dir().join(format!("volputas-overlay-{name}"));
+        let directory = std::env::temp_dir().join(format!("voluptas-overlay-{name}"));
         let _ = std::fs::remove_dir_all(&directory);
         directory
     }

@@ -1,3 +1,4 @@
+require('../src/config/legacyEnvAliases');
 const fs = require('node:fs');
 const path = require('node:path');
 const db = require('../src/config/database');

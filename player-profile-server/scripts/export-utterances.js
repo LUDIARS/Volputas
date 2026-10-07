@@ -1,3 +1,4 @@
+require('../src/config/legacyEnvAliases');
 const config = require('../src/config');
 const db = require('../src/config/database');
 const { buildExternalUtterances } = require('../src/services/utteranceExport');

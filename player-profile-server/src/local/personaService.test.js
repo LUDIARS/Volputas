@@ -14,7 +14,7 @@ test('source fingerprint is stable across object key order', () => {
 });
 
 test('persona analysis is reused until a source record changes', async (t) => {
-  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-persona-'));
+  const repositoryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-persona-'));
   t.after(() => fs.rm(repositoryRoot, { recursive: true, force: true }));
   const timestamps = [
     new Date('2026-07-26T00:00:00.000Z'),

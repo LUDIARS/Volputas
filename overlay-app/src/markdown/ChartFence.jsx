@@ -1,7 +1,7 @@
 // ```chart フェンス 1 個分の描画 (spec §グラフ)。
 // 解析・props 変換は chartFence.js (純粋) が持ち、ここは取得と描画だけ。
 import { useEffect, useState } from 'react';
-import { HotspotChart, NarrativeArcChart, TrendChart, RadarChart } from '@volputas/charts';
+import { HotspotChart, NarrativeArcChart, TrendChart, RadarChart } from '@voluptas/charts';
 import { chartPropsFor, parseChartFence } from './chartFence.js';
 import { resolveChartData } from '../lib/chartData.js';
 import { readJson } from '../lib/overlayBridge.js';

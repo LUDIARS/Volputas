@@ -15,7 +15,7 @@ async function git(args) {
 }
 
 test('publishes only the survey response and preserves unrelated staged changes', async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-publish-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-publish-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const repositoryRoot = path.join(root, 'VolputasData');
   const remoteRoot = path.join(root, 'remote.git');

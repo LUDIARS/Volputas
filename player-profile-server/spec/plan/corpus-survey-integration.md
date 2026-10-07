@@ -29,7 +29,7 @@ GLABのCorpus plugin packには、Voluptasのアンケートを表示・回答�
 
 この変更では責務を次の境界へ固定する。
 
-- **frontend**: GLABの`plugins/volputas/`がCorpus panelを描画する。
+- **frontend**: GLABの`plugins/voluptas/`がCorpus panelを描画する。
 - **backend**: Voluptasが設問catalog APIを提供し、Cernere本人回答へ接続する。
 - **identity / response store**: Cernereが本人IDとCorpus回答の正本を持つ。
 - **local survey**: GitHub CLI本人性とprivate OKF repositoryを使う既存CLIは独立して維持する。
@@ -48,7 +48,7 @@ GLABのCorpus plugin packには、Voluptasのアンケートを表示・回答�
 
 ```text
 Corpus shell
-  └─ GLAB plugins/volputas panel (frontend)
+  └─ GLAB plugins/voluptas panel (frontend)
        └─ GLAB connector / proxy
             ├─ Cernere: user access token → Voluptas向けproject-token
             └─ Voluptas backend: /api/v1/integrations/glab/surveys
@@ -87,5 +87,5 @@ Cernere `sub`とGitHub numeric IDは異なるidentity domainである。自動�
 
 ## ロールバック
 
-追加routeとmigration columnは加算的である。接続を止める場合はGLABの`VOLPUTAS_URL`を未設定に
+追加routeとmigration columnは加算的である。接続を止める場合はGLABの`VOLUPTAS_URL`を未設定に
 してdegraded表示へ戻す。DB columnやCernere回答tableは削除しない。

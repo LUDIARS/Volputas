@@ -1,3 +1,4 @@
+require('./config/legacyEnvAliases');
 const express = require('express');
 const helmet = require('helmet');
 const path = require('node:path');
@@ -182,7 +183,7 @@ if (require.main === module) {
       startCompanionListener(createCompanionApp({ captureSessionService }), companionConfig);
     }
   } catch (error) {
-    process.stderr.write(`Volputas local startup failed: ${error.message}\n`);
+    process.stderr.write(`Voluptas local startup failed: ${error.message}\n`);
     process.exitCode = 1;
   }
 }

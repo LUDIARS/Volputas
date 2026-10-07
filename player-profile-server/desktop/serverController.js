@@ -38,7 +38,7 @@ class DesktopServerController {
         settled = true;
         child.kill();
         this.child = null;
-        reject(new Error('Timed out while starting the Volputas desktop server'));
+        reject(new Error('Timed out while starting the Voluptas desktop server'));
       }, this.startupTimeoutMs);
 
       const settleError = (error) => {
@@ -57,9 +57,9 @@ class DesktopServerController {
         const exitedWhileOwned = this.child === child;
         if (exitedWhileOwned) this.child = null;
         if (!settled) {
-          settleError(new Error(`Volputas desktop server exited with code ${code}`));
+          settleError(new Error(`Voluptas desktop server exited with code ${code}`));
         } else if (exitedWhileOwned && code !== 0) {
-          this.onDiagnostic(`Volputas desktop server exited with code ${code}`);
+          this.onDiagnostic(`Voluptas desktop server exited with code ${code}`);
         }
       });
       child.on('message', (message) => {

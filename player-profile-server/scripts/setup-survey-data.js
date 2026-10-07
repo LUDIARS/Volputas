@@ -1,4 +1,5 @@
 'use strict';
+require('../src/config/legacyEnvAliases');
 
 const fs = require('node:fs');
 const { execFileSync } = require('node:child_process');

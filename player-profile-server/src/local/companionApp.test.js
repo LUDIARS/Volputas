@@ -63,7 +63,7 @@ test('the companion page is served without a token', async (t) => {
   const response = await fetch(origin);
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /Volputas Capture Companion/);
+  assert.match(html, /Voluptas Capture Companion/);
   assert.equal(response.headers.get('cache-control'), 'private, no-store');
   const nonce = html.match(/<script nonce="([^"]+)">/)?.[1];
   assert.ok(nonce, 'the inline companion script has a nonce');
@@ -178,20 +178,20 @@ test('companion listener config is opt-in and fail-fast on bad values', () => {
   assert.equal(readCompanionConfig({}), null);
   assert.deepEqual(
     readCompanionConfig({
-      VOLPUTAS_COMPANION_PORT: '58080',
-      VOLPUTAS_COMPANION_HOST: '127.0.0.1',
+      VOLUPTAS_COMPANION_PORT: '58080',
+      VOLUPTAS_COMPANION_HOST: '127.0.0.1',
     }),
     { port: 58080, host: '127.0.0.1', tls: null }
   );
   assert.throws(
-    () => readCompanionConfig({ VOLPUTAS_COMPANION_PORT: '58080' }),
+    () => readCompanionConfig({ VOLUPTAS_COMPANION_PORT: '58080' }),
     /TLS certificate and key are required/
   );
-  assert.throws(() => readCompanionConfig({ VOLPUTAS_COMPANION_PORT: 'games' }), /valid TCP port/);
+  assert.throws(() => readCompanionConfig({ VOLUPTAS_COMPANION_PORT: 'games' }), /valid TCP port/);
   assert.throws(
     () => readCompanionConfig({
-      VOLPUTAS_COMPANION_PORT: '58080',
-      VOLPUTAS_COMPANION_TLS_CERT_FILE: 'cert.pem',
+      VOLUPTAS_COMPANION_PORT: '58080',
+      VOLUPTAS_COMPANION_TLS_CERT_FILE: 'cert.pem',
     }),
     /must be set together/
   );

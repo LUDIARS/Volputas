@@ -11,13 +11,13 @@ const { discuterePersonaBridgeBearer } = require('./discuterePersonaBridgeAuth')
 
 const GAME_REVIEW_SOURCE = 'volputas_web_game_review';
 
-/** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+/** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
 function reviewRating(impression) {
   const rating = Number(impression?.client?.rating);
   return Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null;
 }
 
-/** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+/** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
 function createImpressionDiscussionService({
   impressions = impressionRepository,
   profiles = profileModel,
@@ -31,7 +31,7 @@ function createImpressionDiscussionService({
   }),
 } = {}) {
   return {
-    /** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+    /** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
     async start({ impressionId, userId }) {
       const impression = await impressions.getOwned(impressionId, userId);
       if (!impression) throw new AppError(404, 'NOT_FOUND', 'Impression not found');

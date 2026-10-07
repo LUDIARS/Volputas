@@ -1,6 +1,6 @@
 // Thin adapter over the Anatomia CLI (`node <anatomia.mjs> context|find`)
 // used to locate the code behind a game moment (spec/feature/game-insight.md
-// §改善提案 3). The CLI path comes from VOLPUTAS_ANATOMIA_CLI; the project must
+// §改善提案 3). The CLI path comes from VOLUPTAS_ANATOMIA_CLI; the project must
 // already be registered and analyzed on the Anatomia side. No shell: the
 // script path, project name and free-text task are passed as argv entries and
 // the project name is restricted to a safe charset.
@@ -53,7 +53,7 @@ function reduceFindHits(result) {
 /** @implements SPEC-GAME-INSIGHT */
 class AnatomiaClient {
   constructor({
-    cliPath = process.env.VOLPUTAS_ANATOMIA_CLI || '',
+    cliPath = process.env.VOLUPTAS_ANATOMIA_CLI || '',
     nodePath = process.execPath,
     spawnImpl = spawn,
     timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -71,7 +71,7 @@ class AnatomiaClient {
   run(args) {
     if (!this.isConfigured()) {
       throw anatomiaError(503, 'ANATOMIA_NOT_CONFIGURED',
-        'Anatomia CLI is not configured: set VOLPUTAS_ANATOMIA_CLI to the absolute path of anatomia.mjs');
+        'Anatomia CLI is not configured: set VOLUPTAS_ANATOMIA_CLI to the absolute path of anatomia.mjs');
     }
     return new Promise((resolve, reject) => {
       const child = this.spawnImpl(this.nodePath, [this.cliPath, ...args], {

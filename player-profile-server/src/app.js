@@ -1,3 +1,4 @@
+require('./config/legacyEnvAliases');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -82,7 +83,7 @@ function getGlabSurveyService() {
 
 // Attribution for the public review feed. The Discord relay is queued by GLAB
 // itself from the 201 response of its review proxy (GLAB is the front), so
-// Volputas no longer resolves an author for relaying.
+// Voluptas no longer resolves an author for relaying.
 async function resolveGlabReviewAuthor(cernereUserId, record) {
   if (record.displayName) return record.displayName;
   const user = await userModel.findByCernereSubject(cernereUserId);

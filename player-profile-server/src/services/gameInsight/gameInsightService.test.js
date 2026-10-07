@@ -24,7 +24,7 @@ async function seedRepository(root) {
 }
 
 test('game insight aggregates across every player directory and persists a derived record', async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-game-insight-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-game-insight-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await seedRepository(root);
   const context = { repositoryRoot: root, name: 'me' };
@@ -66,7 +66,7 @@ test('game insight aggregates across every player directory and persists a deriv
 });
 
 test('propose joins capture markers, Anatomia locations and frames, and detects stale sources', async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-game-insight-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-game-insight-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await seedRepository(root);
   const context = { repositoryRoot: root, name: 'me' };
@@ -220,7 +220,7 @@ test('sourceRevision covers the scale answers that feed analysis.scales', () => 
 });
 
 test('scales from every player impression are aggregated ordinal-first into analysis.scales', async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'volputas-game-insight-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-game-insight-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await seedRepository(root);
   const voices = new ProfileRecordStore('voices');

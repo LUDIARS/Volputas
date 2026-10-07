@@ -39,7 +39,7 @@ APIは`http://127.0.0.1:53000`、MinIO S3 APIは`http://127.0.0.1:59000`、conso
 
 コンテナ内部の`MEDIA_S3_ENDPOINT`とブラウザへ返す`MEDIA_S3_PUBLIC_ENDPOINT`は分離します。これによりworkerはCompose内のMinIOへ接続し、署名URLはホストブラウザから到達できます。
 
-## Volputas 単体の動画レビュー
+## Voluptas 単体の動画レビュー
 
 ログイン後の `Video Review` から、ローカルの MP4 / MKV / WebM をアップロードできます。上限は 200MB・2時間です。Spectator の直前リプレイ投稿は従来どおり30秒上限で、クライアントメタデータの `source` をサーバーが明示的に判定します。
 
@@ -49,6 +49,6 @@ APIは`http://127.0.0.1:53000`、MinIO S3 APIは`http://127.0.0.1:59000`、conso
 - `positive`: ここ良かった
 - `negative`: ここ悪かった
 
-リアクションは `impression_reactions` に `video_offset_ms`、`kind`、本人入力の `content`、`recorded_at` を保存します。API は `GET/POST /api/v1/impressions/:id/reactions` と `DELETE /api/v1/impressions/:id/reactions/:reactionId` です。すべて既存の Volputas 認証を通し、対象 impression の所有者だけが操作できます。
+リアクションは `impression_reactions` に `video_offset_ms`、`kind`、本人入力の `content`、`recorded_at` を保存します。API は `GET/POST /api/v1/impressions/:id/reactions` と `DELETE /api/v1/impressions/:id/reactions/:reactionId` です。すべて既存の Voluptas 認証を通し、対象 impression の所有者だけが操作できます。
 
 `GET /api/v1/impressions/:id/reactions/raw` はSpectatorと同じ `spectator.reaction-raw/v2` 契約を返します。`POST /api/v1/impressions/:id/reactions/timeline` は現在の本人入力を既存の `video_comments` affect timelineへ集約・upsertします。Web画面からraw JSON保存と感情曲線生成を実行できます。

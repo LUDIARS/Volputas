@@ -3,8 +3,8 @@
 > Spec ID: `SPEC-EMOTION-CAPTURE-COMPANION`
 >
 > 状態: 実装 (2026-08-13)、追補 (2026-08-16: デスクトップキャプチャ・録画・事後視線推定・
-> リプレイ・感情曲線の編集)。neco 指示「Volputas の感情分析補助ツールを用意する。ゲームから合図が
-> あった、または自動で開始した Volputas はゲーム画面と同期したタイムラインを持ち、iPhone を通して
+> リプレイ・感情曲線の編集)。neco 指示「Voluptas の感情分析補助ツールを用意する。ゲームから合図が
+> あった、または自動で開始した Voluptas はゲーム画面と同期したタイムラインを持ち、iPhone を通して
 > アイトラッキングと音声のキャプチャを行う」および「感情分析処理を仕上げる (音声+映像キャプチャ →
 > 事後の視線解析をゲーム画面に反映 → 録画アップロードでタイムライン → STT 感情曲線 → 人間が編集 →
 > 複数プレイでナラティブアーク)」の設計。
@@ -15,7 +15,7 @@
 
 感情曲線 (事後の自己申告) を補助する **プレイ中の客観キャプチャ** を追加する。
 
-1. **ゲーム合図で開始/停止** — ゲームがローカル API に signal を POST すると、Volputas が
+1. **ゲーム合図で開始/停止** — ゲームがローカル API に signal を POST すると、Voluptas が
    キャプチャセッションを自動開始・停止する。手動開始 (UI ボタン) も可。
 2. **ゲーム画面と同期したタイムライン** — セッションは開始時刻起点の単一クロック
    (`sessionMs`) を持ち、ゲームが送る `gameClockMs` アンカーとマーカー (イベント/章区切り) を
@@ -29,7 +29,7 @@
 ## アーキテクチャ
 
 ```
-ゲーム (同一 PC) ──POST /api/local/capture-sessions/signal──▶ Volputas local app (127.0.0.1)
+ゲーム (同一 PC) ──POST /api/local/capture-sessions/signal──▶ Voluptas local app (127.0.0.1)
 デスクトップ UI ──/api/local/capture-sessions/*────────────▶      │ CaptureSessionService
                                                                   │   ├ ProfileRecordStore('capture-sessions')
 iPhone (同一 LAN) ──/api/join /api/gaze /api/audio ───▶ companion listener (別ポート・opt-in)
@@ -39,7 +39,7 @@ iPhone (同一 LAN) ──/api/join /api/gaze /api/audio ───▶ companion 
 - iPhone 向けは **companion listener** という別 Express アプリ + 別ポートに分離する。
   companion listener が公開するのはペアリング済みトークンで守られた 5 エンドポイントと
   コンパニオンページだけで、プロフィール API には一切触れない。
-- companion listener は `VOLPUTAS_COMPANION_PORT` を設定したときだけ起動する (opt-in)。
+- companion listener は `VOLUPTAS_COMPANION_PORT` を設定したときだけ起動する (opt-in)。
   非 loopback での待ち受けには TLS 証明書・秘密鍵を必須とし、ポート不正・TLS 設定不整合は
   起動時に fail-fast (§7.1/§9)。HTTP は loopback の開発・テスト用途だけで許可する。
 - セッション更新はサービス内で直列化し、マーカー・視線バッチ・停止の同時要求が最後の書き込みで
@@ -190,9 +190,9 @@ capture-audio ──ffmpeg (16kHz mono WAV)──▶ whisper-stt (ローカル, 
 
 ## デスクトップキャプチャ (追補 2026-08-16)
 
-> neco 指示 (1)(2): 「Volputas 上で音声+映像をキャプチャ」「ゲームプレイを録画 (音声も)」。
+> neco 指示 (1)(2): 「Voluptas 上で音声+映像をキャプチャ」「ゲームプレイを録画 (音声も)」。
 
-iPhone が無くても、Volputas を開いている PC だけで完結するキャプチャ経路。`CaptureSessionPage` の
+iPhone が無くても、Voluptas を開いている PC だけで完結するキャプチャ経路。`CaptureSessionPage` の
 録画中カードに **この PC で録画** パネル (`CaptureDesktopPanel` + `useDesktopCapture`) を置く。
 
 - **顔カメラ + マイク** — `getUserMedia({ video, audio })` を 2 本の `MediaRecorder` で記録する:
@@ -257,8 +257,8 @@ iPhone が無くても、Volputas を開いている PC だけで完結するキ
 - **モデルの配置** — `npm run build:frontend` が事前に `setup:gaze-model` を呼び、
   `@mediapipe/tasks-vision` の WASM を
   `frontend/public/mediapipe/wasm/` へコピーし、Face Landmarker モデルを一度だけ取得する
-  (`VOLPUTAS_GAZE_MODEL_URL` は HTTPS の最終 URL のみ・redirect 拒否、または
-  `VOLPUTAS_GAZE_MODEL_PATH` で差し替え可、gitignore 済)。desktop package も同じ build を通るため
+  (`VOLUPTAS_GAZE_MODEL_URL` は HTTPS の最終 URL のみ・redirect 拒否、または
+  `VOLUPTAS_GAZE_MODEL_PATH` で差し替え可、gitignore 済)。desktop package も同じ build を通るため
   runtime/model を成果物へ必ず同梱する。解析時に
   外部へ出るものは無い。モデル未配置は `GAZE_MODEL_UNAVAILABLE` として **fail-fast** する。
 - **視線ログの置換** — 事後推定は 1 件以上のサンプルを必須とし、`gazeSampleLog.replace` でファイルごと置き換え、
@@ -299,12 +299,12 @@ iPhone が無くても、Volputas を開いている PC だけで完結するキ
 
 | 変数 | 意味 |
 |---|---|
-| `VOLPUTAS_GAZE_MODEL_URL` / `VOLPUTAS_GAZE_MODEL_PATH` | `setup:gaze-model` の取得元 (未指定は Google 公開モデルバケット / ローカルファイル) |
-| `VOLPUTAS_COMPANION_PORT` | 設定時のみ companion listener を起動 (1-65535 以外は起動失敗) |
-| `VOLPUTAS_COMPANION_HOST` | バインド先 (既定 `0.0.0.0`) |
-| `VOLPUTAS_COMPANION_TLS_CERT_FILE` / `_KEY_FILE` | 非 loopback listener では両方必須。片方だけは起動失敗 |
-| `VOLPUTAS_STT_URL` | ローカル whisper-stt サーバ (例: LocalServices/whisper-stt)。正本ポートは Excubitor catalog。未設定時の分析は `STT_NOT_CONFIGURED` (503) |
-| `VOLPUTAS_FFMPEG` | ffmpeg コマンド (既定 `ffmpeg`、不在は `FFMPEG_NOT_AVAILABLE`) |
+| `VOLUPTAS_GAZE_MODEL_URL` / `VOLUPTAS_GAZE_MODEL_PATH` | `setup:gaze-model` の取得元 (未指定は Google 公開モデルバケット / ローカルファイル) |
+| `VOLUPTAS_COMPANION_PORT` | 設定時のみ companion listener を起動 (1-65535 以外は起動失敗) |
+| `VOLUPTAS_COMPANION_HOST` | バインド先 (既定 `0.0.0.0`) |
+| `VOLUPTAS_COMPANION_TLS_CERT_FILE` / `_KEY_FILE` | 非 loopback listener では両方必須。片方だけは起動失敗 |
+| `VOLUPTAS_STT_URL` | ローカル whisper-stt サーバ (例: LocalServices/whisper-stt)。正本ポートは Excubitor catalog。未設定時の分析は `STT_NOT_CONFIGURED` (503) |
+| `VOLUPTAS_FFMPEG` | ffmpeg コマンド (既定 `ffmpeg`、不在は `FFMPEG_NOT_AVAILABLE`) |
 
 ## 非目標
 

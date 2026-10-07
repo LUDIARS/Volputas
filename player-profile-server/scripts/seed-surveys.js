@@ -1,3 +1,4 @@
+require('../src/config/legacyEnvAliases');
 const db = require('../src/config/database');
 const { SURVEY_DEFINITIONS } = require('../src/surveys/surveyCatalog');
 

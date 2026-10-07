@@ -39,7 +39,7 @@ export default function LocalLayout() {
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h1>Volputas</h1>
+          <h1>Voluptas</h1>
           <div className="subtitle">Local Survey Tool</div>
         </div>
 

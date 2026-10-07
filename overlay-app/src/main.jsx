@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import SurfaceView from './panels/SurfaceView.jsx';
 import { surfaceIdFromSearch } from './lib/surfaceRoute.js';
-import '@volputas/charts/styles.css';
+import '@voluptas/charts/styles.css';
 import './styles/overlay.css';
 
 // 同じフロントが 2 役を持つ: パネル本体 (main) と情報サーフェス

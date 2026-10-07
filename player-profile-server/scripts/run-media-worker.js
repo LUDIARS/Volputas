@@ -1,3 +1,4 @@
+require('../src/config/legacyEnvAliases');
 const config = require('../src/config');
 const { S3MediaStorage } = require('../src/services/mediaStorage');
 const { MediaCommandRunner } = require('../src/services/mediaCommandRunner');

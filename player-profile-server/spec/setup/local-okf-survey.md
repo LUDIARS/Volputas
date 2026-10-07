@@ -44,7 +44,7 @@ gh repo create <owner>/<your-volputas-data> --private --template LUDIARS/Volputa
 
 ## Setup
 
-Volputas repository rootで実行する。
+Voluptas repository rootで実行する。
 
 ```bash
 gh auth login

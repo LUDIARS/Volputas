@@ -1,6 +1,6 @@
 # ウインドウ表示拡張ツールの切り離し設計 (実施しない・設計のみ)
 
-> 状態: 設計 (2026-08-21)。neco 指示「このツールって Volputas 以外でも使いそう。
+> 状態: 設計 (2026-08-21)。neco 指示「このツールって Voluptas 以外でも使いそう。
 > ちょっと切り離しを考える。今はやらない。設計だけ」。
 > 対象: `overlay-app/` (`SPEC-WINDOW-OVERLAY-EXTENSION`)。
 > **この文書は着手指示ではない。** 実施条件は §実施時期 を参照。
@@ -9,17 +9,17 @@
 
 `overlay-app/` は 2 層が同居している。
 
-| 層 | 中身 | Volputas への依存 |
+| 層 | 中身 | Voluptas への依存 |
 |---|---|---|
 | 汎用 | OS 別ウインドウ追従、クリック透過、配置計算 (`placement` / `surface`)、Markdown 描画、グラフフェンスの差し込み口、プロファイル設定 | **無い** |
-| 固有 | 感想マーカー投下 (`capture-session` API)、ホットスポット/ナラティブアークのデータ源、Volputas 用チャート実装 | **有る** |
+| 固有 | 感想マーカー投下 (`capture-session` API)、ホットスポット/ナラティブアークのデータ源、Voluptas 用チャート実装 | **有る** |
 
-汎用層は「任意のアプリのウインドウに情報を重ねる」以上のことを知らない。Volputas を消しても
+汎用層は「任意のアプリのウインドウに情報を重ねる」以上のことを知らない。Voluptas を消しても
 成立する。切り離せるのはこの境界がすでに引かれているからで、新たに引き直す作業ではない。
 
 ## 切り離しの形
 
-**新規リポジトリ 1 本 + Volputas 側は薄いアダプタ**にする。
+**新規リポジトリ 1 本 + Voluptas 側は薄いアダプタ**にする。
 
 ```
 Fenestra (新リポジトリ)
@@ -32,21 +32,21 @@ Fenestra (新リポジトリ)
 
 Voluptas
   overlay-app/                 Fenestra を依存に取り、固有だけを持つ
-                                 マーカー投下 (capture-session API)、Volputas 用チャート登録、
+                                 マーカー投下 (capture-session API)、Voluptas 用チャート登録、
                                  overlay-profiles の既定値
 ```
 
 ### 境界の規則 (これを破ると切り離した意味が消える)
 
-1. **Fenestra は Volputas を知らない。** 文字列 `capture-session` も `player-profile-server` も
+1. **Fenestra は Voluptas を知らない。** 文字列 `capture-session` も `player-profile-server` も
    Fenestra 側に出てこない。データ取得は「HTTP / ファイル / inline を返す `ContentSource`」
    という抽象までで止める。`/api/local/capture-sessions/...` のような具体は利用側が持つ。
 2. **チャート実装は Fenestra に入れない。** Fenestra が持つのは ```chart フェンスの
    **レジストリ** (`registerChart(type, component)`) だけ。`HotspotChart` /
-   `NarrativeArcChart` は Volputas のドメイン (`game-insight` / `narrative-arc`) に属したまま、
+   `NarrativeArcChart` は Voluptas のドメイン (`game-insight` / `narrative-arc`) に属したまま、
    利用側が起動時に登録する。`TrendChart` / `RadarChart` も同じ。
 3. **ホットキーの意味づけは利用側。** Fenestra は「このキーが押された」を通知するだけで、
-   `hype` / `like` / `dislike` / `stress` という語彙は Volputas 側にある。
+   `hype` / `like` / `dislike` / `stress` という語彙は Voluptas 側にある。
 4. **不変条件は Fenestra が守る。** タップ貫通 (サーフェスは `ignore_cursor_events` を
    解除しない)、モニタへのクランプ、ビュー領域基準の追従は Fenestra 側のテストで固定する。
    利用側から破れる API を出さない。
@@ -78,10 +78,10 @@ LUDIARS は GitHub を release 管理にしか使わないので、npm / crates.
    (`tauri::Builder::plugin(fenestra::init())` で他アプリが載せられる形)
 3. `overlay-app/src/{panels,markdown,lib}` のうち汎用分を `packages/fenestra-ui` へ移し、
    チャートをレジストリ経由に変える
-4. Volputas 側を submodule + アダプタに書き換え、既存テストが緑のままであることを確認
-5. Anatomia ドメインの再宣言 (Fenestra 側に新規、Volputas 側は `window-overlay-extension` を
+4. Voluptas 側を submodule + アダプタに書き換え、既存テストが緑のままであることを確認
+5. Anatomia ドメインの再宣言 (Fenestra 側に新規、Voluptas 側は `window-overlay-extension` を
    アダプタだけの membership に縮める)
-6. 参照実装 `apps/fenestra-shell` (Volputas 無しで動くことの証明。これが無いと境界 1 が腐る)
+6. 参照実装 `apps/fenestra-shell` (Voluptas 無しで動くことの証明。これが無いと境界 1 が腐る)
 
 ## 実施時期
 
@@ -96,5 +96,5 @@ LUDIARS は GitHub を release 管理にしか使わないので、npm / crates.
 - Windows でゲームウインドウへの追従・クリック透過・ホットキーが実機で確認済み
 - 2 つ目の利用先が実在する (仮定ではなく、実際に使う予定のあるアプリ)
 
-3 つ目が重要で、利用先が Volputas 1 つのままなら切り離しは純粋な負債になる
+3 つ目が重要で、利用先が Voluptas 1 つのままなら切り離しは純粋な負債になる
 (submodule 運用コストを払って、得るものが無い)。

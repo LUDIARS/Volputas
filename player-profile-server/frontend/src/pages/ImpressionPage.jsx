@@ -17,7 +17,7 @@ function formatDuration(milliseconds) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-/** @implements SPEC-VOLPUTAS-DISCUTERE-REVIEW-DISCUSSION */
+/** @implements SPEC-VOLUPTAS-DISCUTERE-REVIEW-DISCUSSION */
 export default function ImpressionPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -106,7 +106,7 @@ export default function ImpressionPage() {
       ));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `volputas-reactions-${id}.json`;
+      link.download = `voluptas-reactions-${id}.json`;
       document.body.appendChild(link);
       link.click();
       link.remove();

@@ -4,7 +4,7 @@ const { getCurrentSigningKey, getSigningKey } = require('./jwks');
 
 const MEDIA_AUDIENCE = `${config.jwt.audience}:profile-media`;
 
-// sub が何の id かを券面に書く。 自前フロント経由の券は Volputas ローカルの
+// sub が何の id かを券面に書く。 自前フロント経由の券は Voluptas ローカルの
 // user id、 GLAB 経由の券は Cernere の owner id で、 同じ値空間ではない。
 // 明示しないと、 片方の券をもう片方の再生口で使われたときに「別人の id を
 // 所有者として解決する」 事故になる。

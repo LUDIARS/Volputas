@@ -7,7 +7,7 @@ spec_links:
   - player-profile-server/spec/feature/game-experience-scales.md
   - player-profile-server/spec/feature/game-insight.md
 ---
-# Volputas ゲーム感想の GEQ / PENS 化 + トータル分析の順序化 (neco 指示 2026-08-21)
+# Voluptas ゲーム感想の GEQ / PENS 化 + トータル分析の順序化 (neco 指示 2026-08-21)
 
 ## 指示 (原文)
 1. ゲーム感想を GEQ と PENS をベースに整備する

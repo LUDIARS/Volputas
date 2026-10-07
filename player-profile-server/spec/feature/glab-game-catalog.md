@@ -20,16 +20,16 @@ updated: 2026-08-09
 
 感想と感情曲線の「ゲーム名」は自由入力だった。同じゲームが表記ゆれのまま別物として
 溜まり、GLAB の学内制作ゲームは Steam の直近プレイにも出ないためサジェストからも
-選べない。ゲームの正本を Volputas に置き、管理者が登録したものから選ばせる。
+選べない。ゲームの正本を Voluptas に置き、管理者が登録したものから選ばせる。
 
-設問の正本が Volputas、回答の正本が Cernere という分担は変えない。ゲームマスタも
-同じ理由で Volputas に置く。GLAB は表示と投稿の面だけを持つ。
+設問の正本が Voluptas、回答の正本が Cernere という分担は変えない。ゲームマスタも
+同じ理由で Voluptas に置く。GLAB は表示と投稿の面だけを持つ。
 
 ## 権限
 
 管理操作の認可は Cernere project token の `role` クレーム (= `users.role`) だけで
 決める。GLAB 側にも管理者判定 (Corpus の `adminIds`) はあるが、それは画面を出すか
-どうかの判断でしかない。GLAB を迂回して Volputas を直接叩かれても書けないよう、
+どうかの判断でしかない。GLAB を迂回して Voluptas を直接叩かれても書けないよう、
 サーバ側はトークンのクレームで判定する (`middleware/cernereAdmin`)。
 
 `role` が無いトークンは管理者として扱わない。GLAB の管理者に登録操作をさせるには
@@ -86,7 +86,7 @@ Voluptas 自前アンケート 3 本 (gamer-preferences / subtypes / emotions) �
 マスタ登録前に書かれた記録には `gameId` が無い。表示は `gameTitle` が担い、`gameId`
 はゲーム単位の集計と絞り込みのために付く。
 
-Volputas のローカル evidence 経路はゲームマスタを解決しないため、受信した `gameId` を
+Voluptas のローカル evidence 経路はゲームマスタを解決しないため、受信した `gameId` を
 保存しない。カタログ ID を保持できるのは、保存前に存在・稼働確認を行う GLAB 経路だけとする。
 
 ## スキーマ
@@ -95,7 +95,7 @@ Volputas のローカル evidence 経路はゲームマスタを解決しない�
 
 - `games` — `title` は `lower(title)` の一意索引で表記ゆれを止める。`registered_by` は
   登録した管理者の Cernere user id で、ローカル `users` への FK は張らない
-  (GLAB 経由の管理者は Volputas にローカルアカウントを持たないことがある)。
+  (GLAB 経由の管理者は Voluptas にローカルアカウントを持たないことがある)。
 - `surveys.game_id` — `ON DELETE SET NULL`。ゲームを消しても回答済みアンケートを失わない。
 
 `surveyContract` の行スキーマは `.strict()` なので、GLAB へ返す列を増やすときは
@@ -105,7 +105,7 @@ Volputas のローカル evidence 経路はゲームマスタを解決しない�
 
 ### SPEC-GLAB-ADMIN-AUTHORIZATION
 
-ゲームとアンケートの作成・更新は、有効な Volputas 向け Cernere project token の
+ゲームとアンケートの作成・更新は、有効な Voluptas 向け Cernere project token の
 `role=admin` を持つ利用者だけに許可する。role が無い、または別の値である token は
 403 とし、GLAB 側UIの管理者判定だけを認可根拠にしてはならない。
 

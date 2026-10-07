@@ -7,10 +7,10 @@ spec_links:
   - player-profile-server/spec/feature/emotion-capture-companion.md
   - player-profile-server/spec/feature/narrative-arc.md
 ---
-# Volputas 感情分析処理の仕上げ (neco 指示 2026-08-16)
+# Voluptas 感情分析処理の仕上げ (neco 指示 2026-08-16)
 
 ## 指示 (原文の流れ)
-1. Volputas 上で音声+映像をキャプチャ
+1. Voluptas 上で音声+映像をキャプチャ
    1-1. 後からプレイしている人間の視線を解析 (アイトラッキング)
    1-2. アイトラッキングはゲーム画面に反映する
 2. ゲームプレイを録画 (音声も録画)

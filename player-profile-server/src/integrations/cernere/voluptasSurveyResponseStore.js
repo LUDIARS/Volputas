@@ -57,7 +57,7 @@ function parseUpstream(schema, value, name) {
   return parsed.data;
 }
 
-class VolputasSurveyResponseStore {
+class VoluptasSurveyResponseStore {
   constructor(projectClient) {
     this.projectClient = projectClient;
   }
@@ -141,5 +141,5 @@ class VolputasSurveyResponseStore {
 }
 
 module.exports = {
-  VolputasSurveyResponseStore,
+  VoluptasSurveyResponseStore,
 };

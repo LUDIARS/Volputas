@@ -46,7 +46,7 @@ class CernereProjectSocketClient {
     openState = WebSocket.OPEN,
     closedState = WebSocket.CLOSED,
     requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
-    requestId = () => `volputas-${randomUUID()}`,
+    requestId = () => `voluptas-${randomUUID()}`,
   }) {
     this.baseUrl = baseUrl;
     this.clientId = clientId;
