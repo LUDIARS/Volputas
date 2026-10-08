@@ -25,7 +25,7 @@ updated: 2026-07-24
 
 `GET /.well-known/corpus-service.json`は認証不要で、次を宣言する。
 
-- `service`: `volputas`
+- `service`: `voluptas`
 - `corpusApi`: `1`
 - `health`: `/health`
 - `auth`: `cernere-project-token`

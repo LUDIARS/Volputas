@@ -1,7 +1,7 @@
 const { version } = require('../../package.json');
 
 const CORPUS_SERVICE_MANIFEST = Object.freeze({
-  service: 'volputas',
+  service: 'voluptas',
   displayName: 'Voluptas',
   version,
   corpusApi: 1,

@@ -242,7 +242,9 @@ impl OverlayController {
             return;
         };
         // 自分自身は選ばせない (オーバーレイをクリックしても対象にしない)。
-        if picked.process_name.eq_ignore_ascii_case("volputas-overlay.exe") {
+        if picked.process_name.eq_ignore_ascii_case("voluptas-overlay.exe")
+            || picked.process_name.eq_ignore_ascii_case("volputas-overlay.exe")
+        {
             return;
         }
         self.picking.store(false, Ordering::Relaxed);
