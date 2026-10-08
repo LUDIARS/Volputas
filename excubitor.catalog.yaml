@@ -20,6 +20,10 @@ services:
     autostart: false
     env:
       PORT: "8892"
+      # この catalog は同一端末の Cr / Vo を使う。HTTP は loopback のみに限定する。
+      # Cr の port 正本: Cernere/excubitor.catalog.yaml (cernere:8080)。
+      CERNERE_BASE_URL: http://127.0.0.1:8080
+      VOLUPTAS_URL: http://127.0.0.1:8892
       JWT_ISSUER: http://localhost:8892
       GOOGLE_CALLBACK_URL: http://localhost:8892/auth/callback
       DISCORD_CALLBACK_URL: http://localhost:8892/auth/callback
