@@ -27,6 +27,17 @@ function createProfileClient(mode) {
       }
       return request(`${base}/${kind}/${recordId}`, { method: 'PUT', body });
     },
+    // Follow-up hearing on a saved voice (both modes; the server limits it to
+    // the caller's own record).
+    voiceFollowUp(recordId) {
+      return request(`${base}/voices/${encodeURIComponent(recordId)}/follow-up`);
+    },
+    answerVoiceFollowUp(recordId, body) {
+      return request(`${base}/voices/${encodeURIComponent(recordId)}/follow-up`, {
+        method: 'POST',
+        body,
+      });
+    },
     upload(kind, recordId, file) {
       return upload(`${base}/media/${kind}/${recordId}`, file);
     },

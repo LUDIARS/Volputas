@@ -1,5 +1,6 @@
 // Shared validation contract for local and authenticated profile evidence.
 const { validateScales } = require('./gameExperienceScales/scaleScores');
+const { PLAY_PROGRESS } = require('./voiceFollowUp/followUpQuestions');
 
 function requiredText(value, label, maximum = 200) {
   const normalized = typeof value === 'string' ? value.trim() : '';
@@ -116,6 +117,16 @@ function validateMechanicIds(value) {
   });
 }
 
+function optionalPlayProgress(value) {
+  if (value === undefined || value === null || value === '') return null;
+  if (!Object.hasOwn(PLAY_PROGRESS, value)) {
+    throw Object.assign(new Error(`Unknown play progress: ${value}`), {
+      code: 'INVALID_PROFILE_INPUT',
+    });
+  }
+  return value;
+}
+
 function validateVoiceInput(body = {}) {
   const scopeType = body.scopeType === 'content' ? 'content' : 'game';
   const recommend = body.recommend === undefined ? null : body.recommend;
@@ -145,7 +156,9 @@ function validateVoiceInput(body = {}) {
     contentName: scopeType === 'content'
       ? requiredText(body.contentName, 'Content name')
       : '',
-    sentiment: optionalNumber(body.sentiment, -2, 2) ?? 0,
+    // null = 未回答 (asked later as a follow-up); 0 = the player chose 中立.
+    // Analysis keeps the two apart, so an omitted value must not become 0.
+    sentiment: optionalNumber(body.sentiment, -2, 2),
     // polarity states the direction explicitly (design §3.5); the sentiment
     // slider stays the intensity.
     polarity: body.polarity === 'like' || body.polarity === 'dislike' ? body.polarity : null,
@@ -153,6 +166,8 @@ function validateVoiceInput(body = {}) {
     // so the Voluptas-side overlay vocabulary keeps working.
     mechanicIds: validateMechanicIds(body.mechanicIds),
     comment: requiredText(body.comment, 'Comment', 8000),
+    // How far the player got; follow-up questions never reach past it.
+    playProgress: optionalPlayProgress(body.playProgress),
     tags: optionalText(body.tags, 500)
       .split(',')
       .map((tag) => tag.trim())

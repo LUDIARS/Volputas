@@ -21,6 +21,8 @@ const {
   validateVoiceInput,
 } = require('../services/profileEvidenceSchemas');
 const { ProfileMediaStore } = require('../services/profileMediaStore');
+const { applyFollowUpAnswer } = require('../services/voiceFollowUp/applyFollowUpAnswer');
+const { nextFollowUpQuestion } = require('../services/voiceFollowUp/followUpQuestions');
 const { OnlinePersonaService } = require('../services/onlinePersonaService');
 const { issueMediaTicket, verifyMediaTicket } = require('../services/mediaTicketService');
 const { createLlmTextClient } = require('../services/llm/createLlmTextClient');
@@ -132,6 +134,40 @@ function createProfileEvidenceRouter({
   for (const { kind } of EVIDENCE_MEDIA) {
     collectionRoutes(`/${kind}`, kind, VALIDATOR_BY_KIND[kind]);
   }
+
+  // Follow-up hearing on the caller's own voice only: findOwned scopes the
+  // lookup to req.user, so another user's record id answers 404.
+  async function ownedVoice(userId, recordId) {
+    const owned = await model.findOwned(userId, recordId);
+    if (!owned || owned.kind !== 'voices') {
+      throw new AppError(404, 'PROFILE_RECORD_NOT_FOUND', 'Voice not found');
+    }
+    return owned.record;
+  }
+
+  router.get('/voices/:recordId/follow-up', async (req, res, next) => {
+    try {
+      const record = await ownedVoice(req.user.id, req.params.recordId);
+      return res.json({ ok: true, data: { question: nextFollowUpQuestion(record) } });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  router.post('/voices/:recordId/follow-up', async (req, res, next) => {
+    try {
+      const existing = await ownedVoice(req.user.id, req.params.recordId);
+      const patch = applyFollowUpAnswer(existing, req.body);
+      const record = await model.updateOwned(req.user.id, 'voices', req.params.recordId, patch);
+      if (!record) throw new AppError(404, 'PROFILE_RECORD_NOT_FOUND', 'Voice not found');
+      return res.json({ ok: true, data: { record, question: nextFollowUpQuestion(record) } });
+    } catch (error) {
+      if (error.code === 'FOLLOW_UP_NOT_OPEN') {
+        return next(new AppError(409, error.code, error.message));
+      }
+      return next(asInputError(error));
+    }
+  });
 
   router.post('/discussion-voices/sync', async (req, res, next) => {
     try {

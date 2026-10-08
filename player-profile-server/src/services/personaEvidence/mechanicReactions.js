@@ -1,10 +1,13 @@
 // mechanicReactions compartment (design §3.5 / §2): per-mechanic sentiment
 // aggregated from voices that name Ludus lexicon ids. polarity fixes the
-// direction; the slider supplies intensity.
+// direction; the slider supplies intensity. An unanswered slider with no
+// polarity says nothing about the mechanic, so it yields null (not 中立).
+const { answeredSentiment } = require('./answeredSentiment');
+
 function effectiveSentiment(record) {
-  const sentiment = Number(record.sentiment) || 0;
-  if (record.polarity === 'dislike') return -Math.max(1, Math.abs(sentiment));
-  if (record.polarity === 'like') return Math.max(1, Math.abs(sentiment));
+  const sentiment = answeredSentiment(record);
+  if (record.polarity === 'dislike') return -Math.max(1, Math.abs(sentiment ?? 0));
+  if (record.polarity === 'like') return Math.max(1, Math.abs(sentiment ?? 0));
   return sentiment;
 }
 
@@ -33,6 +36,7 @@ function collectMechanicReactions(voices, voiceMemos = []) {
       const mechanicIds = record.mechanicIds || [];
       if (mechanicIds.length === 0) continue;
       const sentiment = effectiveSentiment(record);
+      if (sentiment === null) continue;
       for (const mechanicId of mechanicIds) {
         if (!byMechanic.has(mechanicId)) {
           byMechanic.set(mechanicId, { total: 0, count: 0, sources: [] });
@@ -62,7 +66,7 @@ function mechanicAversionEvidence(voices, voiceMemos = []) {
     for (const record of group.records) {
       if (group.needsTranscript && !record.transcript?.trim()) continue;
       if (record.polarity !== 'dislike') continue;
-      const sentiment = Number(record.sentiment) || 0;
+      const sentiment = answeredSentiment(record) ?? 0;
       const strength = Number(Math.max(0.5, Math.abs(sentiment) / 2).toFixed(4));
       const source = sourceIdentity(group, record);
       for (const mechanicId of record.mechanicIds || []) {

@@ -1,5 +1,6 @@
 // Deterministic analysis shared by Git-backed and database-backed modes.
 const { scaleAxisSignals } = require('./gameExperienceScales/scaleContributions');
+const { answeredSentiment } = require('./personaEvidence/answeredSentiment');
 
 const AXES = [
   ['exploration', '探索志向'],
@@ -56,8 +57,9 @@ function addGameplayEvidence(accumulator, record) {
 }
 
 function addVoiceEvidence(accumulator, record) {
-  const emotionalStrength = Math.abs(Number(record.sentiment) || 0) / 2;
-  add(accumulator, 'emotionalEngagement', emotionalStrength, 1.5);
+  // 未回答 (null) is skipped; an explicit 中立 (0) still counts as a low signal.
+  const sentiment = answeredSentiment(record);
+  if (sentiment !== null) add(accumulator, 'emotionalEngagement', Math.abs(sentiment) / 2, 1.5);
   add(accumulator, 'reflection', textStrength(record.comment), 1.5);
   if (record.scopeType === 'content') add(accumulator, 'exploration', 0.6, 0.75);
   const terms = [record.comment, ...(record.tags || [])];

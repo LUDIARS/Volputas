@@ -20,6 +20,8 @@ const {
   validateVoiceMemoInput,
   validateVoiceInput,
 } = require('../services/profileEvidenceSchemas');
+const { applyFollowUpAnswer } = require('../services/voiceFollowUp/applyFollowUpAnswer');
+const { nextFollowUpQuestion } = require('../services/voiceFollowUp/followUpQuestions');
 
 // Keyed by the canonical medium kind; assertCoversEveryMedium turns a forgotten
 // entry into a startup failure instead of a 500 on the first POST.
@@ -59,6 +61,7 @@ function createLocalRoutes({
 }) {
   assertCoversEveryMedium(evidenceStores, 'local evidence store map');
   const emotionCurveStore = evidenceStores['emotion-curves'];
+  const voiceStore = evidenceStores.voices;
   const router = Router();
 
   router.get('/environment', async (_req, res, next) => {
@@ -293,6 +296,43 @@ function createLocalRoutes({
         },
       });
       return res.json({ ok: true, data: result.record });
+    } catch (error) {
+      return next(asAppError(error));
+    }
+  });
+
+  // Follow-up hearing on a saved voice. Only the answer fields change; the
+  // original comment and identity fields come from the stored record.
+  async function storedVoice(recordId) {
+    const { config, gitAuthor } = await configuredContext();
+    const context = { repositoryRoot: gitAuthor.repositoryRoot, name: config.name };
+    const records = await voiceStore.list(context);
+    const existing = records.find((item) => item.id === recordId);
+    if (!existing) throw new AppError(404, 'PROFILE_RECORD_NOT_FOUND', 'Voice not found');
+    return { context, existing };
+  }
+
+  router.get('/voices/:recordId/follow-up', async (req, res, next) => {
+    try {
+      const { existing } = await storedVoice(req.params.recordId);
+      return res.json({ ok: true, data: { question: nextFollowUpQuestion(existing) } });
+    } catch (error) {
+      return next(asAppError(error));
+    }
+  });
+
+  router.post('/voices/:recordId/follow-up', async (req, res, next) => {
+    try {
+      const { context, existing } = await storedVoice(req.params.recordId);
+      const patch = applyFollowUpAnswer(existing, req.body);
+      const result = await voiceStore.write({
+        ...context,
+        data: { ...existing, ...patch, editedAt: new Date().toISOString() },
+      });
+      return res.json({
+        ok: true,
+        data: { record: result.record, question: nextFollowUpQuestion(result.record) },
+      });
     } catch (error) {
       return next(asAppError(error));
     }

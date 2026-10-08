@@ -12,6 +12,7 @@ const {
 } = require('./textSignals');
 const { aspectTextContributions } = require('./aspectTextContributions');
 const { mapV1Contribution } = require('./v1AxisMapping');
+const { answeredSentiment } = require('./answeredSentiment');
 const { scaleAxisSignals } = require('../gameExperienceScales/scaleContributions');
 
 // 「文字数=内省」 heuristic: compressed per design §3.3 (fullAt 600) and kept
@@ -57,7 +58,11 @@ function gameplayContributions(record) {
 // sentiment (slider, or analyzed valence for free text) decides whether a
 // social mention is a preference or an aversion.
 function socialSignal(text, sentiment, source) {
-  if (!containsAny([text], SOCIAL_TERMS)) return { contributions: [], aversionEvidence: [] };
+  // Unknown direction (unanswered, no polarity): a social mention is neither
+  // a preference nor an aversion yet.
+  if (sentiment === null || !containsAny([text], SOCIAL_TERMS)) {
+    return { contributions: [], aversionEvidence: [] };
+  }
   if (sentiment >= 0) {
     return {
       contributions: [{
@@ -76,24 +81,34 @@ function socialSignal(text, sentiment, source) {
   };
 }
 
+// Direction from the like/dislike tap when the slider is unanswered.
+function polaritySentiment(record) {
+  if (record.polarity === 'like') return 1;
+  if (record.polarity === 'dislike') return -1;
+  return null;
+}
+
 function voiceContributions(record, sourceKind = 'voice', commentField = 'comment') {
   const resolvedSourceKind = record.sourceKind === 'discussion' ? 'discussion' : sourceKind;
   const sourceId = resolvedSourceKind === 'discussion'
     ? record.sourceRef || record.id || null
     : record.id || null;
   const source = (field) => ({ kind: resolvedSourceKind, id: sourceId, field });
-  const sentiment = Number(record.sentiment) || 0;
+  const sentiment = answeredSentiment(record);
   const v1 = [
-    entry('emotionalEngagement', Math.abs(sentiment) / 2, 1.5, source('sentiment')),
     entry('reflection', textStrength(record.comment, REFLECTION_FULL_AT), 1.5, source(commentField)),
   ];
+  // An unanswered slider is not 中立: it contributes no emotional signal.
+  if (sentiment !== null) {
+    v1.unshift(entry('emotionalEngagement', Math.abs(sentiment) / 2, 1.5, source('sentiment')));
+  }
   if (record.scopeType === 'content') {
     v1.push(entry('exploration', 0.6, 0.75, source('scopeType')));
   }
 
   const text = [record.comment, ...(record.tags || [])].filter(Boolean).join(' ');
   const aspects = aspectTextContributions(text, { weight: 1.5, source: source(commentField) });
-  const social = socialSignal(text, sentiment, source(commentField));
+  const social = socialSignal(text, sentiment ?? polaritySentiment(record), source(commentField));
   // GEQ / PENS subscales map straight onto v2 axes (no v1 detour).
   const scales = scaleAxisSignals(record.scales).flatMap((signal) => signal.v2.map(([axis, weight]) => entry(
     axis, signal.value, weight, source('scales'), `${signal.family}.${signal.subscale}`

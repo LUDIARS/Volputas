@@ -3,6 +3,7 @@ import ProfileFeatureLayout from '../components/ProfileFeatureLayout';
 import ProfileField from '../components/ProfileField';
 import ExperienceScalesInput from '../components/ExperienceScalesInput';
 import ScaleSummary from '../components/ScaleSummary';
+import VoiceFollowUpPanel from '../components/VoiceFollowUpPanel';
 import { useProfileClient } from '../lib/profileClient';
 import lexicon from '../data/ludus-lexicon.json';
 
@@ -10,11 +11,38 @@ const INITIAL_FORM = {
   gameTitle: '',
   scopeType: 'game',
   contentName: '',
-  sentiment: '0',
+  playProgress: '',
+  sentiment: '',
   polarity: '',
   comment: '',
   tags: '',
 };
+
+const PLAY_PROGRESS = {
+  early: '序盤',
+  middle: '中盤',
+  late: '終盤',
+  cleared: 'クリア済み',
+  'post-clear': 'クリア後もやり込み中',
+};
+
+const FOLLOW_UP_LABELS = {
+  playProgress: '遊んだ範囲',
+  sentiment: '全体の感情',
+  polarity: 'スキ / 嫌い',
+  reason: '理由',
+  highlight: '印象に残った場面',
+  ending: '結末・クリアまで',
+};
+
+function followUpAnswerText(item) {
+  if (item.questionId === 'playProgress') return PLAY_PROGRESS[item.answer] || item.answer;
+  if (item.questionId === 'sentiment') return SENTIMENTS[item.answer] || item.answer;
+  if (item.questionId === 'polarity') {
+    return { like: '👍 スキ', dislike: '👎 嫌い', neither: 'どちらでもない' }[item.answer] || item.answer;
+  }
+  return item.answer;
+}
 
 const SENTIMENTS = {
   '-2': '強い不満',
@@ -37,6 +65,7 @@ export default function VoicePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [followUpRecordId, setFollowUpRecordId] = useState(null);
 
   useEffect(() => {
     client.list('voices').then(setRecords).catch((reason) => setError(reason.message));
@@ -76,7 +105,8 @@ export default function VoicePage() {
       setForm(INITIAL_FORM);
       setMechanicIds([]);
       setScales(null);
-      setSuccess('ユーザの声を保存しました。');
+      setSuccess('ユーザの声を保存しました。足りない情報があれば一問ずつ伺います。');
+      setFollowUpRecordId(result.record.id);
     } catch (reason) {
       setError(reason.message);
     } finally {
@@ -84,7 +114,23 @@ export default function VoicePage() {
     }
   }
 
+  function replaceRecord(record) {
+    setRecords((current) => current.map((item) => (item.id === record.id ? record : item)));
+  }
+
+  const followUpPanel = followUpRecordId && (
+    <VoiceFollowUpPanel
+      key={followUpRecordId}
+      client={client}
+      recordId={followUpRecordId}
+      onRecordUpdated={replaceRecord}
+      onClose={() => setFollowUpRecordId(null)}
+    />
+  );
+
   const entryForm = (
+    <>
+    {followUpPanel}
     <form onSubmit={submit}>
       <h3>感想を登録</h3>
       <p className="form-intro">ゲーム全体、またはゲーム内の特定コンテンツに対する声を残します。</p>
@@ -102,8 +148,17 @@ export default function VoicePage() {
           <input name="contentName" value={form.contentName} onChange={update} required />
         </ProfileField>
       )}
-      <ProfileField label="感情">
+      <ProfileField label="どこまで遊んだか" hint="遊んでいない範囲については質問しません">
+        <select name="playProgress" value={form.playProgress} onChange={update} required>
+          <option value="" disabled>選択してください</option>
+          {Object.entries(PLAY_PROGRESS).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+      </ProfileField>
+      <ProfileField label="感情" hint="未回答と「中立」は区別して扱います">
         <select name="sentiment" value={form.sentiment} onChange={update}>
+          <option value="">未回答 (あとで答える)</option>
           {Object.entries(SENTIMENTS).map(([value, label]) => (
             <option key={value} value={value}>{label}</option>
           ))}
@@ -173,6 +228,7 @@ export default function VoicePage() {
       <ExperienceScalesInput value={scales} onChange={setScales} />
       <button className="btn-primary" disabled={saving}>{saving ? '保存中…' : '投稿する'}</button>
     </form>
+    </>
   );
 
   return (
@@ -189,15 +245,37 @@ export default function VoicePage() {
           <div className="record-heading">
             <div>
               <h4>{record.gameTitle}</h4>
-              <span>{record.scopeType === 'content' ? record.contentName : 'ゲーム全体'}</span>
+              <span>
+                {record.scopeType === 'content' ? record.contentName : 'ゲーム全体'}
+                {PLAY_PROGRESS[record.playProgress] && ` · ${PLAY_PROGRESS[record.playProgress]}`}
+              </span>
             </div>
             <span className={`sentiment sentiment-${record.sentiment}`}>
               {record.polarity === 'like' && '👍 '}
               {record.polarity === 'dislike' && '👎 '}
-              {SENTIMENTS[record.sentiment]}
+              {record.sentiment === null || record.sentiment === undefined
+                ? '感情 未回答'
+                : SENTIMENTS[record.sentiment]}
             </span>
           </div>
           <p className="record-comment">{record.comment}</p>
+          {record.followUps?.length > 0 && (
+            <dl className="follow-up-answers">
+              {record.followUps.map((item) => (
+                <div key={`${item.questionId}-${item.answeredAt}`}>
+                  <dt>{FOLLOW_UP_LABELS[item.questionId] || item.questionId}</dt>
+                  <dd>{followUpAnswerText(item)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <button
+            type="button"
+            className="follow-up-resume"
+            onClick={() => setFollowUpRecordId(record.id)}
+          >
+            追加の質問に答える
+          </button>
           <div className="tags-row">
             {record.mechanicIds?.map((id) => (
               <span className="tag mechanic-chip" key={id}>{MECHANIC_NAME[id] || id}</span>
