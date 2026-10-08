@@ -95,7 +95,7 @@ async function bootstrap() {
       })
       .catch(() => callback({}));
   }, { useSystemPicker: true });
-  app.setAppUserModelId('com.squirrel.Volputas.Volputas');
+  app.setAppUserModelId('com.squirrel.Voluptas.Voluptas');
   registerDesktopHandlers();
   stopUpdates = startAutoUpdates({ isPackaged: app.isPackaged });
   await createMainWindow();

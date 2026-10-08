@@ -3,7 +3,7 @@ id: SPEC-LOCAL-SURVEY-GIT-WORKFLOW
 type: interface
 title: "Local survey Git workflow"
 description: "独立VolputasData cloneの取得、identity検証、atomic local write、lockのinterface contract。"
-service: volputas
+service: voluptas
 domain: persistence
 tags:
   - git

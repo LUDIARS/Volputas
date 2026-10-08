@@ -15,7 +15,7 @@ $OutputEncoding = $Utf8NoBom
 # Settings; requiring this parameter makes that a usage error instead of a possibility.
 if (-not $RepositoryUrl) {
   throw @'
-Usage: setup-volputas-data.ps1 -RepositoryUrl <repository-url> [-TargetPath <path>] [-ConfigPath <path>]
+Usage: setup-voluptas-data.ps1 -RepositoryUrl <repository-url> [-TargetPath <path>] [-ConfigPath <path>]
 
 <repository-url> is your own private GitHub data repository (for example a copy
 made from the LUDIARS/VolputasData template). There is no default: pass it
@@ -69,7 +69,7 @@ if (-not $ownerRepo) {
 }
 
 # A single scalar line ("true|private") rather than an embedded JSON object, matching
-# setup-volputas-data.sh: an object result is not guaranteed to arrive on one line, and
+# setup-voluptas-data.sh: an object result is not guaranteed to arrive on one line, and
 # Windows PowerShell 5.1 pipes multi-line native output into ConvertFrom-Json as a
 # string array, which fails to parse. A scalar line is unambiguous to compare directly.
 $visibilityLines = @(

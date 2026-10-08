@@ -2,7 +2,7 @@
 type: plan
 title: "ペルソナエンジン v2 実装引き継ぎ (T10-T16)"
 description: "T1-T9 完了時点の実装配置と、T10 以降を Codex が実装するための作業指示書。"
-service: volputas
+service: voluptas
 domain: persona
 status: in-progress
 related:

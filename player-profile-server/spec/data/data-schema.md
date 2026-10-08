@@ -2,7 +2,7 @@
 type: data
 title: "Voluptas data schema classification"
 description: "Voluptas のデータごとの権威ソース、保存先、保護境界を定義する。local回答とCorpus回答のidentity domainを分離する。"
-service: volputas
+service: voluptas
 domain: persistence
 tags:
   - data-authority

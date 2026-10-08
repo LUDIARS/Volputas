@@ -3,7 +3,7 @@ id: SPEC-LOCAL-DATA-REPOSITORY-VISIBILITY
 type: interface
 title: "Local data repository visibility guard"
 description: "企業ごとのデータリポジトリをowner/repoへ解決し、local desktop appの設定保存時と各local API処理開始前にprivate visibilityを検証するinterface contract。"
-service: volputas
+service: voluptas
 domain: persistence
 tags:
   - git

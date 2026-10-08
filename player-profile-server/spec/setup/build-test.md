@@ -2,7 +2,7 @@
 type: setup
 title: "Build / test toolchain"
 description: "Voluptas backend / frontend のNode.js版数、test探索方法、CI jobの構成を定める。"
-service: volputas
+service: voluptas
 domain: tooling
 tags:
   - setup

@@ -95,8 +95,8 @@ WindowsではSquirrelインストーラー、macOS/LinuxではZIPを作成する
 は既定値を持たない必須引数で、スクリプト自身もclone後にvisibilityを検証する
 （`gh`必須）。
 
-- Windows: `desktop/setup-samples/setup-volputas-data.ps1 -RepositoryUrl <url>`
-- macOS / Linux: `desktop/setup-samples/setup-volputas-data.sh <url>`
+- Windows: `desktop/setup-samples/setup-voluptas-data.ps1 -RepositoryUrl <url>`
+- macOS / Linux: `desktop/setup-samples/setup-voluptas-data.sh <url>`
 
 公開GitHub Releasesを更新元として、パッケージ版は起動時と10分ごとに更新を確認する。
 自動更新対象はElectronが対応するWindowsとmacOS。macOSの更新配布には署名が必要。

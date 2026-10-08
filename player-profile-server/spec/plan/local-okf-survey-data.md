@@ -2,7 +2,7 @@
 type: plan
 title: "Local-only survey data architecture"
 description: "公開定義リポジトリを独立cloneし、個人回答をremoteへ公開せずローカル保存する設計宣言。"
-service: volputas
+service: voluptas
 domain: persistence
 tags:
   - local-first

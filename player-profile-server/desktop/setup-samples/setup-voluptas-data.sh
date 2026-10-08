@@ -6,7 +6,7 @@ set -eu
 # Settings; requiring this argument makes that a usage error instead of a possibility.
 if [ "${1:-}" = '' ]; then
   cat >&2 <<'USAGE'
-Usage: setup-volputas-data.sh <repository-url> [target-path] [config-path]
+Usage: setup-voluptas-data.sh <repository-url> [target-path] [config-path]
 
 <repository-url> is your own private GitHub data repository (for example a copy
 made from the LUDIARS/VolputasData template). There is no default: pass it

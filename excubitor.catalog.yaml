@@ -3,11 +3,11 @@
 # 焼き込まないため、 各サービスの catalog エントリは自リポに置く。
 # Excubitor が ${ARS_ROOT} 配下を走査して集積する (Excubitor catalog/FRAGMENTS.md 参照)。
 services:
-  - code: volputas
-    name: Volputas
+  - code: voluptas
+    name: Voluptas
     domain: vo-m${DOMAIN_ROOT}
     tier: saas
-    project_code: volputas
+    project_code: voluptas
     subdomain: vo-m
     component: backend
     port: 8892
@@ -27,22 +27,22 @@ services:
       JWT_ISSUER: http://localhost:8892
       GOOGLE_CALLBACK_URL: http://localhost:8892/auth/callback
       DISCORD_CALLBACK_URL: http://localhost:8892/auth/callback
-    required_env: [CERNERE_BASE_URL, VOLPUTAS_URL, VOLPUTAS_DATABASE_URL]
-    # VOLPUTAS_DATABASE_URL などの secret は Excubitor の Vault (WebUI「環境変数」) の volputas 紐付けから注入する。
+    required_env: [CERNERE_BASE_URL, VOLUPTAS_URL, VOLUPTAS_DATABASE_URL]
+    # VOLUPTAS_DATABASE_URL などの secret は Excubitor の Vault (WebUI「環境変数」) の voluptas 紐付けから注入する。
     requires_secret:
       - service: cernere
         keys: [EXCUBITOR_CERNERE_CLIENT_ID, EXCUBITOR_CERNERE_CLIENT_SECRET]
     cernere_launch_credentials:
-      target_project: volputas
+      target_project: voluptas
     health:
       type: http
       url: http://localhost:8892/health
       interval_sec: 30
     provides:
-      VOLPUTAS_URL: http://${host}:${port}
+      VOLUPTAS_URL: http://${host}:${port}
 
-  - code: volputas-haster
-    name: Volputas HASTER
+  - code: voluptas-haster
+    name: Voluptas HASTER
     # 通常運用では起動させない。 HASTER は公開 fixture identity を使う使い捨ての
     # 統合テスト環境で (spec/test/haster-public-user.md)、 本番と同じ形式の
     # 検証には使えない。 起動できる状態のまま置くと「経路を通すため」に
@@ -50,10 +50,10 @@ services:
     # supervisor は disabled なサービスの stop 以外を SERVICE_DISABLED で拒否する。
     disabled: true
     tier: local-app
-    project_code: volputas
+    project_code: voluptas
     component: backend
     port: 18892
-    repo: LUDIARS/Volputas
+    repo: LUDIARS/Voluptas
     runtime: node
     cwd: ${ARS_ROOT}/Voluptas/player-profile-server
     command: npm run dev
@@ -62,32 +62,32 @@ services:
     autostart: false
     env:
       PORT: "18892"
-      VOLPUTAS_ENVIRONMENT: HASTER
+      VOLUPTAS_ENVIRONMENT: HASTER
       JWT_ISSUER: http://localhost:18892
       # 自分自身の URL は自分の env で持つ。 provides で配ると topology は
-      # 後勝ちで全消費者の VOLPUTAS_URL を 18892 へ上書きしてしまい、
+      # 後勝ちで全消費者の VOLUPTAS_URL を 18892 へ上書きしてしまい、
       # GLAB など本来 8892 を見るサービスが HASTER へ繋がる。
       # (優先順位は topology < env: なので、 ここでの指定は自分にだけ効く)
-      VOLPUTAS_URL: http://localhost:18892
+      VOLUPTAS_URL: http://localhost:18892
       CERNERE_OIDC_CALLBACK_URL: http://localhost:18892/auth/callback
-      VOLPUTAS_PERSONA_EXPORT_TOKEN: haster-public-persona-export-token-v1
-      VOLPUTAS_PSEUDO_ID_SECRET: haster-public-pseudo-id-secret-v1
+      VOLUPTAS_PERSONA_EXPORT_TOKEN: haster-public-persona-export-token-v1
+      VOLUPTAS_PSEUDO_ID_SECRET: haster-public-pseudo-id-secret-v1
     required_env:
       - CERNERE_BASE_URL
-      - VOLPUTAS_URL
-      - VOLPUTAS_DATABASE_URL
+      - VOLUPTAS_URL
+      - VOLUPTAS_DATABASE_URL
       - CERNERE_OIDC_CLIENT_ID
       - CERNERE_OIDC_CLIENT_SECRET
       - DISCUTERE_PERSONA_BRIDGE_URL
       - DISCUTERE_PERSONA_BRIDGE_TOKEN
       - DISCUTERE_PERSONA_BRIDGE_ASSERTION_PRIVATE_KEY
-    # 上の required_env の secret は Excubitor の Vault の volputas-haster 紐付けから注入する。
+    # 上の required_env の secret は Excubitor の Vault の voluptas-haster 紐付けから注入する。
     # HASTER を使うときは、本番と別の値を Vault に登録して紐付ける (本番の値を流用しない)。
     requires_secret:
       - service: cernere
         keys: [EXCUBITOR_CERNERE_CLIENT_ID, EXCUBITOR_CERNERE_CLIENT_SECRET]
     cernere_launch_credentials:
-      target_project: volputas
+      target_project: voluptas
     health:
       type: http
       url: http://localhost:18892/health

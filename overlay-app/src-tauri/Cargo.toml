@@ -1,5 +1,5 @@
 [package]
-name = "volputas-overlay"
+name = "voluptas-overlay"
 version = "1.0.0"
 description = "Voluptas window overlay extension"
 authors = ["LUDIARS"]

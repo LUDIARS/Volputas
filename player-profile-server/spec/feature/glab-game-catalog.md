@@ -2,7 +2,7 @@
 type: feature
 title: "GLAB game catalog and game-scoped surveys"
 description: "GLAB向けゲームマスタ、管理者認可、ゲーム別アンケート、投稿時の正準ゲーム解決を定義する。"
-service: volputas
+service: voluptas
 domain: glab-player-research
 tags:
   - glab

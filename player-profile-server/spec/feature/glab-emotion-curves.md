@@ -2,7 +2,7 @@
 type: feature
 title: "GLAB emotion-curve evidence transport"
 description: "Cernere owner単位の感情曲線、保護media、短命再生ticket、LLM評価の境界を定義する。"
-service: volputas
+service: voluptas
 domain: glab-player-research
 tags:
   - glab

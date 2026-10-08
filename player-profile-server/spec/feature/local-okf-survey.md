@@ -2,7 +2,7 @@
 type: feature
 title: "Local survey"
 description: "アンケート定義を独立cloneし、本人回答をprivate data repositoryの本人branchへ保存・publishする機能。"
-service: volputas
+service: voluptas
 domain: survey
 tags:
   - cli

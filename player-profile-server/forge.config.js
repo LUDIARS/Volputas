@@ -3,7 +3,7 @@ const path = require('node:path');
 module.exports = {
   packagerConfig: {
     asar: true,
-    executableName: 'Volputas',
+    executableName: 'Voluptas',
     extraResource: [
       path.join(__dirname, 'desktop', 'setup-samples'),
     ],
@@ -19,7 +19,7 @@ module.exports = {
       name: '@electron-forge/maker-squirrel',
       platforms: ['win32'],
       config: {
-        name: 'Volputas',
+        name: 'Voluptas',
         authors: 'LUDIARS',
         description: 'Local-only survey desktop tool for Git-backed VolputasData',
       },
@@ -36,7 +36,7 @@ module.exports = {
       config: {
         repository: {
           owner: 'LUDIARS',
-          name: 'Volputas',
+          name: 'Voluptas',
         },
         draft: true,
         prerelease: false,

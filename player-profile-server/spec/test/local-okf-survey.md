@@ -2,7 +2,7 @@
 type: test
 title: "Local survey test plan"
 description: "独立clone、repository identity、atomic local write、lock、privacyを検証する。"
-service: volputas
+service: voluptas
 domain: tooling
 tags:
   - test

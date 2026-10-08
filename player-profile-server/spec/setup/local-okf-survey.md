@@ -2,7 +2,7 @@
 type: setup
 title: "Local survey setup"
 description: "独立VolputasData clone、GitHub CLI identity、non-secret configを準備する手順。"
-service: volputas
+service: voluptas
 domain: tooling
 tags:
   - setup
