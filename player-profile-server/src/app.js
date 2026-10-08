@@ -60,6 +60,7 @@ const memoriaRoutes = require('./routes/memoria');
 const corpusManifestRoutes = require('./routes/corpusManifest');
 const { router: personaExportRoutes } = require('./routes/personaExport');
 const { createImpressionExportRouter } = require('./routes/impressionExport');
+const { createImpressionRequestsRouter } = require('./routes/impressionRequests');
 const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
 
 const app = express();
@@ -238,6 +239,7 @@ app.use('/api/v1', impressionDiscussionRoutes);
 app.use('/api/v1/profile-data', profileEvidenceRoutes);
 // 遊んだ感想の書き出し (Discutere)。ペルソナ書き出しと同じサービス間認証。
 app.use('/api/personas/impressions', createImpressionExportRouter({ serviceProvider: getGlabReviewService }));
+app.use('/api/personas/impression-requests', createImpressionRequestsRouter());
 app.use('/api/personas', personaExportRoutes);
 
 if (fs.existsSync(path.join(frontendDirectory, 'index.html'))) {
