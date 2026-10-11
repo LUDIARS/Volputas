@@ -3,6 +3,7 @@ import ProfileFeatureLayout from '../components/ProfileFeatureLayout';
 import ProfileField from '../components/ProfileField';
 import ExperienceScalesInput from '../components/ExperienceScalesInput';
 import ScaleSummary from '../components/ScaleSummary';
+import VoiceAnalysisPanel from '../components/VoiceAnalysisPanel';
 import VoiceFollowUpPanel from '../components/VoiceFollowUpPanel';
 import { useProfileClient } from '../lib/profileClient';
 import lexicon from '../data/ludus-lexicon.json';
@@ -65,6 +66,7 @@ export default function VoicePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [analysisRecordId, setAnalysisRecordId] = useState(null);
   const [followUpRecordId, setFollowUpRecordId] = useState(null);
 
   useEffect(() => {
@@ -283,6 +285,12 @@ export default function VoicePage() {
             {record.tags?.map((tag) => <span className="tag" key={tag}>{tag}</span>)}
           </div>
           <ScaleSummary scales={record.scales} />
+          <button type="button" className="btn-outline voice-analysis-toggle"
+            aria-expanded={analysisRecordId === record.id}
+            onClick={() => setAnalysisRecordId((current) => current === record.id ? null : record.id)}>
+            {analysisRecordId === record.id ? '解析を閉じる' : '声を解析・結果を見る'}
+          </button>
+          {analysisRecordId === record.id && <VoiceAnalysisPanel client={client} record={record} />}
         </article>
       )}
     />

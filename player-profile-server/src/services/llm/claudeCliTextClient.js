@@ -83,11 +83,16 @@ class ClaudeCliTextClient {
   // limited to those exact basenames inside their private temporary directory.
   // Without images no tool is granted.
   /** @implements SPEC-GAME-INSIGHT */
-  async generate({ system, prompt, imagePaths = [] }) {
+  async generate({ system, prompt, imagePaths = [], disableTools = false }) {
     const imageAccess = prepareImageAccess(prompt, imagePaths);
     const args = ['-p', '--output-format', 'text'];
     if (this.model) args.push('--model', this.model);
-    if (imageAccess.allowedTools) args.push('--allowedTools', imageAccess.allowedTools);
+    if (disableTools) {
+      if (imagePaths.length) throw imagePathError();
+      args.push('--tools', '', '--disallowedTools', '*', '--strict-mcp-config',
+        '--mcp-config', JSON.stringify({ mcpServers: {} }), '--disable-slash-commands',
+        '--no-session-persistence', '--system-prompt', system);
+    } else if (imageAccess.allowedTools) args.push('--allowedTools', imageAccess.allowedTools);
     const spawnOptions = {
       // Lapilli resolves Windows launchers without a shell.
       shell: false,
@@ -151,7 +156,7 @@ class ClaudeCliTextClient {
       });
 
       child.stdin.on('error', () => { /* close/error races surface via 'error'/'close'; best-effort */ });
-      child.stdin.end(`${system}\n\n${imageAccess.prompt}`);
+      child.stdin.end(disableTools ? imageAccess.prompt : `${system}\n\n${imageAccess.prompt}`);
     });
   }
 }

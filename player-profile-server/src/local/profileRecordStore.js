@@ -9,6 +9,22 @@ class ProfileRecordStore {
     this.now = now;
   }
 
+  async read({ repositoryRoot, name, id }) {
+    const filePath = recordPath(repositoryRoot, this.collection, name, id);
+    let text;
+    try {
+      text = await fs.readFile(filePath, 'utf8');
+    } catch (error) {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    }
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw Object.assign(new Error('Profile record is not valid JSON'), { code: 'INVALID_PROFILE_RECORD' });
+    }
+  }
+
   async list({ repositoryRoot, name }) {
     const directory = collectionDirectory(repositoryRoot, this.collection, name);
     let entries;

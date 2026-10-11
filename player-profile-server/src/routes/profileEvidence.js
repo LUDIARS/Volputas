@@ -27,6 +27,8 @@ const { OnlinePersonaService } = require('../services/onlinePersonaService');
 const { issueMediaTicket, verifyMediaTicket } = require('../services/mediaTicketService');
 const { createLlmTextClient } = require('../services/llm/createLlmTextClient');
 const { EmotionCurveEvaluationService } = require('../services/emotionCurveEvaluationService');
+const { VoiceAnalysisService } = require('../services/voiceAnalysis/voiceAnalysisService');
+const { createOnlineVoiceAnalysisRoutes } = require('./onlineVoiceAnalysisRoutes');
 const identityModel = require('../models/identityModel');
 const userModel = require('../models/userModel');
 const { DiscussionBridgeClient } = require('../services/discussionBridgeClient');
@@ -53,6 +55,7 @@ function createProfileEvidenceRouter({
   personaService,
   discussionImportService,
   emotionCurveEvaluator,
+  voiceAnalysisService,
   mediaRoot = config.profileMedia.root,
   issueTicket = issueMediaTicket,
   verifyTicket = verifyMediaTicket,
@@ -112,6 +115,10 @@ function createProfileEvidenceRouter({
   });
 
   router.use(authenticate);
+  router.use('/voice-analysis', createOnlineVoiceAnalysisRoutes({
+    service: voiceAnalysisService || new VoiceAnalysisService({ llmClient: createLlmTextClient() }),
+    model,
+  }));
 
   function collectionRoutes(routePath, kind, validate) {
     router.get(routePath, async (req, res, next) => {

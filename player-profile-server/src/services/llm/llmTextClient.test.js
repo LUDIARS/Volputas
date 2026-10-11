@@ -26,6 +26,24 @@ function fakeChild() {
   return child;
 }
 
+test('voice extraction disables built-in/MCP tools and session persistence without changing ordinary callers', async () => {
+  let args;
+  const child = fakeChild();
+  const client = new ClaudeCliTextClient({ spawnImpl: (_command, argv) => { args = argv; return child; } });
+  const pending = client.generate({ system: 'extract', prompt: 'untrusted review', disableTools: true });
+  child.stdout.emit('data', '{}');
+  child.emit('close', 0);
+  await pending;
+  assert.equal(args[args.indexOf('--tools') + 1], '');
+  assert.equal(args[args.indexOf('--disallowedTools') + 1], '*');
+  assert.ok(args.includes('--strict-mcp-config'));
+  assert.equal(args[args.indexOf('--mcp-config') + 1], '{"mcpServers":{}}');
+  assert.ok(args.includes('--disable-slash-commands'));
+  assert.ok(args.includes('--no-session-persistence'));
+  assert.equal(args[args.indexOf('--system-prompt') + 1], 'extract');
+  assert.equal(child.stdin.written, 'untrusted review');
+});
+
 test('claude-cli client streams the prompt over stdin and returns trimmed stdout', async () => {
   let spawned = null;
   const child = fakeChild();

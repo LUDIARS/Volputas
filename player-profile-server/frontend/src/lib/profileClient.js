@@ -29,6 +29,17 @@ function createProfileClient(mode) {
     },
     // Follow-up hearing on a saved voice (both modes; the server limits it to
     // the caller's own record).
+    voiceAnalysisCatalog() {
+      return request(`${base}/voice-analysis/catalog`);
+    },
+    voiceAnalysis(recordId) {
+      return request(`${base}/voice-analysis/${encodeURIComponent(recordId)}`);
+    },
+    analyzeVoice(recordId) {
+      return request(`${base}/voice-analysis/${encodeURIComponent(recordId)}`, {
+        method: 'POST', body: { consent: true },
+      });
+    },
     voiceFollowUp(recordId) {
       return request(`${base}/voices/${encodeURIComponent(recordId)}/follow-up`);
     },

@@ -30,6 +30,8 @@ const { createOverlayRoutes } = require('./local/overlayRoutes');
 const { OverlayContentService } = require('./services/overlay/overlayContentService');
 const { OverlayMarkdownStore } = require('./services/overlay/overlayMarkdownStore');
 const { createGameInsightService } = require('./local/gameInsightComposition');
+const { createLocalVoiceAnalysisRoutes } = require('./local/voiceAnalysisRoutes');
+const { VoiceAnalysisService } = require('./services/voiceAnalysis/voiceAnalysisService');
 const { ProfileRecordStore } = require('./local/profileRecordStore');
 const {
   companionStatus,
@@ -56,6 +58,7 @@ function createLocalApp({
   captureSessionService = createCaptureSessionService(),
   captureAnalysisService,
   narrativeArcService,
+  voiceAnalysisService,
   gameInsightService,
   overlayContentService,
   llmClient,
@@ -71,9 +74,9 @@ function createLocalApp({
     surveyDefinitionStore,
   });
   // One LLM client serves the per-curve evaluation, the narrative-arc
-  // commentary and the game-insight proposal; tests inject the services directly.
+  // commentary, voice extraction and game-insight proposal; services can be injected.
   const resolvedLlmClient = llmClient
-    || ((emotionCurveEvaluator && narrativeArcService && gameInsightService) ? null : createLlmTextClient());
+    || ((emotionCurveEvaluator && narrativeArcService && gameInsightService && voiceAnalysisService) ? null : createLlmTextClient());
   const resolvedEmotionCurveEvaluator = emotionCurveEvaluator
     || new EmotionCurveEvaluationService({ llmClient: resolvedLlmClient });
   const resolvedNarrativeArcService = narrativeArcService || new NarrativeArcService({
@@ -129,6 +132,12 @@ function createLocalApp({
   app.use('/api/local/overlay', createOverlayRoutes({
     overlayContentService: resolvedOverlayContentService,
     configuredContext,
+  }));
+  app.use('/api/local/voice-analysis', createLocalVoiceAnalysisRoutes({
+    service: voiceAnalysisService || new VoiceAnalysisService({ llmClient: resolvedLlmClient }),
+    configuredContext,
+    voiceStore: evidenceStores.voices,
+    analysisStore: new ProfileRecordStore('voice-analyses'),
   }));
   app.use('/api/local', createLocalRoutes({
     configStore,
