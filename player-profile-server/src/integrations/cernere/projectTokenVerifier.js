@@ -5,8 +5,9 @@ const {
   InvalidCernereTokenError,
 } = require('./cernereErrors');
 
-// Cernere 側の project key は旧綴りのまま登録されている。変えると token 検証が通らなくなる。
-const VOLUPTAS_PROJECT_KEY = 'volputas';
+// Cernere の managed project key (migration 063 で volputas から改名)。service token の aud / sub に
+// 入る storage_slug は volputas のまま変わらない点に注意する。
+const VOLUPTAS_PROJECT_KEY = 'voluptas';
 const DEFAULT_REFRESH_COOLDOWN_MS = 30_000;
 const SIGNATURE_FAILURE_CODE = 'ERR_PASETO_VERIFICATION_FAILED';
 

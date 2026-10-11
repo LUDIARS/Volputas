@@ -142,7 +142,7 @@ class CernereProfileEvidenceStore {
     const ownerId = await this.resolveOwnerId(localUserId);
     const surveys = await this.surveyModel.findActive();
     const responses = await Promise.all(surveys.map((survey) =>
-      this.projectClient.request('volputas_survey', 'get_response', {
+      this.projectClient.request('voluptas_survey', 'get_response', {
         userId: ownerId,
         surveyId: survey.id,
       })
@@ -165,7 +165,7 @@ class CernereProfileEvidenceStore {
 
   async listSurveyStatuses(localUserId, surveyIds) {
     const ownerId = await this.resolveOwnerId(localUserId);
-    return this.projectClient.request('volputas_survey', 'list_response_statuses', {
+    return this.projectClient.request('voluptas_survey', 'list_response_statuses', {
       userId: ownerId,
       surveyIds,
     });
@@ -173,7 +173,7 @@ class CernereProfileEvidenceStore {
 
   async getSurveyResponse(localUserId, surveyId) {
     const ownerId = await this.resolveOwnerId(localUserId);
-    return this.projectClient.request('volputas_survey', 'get_response', {
+    return this.projectClient.request('voluptas_survey', 'get_response', {
       userId: ownerId,
       surveyId,
     });
@@ -181,7 +181,7 @@ class CernereProfileEvidenceStore {
 
   async saveSurveyResponse(localUserId, surveyId, answers) {
     const ownerId = await this.resolveOwnerId(localUserId);
-    return this.projectClient.request('volputas_survey', 'save_response', {
+    return this.projectClient.request('voluptas_survey', 'save_response', {
       userId: ownerId,
       surveyId,
       answers,

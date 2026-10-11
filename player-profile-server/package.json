@@ -19,7 +19,7 @@
     "predev": "npm run migrate",
     "dev": "node --watch src/app.js",
     "migrate": "node migrations/run.js",
-    "test": "node --test \"src/**/*.test.js\" \"desktop/**/*.test.js\"",
+    "test": "node scripts/run-tests.js",
     "test:frontend": "npm --prefix frontend test",
     "test:e2e:media": "node scripts/run-media-e2e.js --confirm-local",
     "desktop:package": "npm run build:frontend && electron-forge package",

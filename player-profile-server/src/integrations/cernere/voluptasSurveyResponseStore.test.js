@@ -62,9 +62,9 @@ test('uses only the Voluptas project survey commands with normalized payloads', 
   assert.deepEqual(
     calls.map(({ module, action }) => [module, action]),
     [
-      ['volputas_survey', 'list_response_statuses'],
-      ['volputas_survey', 'get_response'],
-      ['volputas_survey', 'save_response'],
+      ['voluptas_survey', 'list_response_statuses'],
+      ['voluptas_survey', 'get_response'],
+      ['voluptas_survey', 'save_response'],
     ],
   );
   assert.deepEqual(calls[2].payload, {

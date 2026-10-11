@@ -28,7 +28,7 @@ const CORPUS_SERVICE_MANIFEST = Object.freeze({
   ],
   panels: [],
   auth: 'cernere-project-token',
-  cernereProjectKey: 'volputas',
+  cernereProjectKey: 'voluptas',
 });
 
 module.exports = { CORPUS_SERVICE_MANIFEST };

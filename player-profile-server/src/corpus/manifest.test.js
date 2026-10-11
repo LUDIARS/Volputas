@@ -7,7 +7,7 @@ test('declares the Voluptas backend without owning a Corpus frontend panel', () 
   assert.equal(CORPUS_SERVICE_MANIFEST.corpusApi, 1);
   assert.equal(CORPUS_SERVICE_MANIFEST.health, '/health');
   assert.equal(CORPUS_SERVICE_MANIFEST.auth, 'cernere-project-token');
-  assert.equal(CORPUS_SERVICE_MANIFEST.cernereProjectKey, 'volputas');
+  assert.equal(CORPUS_SERVICE_MANIFEST.cernereProjectKey, 'voluptas');
   assert.deepEqual(CORPUS_SERVICE_MANIFEST.panels, []);
   assert.deepEqual(
     CORPUS_SERVICE_MANIFEST.data.map(({ id }) => id),

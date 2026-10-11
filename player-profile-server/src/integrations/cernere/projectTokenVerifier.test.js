@@ -18,7 +18,7 @@ async function signedToken(privateKey, overrides = {}) {
   const now = Date.now();
   return V4.sign({
     sub: '66e242b5-2f18-4463-b7f0-c0f12d818a20',
-    projectKey: 'volputas',
+    projectKey: 'voluptas',
     kind: 'user_for_project',
     role: 'general',
     displayName: 'Test User',
@@ -46,7 +46,7 @@ test('verifies a real Cernere user-for-Voluptas PASETO', async () => {
 
   const claims = await verifier.verify(await signedToken(privateKey));
   assert.equal(claims.sub, '66e242b5-2f18-4463-b7f0-c0f12d818a20');
-  assert.equal(claims.projectKey, 'volputas');
+  assert.equal(claims.projectKey, 'voluptas');
 });
 
 test('rejects a token for another audience or project', async () => {
@@ -121,7 +121,7 @@ test('refreshes a cached key set once after signature verification fails', async
   });
 
   const claims = await verifier.verify(await signedToken(current.privateKey));
-  assert.equal(claims.projectKey, 'volputas');
+  assert.equal(claims.projectKey, 'voluptas');
   assert.deepEqual(calls, [{}, { forceRefresh: true }]);
 });
 

@@ -26,7 +26,7 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
         Object.assign(columns, payload.data);
         return { ok: true, updated: Object.keys(payload.data) };
       }
-      if (module === 'volputas_survey' && action === 'get_response') return null;
+      if (module === 'voluptas_survey' && action === 'get_response') return null;
       throw new Error(`Unexpected command: ${module}.${action}`);
     },
     close() {},
@@ -135,7 +135,7 @@ test('Cernere store keeps evidence, media metadata, and persona in managed-proje
   assert.equal(unchanged.recomputed, false);
 
   assert.ok(calls.every((call) =>
-    ['managed_project', 'volputas_survey'].includes(call.module)));
+    ['managed_project', 'voluptas_survey'].includes(call.module)));
   assert.equal(columns.gameplay_records.length, 1);
   assert.equal(columns.voice_memo_records.length, 1);
   assert.equal(columns.annotation_records.length, 1);

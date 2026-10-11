@@ -70,7 +70,7 @@ class VoluptasSurveyResponseStore {
     for (let offset = 0; offset < validSurveyIds.length; offset += MAX_STATUS_IDS_PER_REQUEST) {
       const batch = validSurveyIds.slice(offset, offset + MAX_STATUS_IDS_PER_REQUEST);
       const value = await this.projectClient.request(
-        'volputas_survey',
+        'voluptas_survey',
         'list_response_statuses',
         { userId: validUserId, surveyIds: batch },
       );
@@ -102,7 +102,7 @@ class VoluptasSurveyResponseStore {
   async getResponse(userId, surveyId) {
     const validSurveyId = uuidSchema.parse(surveyId);
     const value = await this.projectClient.request(
-      'volputas_survey',
+      'voluptas_survey',
       'get_response',
       {
         userId: uuidSchema.parse(userId),
@@ -124,7 +124,7 @@ class VoluptasSurveyResponseStore {
       answers: normalizedAnswersSchema.parse(answers),
     };
     const value = await this.projectClient.request(
-      'volputas_survey',
+      'voluptas_survey',
       'save_response',
       input,
     );

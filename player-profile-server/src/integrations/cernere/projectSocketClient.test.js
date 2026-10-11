@@ -114,7 +114,7 @@ function clientHarness({ requestTimeoutMs } = {}) {
 test('logs in, authenticates by WebSocket subprotocol, and correlates responses', async () => {
   const harness = clientHarness();
   const responsePromise = harness.client.request(
-    'volputas_survey',
+    'voluptas_survey',
     'get_response',
     { userId: 'user', surveyId: 'survey' },
   );
@@ -148,7 +148,7 @@ test('logs in, authenticates by WebSocket subprotocol, and correlates responses'
 
 test('responds to ping and rejects pending work on protocol failure', async () => {
   const harness = clientHarness();
-  const pending = harness.client.request('volputas_survey', 'get_response', {});
+  const pending = harness.client.request('voluptas_survey', 'get_response', {});
   const socket = await harness.socketCreated;
   socket.readyState = 1;
   socket.emit('message', JSON.stringify({ type: 'connected' }));
@@ -168,7 +168,7 @@ test('responds to ping and rejects pending work on protocol failure', async () =
 
 test('rejects correlated server errors and pending work when the socket closes', async () => {
   const harness = clientHarness();
-  const failedCommand = harness.client.request('volputas_survey', 'get_response', {});
+  const failedCommand = harness.client.request('voluptas_survey', 'get_response', {});
   const socket = await harness.socketCreated;
   socket.readyState = 1;
   socket.emit('message', JSON.stringify({ type: 'connected' }));
@@ -183,7 +183,7 @@ test('rejects correlated server errors and pending work when the socket closes',
   await assert.rejects(failedCommand, CernereIntegrationError);
 
   const pendingAtClose = harness.client.request(
-    'volputas_survey',
+    'voluptas_survey',
     'get_response',
     {},
   );
@@ -195,7 +195,7 @@ test('rejects correlated server errors and pending work when the socket closes',
 
 test('times out an unanswered project command and releases its pending entry', async () => {
   const harness = clientHarness({ requestTimeoutMs: 50 });
-  const pending = harness.client.request('volputas_survey', 'get_response', {});
+  const pending = harness.client.request('voluptas_survey', 'get_response', {});
   const socket = await harness.socketCreated;
   socket.readyState = 1;
   socket.emit('message', JSON.stringify({ type: 'connected' }));
@@ -242,7 +242,7 @@ test('terminal shutdown aborts an in-flight login before a socket is created', a
     },
   });
 
-  const request = client.request('volputas_survey', 'get_response', {});
+  const request = client.request('voluptas_survey', 'get_response', {});
   const rejectedRequest = assert.rejects(
     request,
     (error) => error instanceof CernereIntegrationError
@@ -271,7 +271,7 @@ test('terminal shutdown closes a socket still authenticating', async () => {
     },
   });
 
-  const request = client.request('volputas_survey', 'get_response', {});
+  const request = client.request('voluptas_survey', 'get_response', {});
   const rejectedRequest = assert.rejects(request, /client is closed/);
   while (!socket) await new Promise((resolve) => setImmediate(resolve));
 
@@ -305,12 +305,12 @@ test('authentication timeouts terminate every superseded closing socket', async 
     },
   });
 
-  const firstRequest = client.request('volputas_survey', 'get_response', {});
+  const firstRequest = client.request('voluptas_survey', 'get_response', {});
   while (sockets.length < 1) await new Promise((resolve) => setImmediate(resolve));
   sockets[0].readyState = 1;
   await assert.rejects(firstRequest, /authentication timed out/);
 
-  const secondRequest = client.request('volputas_survey', 'get_response', {});
+  const secondRequest = client.request('voluptas_survey', 'get_response', {});
   while (sockets.length < 2) await new Promise((resolve) => setImmediate(resolve));
   sockets[1].readyState = 1;
   await assert.rejects(secondRequest, /authentication timed out/);
@@ -346,7 +346,7 @@ test('close waits for the active socket and permanently rejects new requests', a
     requestId: () => 'request-before-close',
   });
 
-  const firstRequest = client.request('volputas_survey', 'get_response', {});
+  const firstRequest = client.request('voluptas_survey', 'get_response', {});
   while (!socket) await new Promise((resolve) => setImmediate(resolve));
   socket.readyState = 1;
   socket.emit('message', JSON.stringify({ type: 'connected' }));
@@ -370,7 +370,7 @@ test('close waits for the active socket and permanently rejects new requests', a
   assert.equal(closeSettled, true);
 
   await assert.rejects(
-    client.request('volputas_survey', 'get_response', { secret: 'must-not-leak' }),
+    client.request('voluptas_survey', 'get_response', { secret: 'must-not-leak' }),
     (error) => error instanceof CernereIntegrationError
       && error.message === 'Cernere project client is closed'
       && !error.message.includes('must-not-leak'),
@@ -394,7 +394,7 @@ test('stale socket error and close events cannot reject a newer generation', asy
     requestId: () => `request-${++requestNumber}`,
   });
 
-  const firstRequest = client.request('volputas_survey', 'get_response', {});
+  const firstRequest = client.request('voluptas_survey', 'get_response', {});
   while (sockets.length < 1) await new Promise((resolve) => setImmediate(resolve));
   const firstSocket = sockets[0];
   firstSocket.readyState = 1;
@@ -408,7 +408,7 @@ test('stale socket error and close events cannot reject a newer generation', asy
   assert.deepEqual(await firstRequest, { generation: 1 });
   firstSocket.finishClose();
 
-  const secondRequest = client.request('volputas_survey', 'get_response', {});
+  const secondRequest = client.request('voluptas_survey', 'get_response', {});
   while (sockets.length < 2) await new Promise((resolve) => setImmediate(resolve));
   const secondSocket = sockets[1];
   secondSocket.readyState = 1;
@@ -470,7 +470,7 @@ test('a stop racing an in-flight start leaves no orphan socket behind', async ()
 test('retires a timed-out connection and reconnects on the next request', async () => {
   const { client, sockets } = lifecycleHarness({ requestTimeoutMs: 50 });
 
-  const timedOut = client.request('volputas_survey', 'get_response', {});
+  const timedOut = client.request('voluptas_survey', 'get_response', {});
   while (sockets.length < 1) await tick();
   await authenticate(sockets[0]);
   await assert.rejects(timedOut, /timed out/);
@@ -480,7 +480,7 @@ test('retires a timed-out connection and reconnects on the next request', async 
   assert.equal(sockets[0].readyState, 3);
   assert.equal(client.pending.size, 0);
 
-  const retried = client.request('volputas_survey', 'get_response', {});
+  const retried = client.request('voluptas_survey', 'get_response', {});
   while (sockets.length < 2) await tick();
   assert.notEqual(sockets[1], sockets[0]);
   await authenticate(sockets[1]);
@@ -499,13 +499,13 @@ test('retires a timed-out connection and reconnects on the next request', async 
 test('a retired generation cannot settle a newer generation pending request', async () => {
   const { client, sockets } = lifecycleHarness({ requestTimeoutMs: 200, autoClose: false });
 
-  const timedOut = client.request('volputas_survey', 'get_response', {});
+  const timedOut = client.request('voluptas_survey', 'get_response', {});
   while (sockets.length < 1) await tick();
   await authenticate(sockets[0]);
   await assert.rejects(timedOut, /timed out/);
   assert.equal(client.connection, null);
 
-  const fresh = client.request('volputas_survey', 'get_response', {});
+  const fresh = client.request('voluptas_survey', 'get_response', {});
   while (sockets.length < 2) await tick();
   await authenticate(sockets[1]);
   assert.equal(client.pending.size, 1);

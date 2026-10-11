@@ -105,7 +105,7 @@ function createLocalApp({
   app.use(helmet());
   app.use(express.json({ limit: '1mb' }));
   app.get('/health', (_req, res) => {
-    res.json({ ok: true, service: 'volputas', mode: 'local' });
+    res.json({ ok: true, service: 'voluptas', mode: 'local' });
   });
   app.get('/api/runtime', (_req, res) => {
     res.json({ ok: true, data: { mode: 'local', authentication: 'none' } });
