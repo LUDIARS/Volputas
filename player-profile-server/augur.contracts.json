@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "contractsDir": "contracts",
+  "contracts": [
+    {
+      "id": "C-1",
+      "criterion": "C-1 toAnonymousImpression(record): 返す感想は id / gameTitle / recommend / polarity / comment / createdAt の 6 項目だけで、listImpressions が書き手の項目 (userId / pseudoId / displayName 等) を返しても落とす",
+      "symbol": "toAnonymousImpression",
+      "file": "src/services/discutereImpressionPusher.js",
+      "module": "contracts/discutere-impression-anonymity.contract.js",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-2",
+      "criterion": "C-2 pushPendingImpressions(deps): 例外を投げず結果を返し、送り先か bearer が無ければ送らず理由を返し、送信済み id と 0 件は送らず、成功した id だけを送信済みに加える (失敗時は次回再試行できる)",
+      "symbol": "pushPendingImpressions",
+      "file": "src/services/discutereImpressionPusher.js",
+      "module": "contracts/discutere-impression-push.contract.js",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-3",
+      "criterion": "C-3 discutereImpressionPushConfig(env): enabled は DISCUTERE_IMPRESSION_PUSH_ENABLED が 'false' のときだけ false、intervalMinutes は既定 15 で 1〜1440 にクランプする",
+      "symbol": "discutereImpressionPushConfig",
+      "file": "src/config/discutereImpressionPush.js",
+      "module": "contracts/discutere-impression-push-config.contract.js",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-4",
+      "criterion": "C-4 startDiscutereImpressionPush(options): 起動直後に 1 回送り、多重実行せず、停止関数を返す",
+      "symbol": "startDiscutereImpressionPush",
+      "file": "src/services/discutereImpressionPusher.js",
+      "module": "contracts/discutere-impression-push-start.contract.js",
+      "mode": "observe",
+      "sample": 1
+    }
+  ]
+}

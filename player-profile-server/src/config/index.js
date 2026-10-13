@@ -1,6 +1,7 @@
 require('./legacyEnvAliases').applyLegacyEnvAliases();
 const path = require('node:path');
 const { normalizeOptionalBaseUrl } = require('./baseUrl');
+const { discutereImpressionPushConfig } = require('./discutereImpressionPush');
 const {
   deriveHasterDatabaseUrl,
   isHasterEnvironment,
@@ -150,6 +151,9 @@ const config = {
     cernereProjectKey: process.env.DISCUTERE_CERNERE_PROJECT_KEY?.trim() || 'discutere',
     assertionPrivateKey: process.env.DISCUTERE_PERSONA_BRIDGE_ASSERTION_PRIVATE_KEY || '',
   },
+
+  // Periodic anonymous impression push to config.discuterePersonaBridge.baseUrl.
+  discutereImpressionPush: discutereImpressionPushConfig(process.env),
 
   db: databaseConfig(process.env),
 

@@ -12,6 +12,11 @@ const {
 } = require('./middleware/errorHandler');
 const { initKeyStore } = require('./services/jwks');
 const { startSessionMaintenance } = require('./services/sessionMaintenance');
+const {
+  createDiscutereImpressionPusher,
+  startDiscutereImpressionPush,
+} = require('./services/discutereImpressionPusher');
+const { discuterePersonaBridgeBearer } = require('./services/discuterePersonaBridgeAuth');
 const { closeProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
 const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
 const { assertOnlineConfiguration } = require('./services/onlineConfiguration');
@@ -76,6 +81,7 @@ let glabReviewService = null;
 let glabGameService = null;
 let glabEvidenceService = null;
 let stopSessionMaintenance = null;
+let stopDiscutereImpressionPush = null;
 
 function getGlabSurveyService() {
   if (!glabSurveyService) glabSurveyService = createGlabSurveyService();
@@ -257,6 +263,22 @@ app.use((_req, res) => {
 // Global error handler
 app.use(errorHandler);
 
+// Voluptas is obliged to hand anonymous impressions to Discutere, so the push
+// runs by default. HASTER's public test fixtures must never reach Discutere.
+// @implements SPEC-GLAB-IMPRESSION-EXPORT
+function startImpressionPushIfEnabled() {
+  if (config.haster.enabled || !config.discutereImpressionPush.enabled) return null;
+  const reviews = getGlabReviewService();
+  return startDiscutereImpressionPush({
+    intervalMinutes: config.discutereImpressionPush.intervalMinutes,
+    pusher: createDiscutereImpressionPusher({
+      baseUrl: config.discuterePersonaBridge.baseUrl,
+      listImpressions: (query) => reviews.listImpressions(query),
+      resolveBearer: discuterePersonaBridgeBearer(),
+    }),
+  });
+}
+
 // Start server
 // @implements SPEC-HASTER-ISOLATION
 async function start() {
@@ -270,6 +292,7 @@ async function start() {
   await initKeyStore();
   console.log('JWKS key store initialized');
   stopSessionMaintenance = startSessionMaintenance();
+  stopDiscutereImpressionPush = startImpressionPushIfEnabled();
 
   // The HASTER bearer fixture is deliberately public, so its process must not
   // accept connections from the network even if a catalog is misconfigured.
@@ -300,6 +323,8 @@ function stop() {
     }
     stopSessionMaintenance?.();
     stopSessionMaintenance = null;
+    stopDiscutereImpressionPush?.();
+    stopDiscutereImpressionPush = null;
     closeProfileEvidenceStore();
     const activeIntegration = glabSurveyService;
     glabSurveyService = null;
