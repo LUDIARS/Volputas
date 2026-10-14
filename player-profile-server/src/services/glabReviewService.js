@@ -1,5 +1,7 @@
 const { resolveActiveGameTitle } = require('./glabGameSelection');
 const { validateGlabVoiceInput } = require('./profileEvidenceSchemas');
+const { applyFollowUpAnswer } = require('./voiceFollowUp/applyFollowUpAnswer');
+const { nextFollowUpQuestion } = require('./voiceFollowUp/followUpQuestions');
 
 function reviewView(record, author) {
   return {
@@ -33,11 +35,30 @@ function titleMatches(title, needle) {
   return title.length > 0 && (title.includes(needle) || needle.includes(title));
 }
 
-function createGlabReviewService({ voiceStore, resolveDisplayName, pseudoId, gameRepository }) {
+function notFound() {
+  const error = new Error('Voice not found');
+  error.statusCode = 404;
+  error.code = 'PROFILE_RECORD_NOT_FOUND';
+  return error;
+}
+
+/**
+ * GLAB で書いた感想は Cernere の owner id (req.cernereUser.id) で保存される。追加ヒアリングと体験解析も
+ * 同じ owner id で本人の記録だけを引く (他人の id・声以外の記録は 404)。ownerStore は
+ * profileEvidenceStore の findForOwner / updateForOwner。
+ */
+function createGlabReviewService({ voiceStore, resolveDisplayName, pseudoId, gameRepository, ownerStore = null }) {
   if (!voiceStore || !resolveDisplayName || !pseudoId || !gameRepository) {
     throw new TypeError(
       'voiceStore, resolveDisplayName, pseudoId, and gameRepository are required',
     );
+  }
+
+  async function ownedVoice(ownerId, recordId) {
+    if (!ownerStore) throw new Error('ownerStore is required for owner-scoped voice operations');
+    const owned = typeof recordId === 'string' && recordId ? await ownerStore.findForOwner(ownerId, recordId) : null;
+    if (!owned || owned.kind !== 'voices') throw notFound();
+    return owned.record;
   }
 
   return {
@@ -112,6 +133,31 @@ function createGlabReviewService({ voiceStore, resolveDisplayName, pseudoId, gam
         ...voice,
         gameTitle: await resolveActiveGameTitle(gameRepository, voice),
       });
+    },
+
+    /** 次に聞く追加質問 (足りていれば null)。 @implements SPEC-GLAB-VOICE-FOLLOW-UP */
+    async followUp(ownerId, recordId) {
+      return { question: nextFollowUpQuestion(await ownedVoice(ownerId, recordId)) };
+    },
+
+    /** 追加質問への回答 / スキップ。原文 (comment) は変えず followUps に残す。 */
+    async answerFollowUp(ownerId, recordId, body) {
+      const existing = await ownedVoice(ownerId, recordId);
+      const record = await ownerStore.updateForOwner(ownerId, 'voices', recordId, applyFollowUpAnswer(existing, body));
+      if (!record) throw notFound();
+      return { record, question: nextFollowUpQuestion(record) };
+    },
+
+    /** 体験解析の読み書き用 (routes/voiceAnalysisRoutes の load / save)。 */
+    async loadVoice(ownerId, recordId) {
+      return ownedVoice(ownerId, recordId);
+    },
+
+    async saveAnalysis(ownerId, recordId, analysis) {
+      if (!ownerStore) throw new Error('ownerStore is required for owner-scoped voice operations');
+      const record = await ownerStore.updateForOwner(ownerId, 'voices', recordId, { experienceAnalysis: analysis });
+      if (!record) throw notFound();
+      return record;
     },
   };
 }

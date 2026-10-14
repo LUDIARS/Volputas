@@ -30,6 +30,7 @@ const {
   createGlabSurveyService,
 } = require('./services/glabSurveyService');
 const { createGlabReviewService } = require('./services/glabReviewService');
+const { VoiceAnalysisService } = require('./services/voiceAnalysis/voiceAnalysisService');
 const { pseudoId } = require('./services/pseudoId');
 const { getProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
 const { createGlabReviewRouter } = require('./routes/glabReviews');
@@ -104,6 +105,10 @@ function getGlabReviewService() {
       voiceStore: {
         listVoices: (query) => store.listPublicVoices(query),
         saveVoice: (voice) => store.createForOwner(voice.userId, 'voices', voice),
+      },
+      ownerStore: {
+        findForOwner: (ownerId, recordId) => store.findForOwner(ownerId, recordId),
+        updateForOwner: (ownerId, kind, recordId, patch) => store.updateForOwner(ownerId, kind, recordId, patch),
       },
       resolveDisplayName: resolveGlabReviewAuthor,
       pseudoId: (userId) => pseudoId(userId, config.pseudoIdSecret),
@@ -182,6 +187,7 @@ app.use(
   glabReviewPath,
   createGlabReviewRouter({
     serviceProvider: getGlabReviewService,
+    analysisService: new VoiceAnalysisService({ llmClient: createLlmTextClient() }),
     recentGamesProvider: async (cernereUserId) => {
       const user = await userModel.findByCernereSubject(cernereUserId);
       return user ? steamModel.getRecentlyPlayedGames(user.id, 20) : [];

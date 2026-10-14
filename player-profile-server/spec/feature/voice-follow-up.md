@@ -51,6 +51,24 @@ updated: 2026-10-09
 オンラインは `authenticate` 済みの本人の記録だけを `findOwned` で引き、`updateOwned` で更新する。
 他人の記録 id は 404。応答は `{ record, question }` (次の質問、無ければ `null`)。
 
+## GLAB 経路 (SPEC-GLAB-VOICE-FOLLOW-UP)
+
+neco 2026-10-14「GLab のゲーム感想を書く Vo のロジックを仕上げる」。GLAB で書いた感想は
+`/api/v1/integrations/glab/reviews` から Cernere の owner id (`req.cernereUser.id`) で同じ声の記録として保存される。
+追加ヒアリングと体験解析も同じ owner id で本人の記録だけを引く (`ownerStore.findForOwner` / `updateForOwner`)。
+
+| 用途 | API (`/api/v1/integrations/glab/reviews` 配下) |
+|---|---|
+| 次の追加質問 | `GET /:id/follow-up` → `{ question }` |
+| 回答 / スキップ | `POST /:id/follow-up` `{ questionId, answer }` / `{ questionId, skip: true }` → `{ record, question }` |
+| 体験解析の状態 | `GET /analysis/:id` |
+| 体験解析の実行 | `POST /analysis/:id` `{ consent: true }` (本人の明示操作だけ。[体験解析](voice-experience-analysis.md)と同じ) |
+
+- 質問・保存形・未回答と中立の区別は本体の声と同じ (`nextFollowUpQuestion` / `applyFollowUpAnswer`)。
+- 他人の記録・声以外の記録は 404、開いていない質問への回答は 409 `FOLLOW_UP_NOT_OPEN`。
+- 実装: `src/services/glabReviewService.js` (`followUp` / `answerFollowUp` / `loadVoice` / `saveAnalysis`)、
+  `src/routes/glabReviews.js`。テスト: `src/services/glabVoiceFollowUp.test.js`。
+
 ## 分析での扱い
 
 - `personaEvidence/answeredSentiment.js` が未回答を `null`、中立を `0` として返す。
