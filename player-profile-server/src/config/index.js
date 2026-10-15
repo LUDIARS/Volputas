@@ -103,6 +103,12 @@ const config = {
     ),
   },
 
+  aiPlaytest: {
+    // Inbound credential of Ingenium `ingenium playtest` (AI playtest reviews). Not
+    // shared with any other route. HASTER's public test mode never accepts reviews.
+    token: hasterEnabled ? '' : (process.env.VOLUPTAS_AI_PLAYTEST_TOKEN || ''),
+  },
+
   steam: {
     apiKey: process.env.STEAM_API_KEY || '',
   },

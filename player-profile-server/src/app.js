@@ -67,6 +67,11 @@ const corpusManifestRoutes = require('./routes/corpusManifest');
 const { router: personaExportRoutes } = require('./routes/personaExport');
 const { createImpressionExportRouter } = require('./routes/impressionExport');
 const { createImpressionRequestsRouter } = require('./routes/impressionRequests');
+const { createAiPlaytestReviewRouter } = require('./routes/aiPlaytestReviews');
+const { createAiPlaytestAuth } = require('./middleware/aiPlaytestAuth');
+const { createPersonaExportAuth } = require('./middleware/personaExportAuth');
+const { createAiPlaytestReviewService } = require('./services/aiPlaytest/aiPlaytestReviewService');
+const { createAiPlaytestReviewRepository } = require('./models/aiPlaytestReviewRepository');
 const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
 
 const app = express();
@@ -253,6 +258,13 @@ app.use('/api/v1/profile-data', profileEvidenceRoutes);
 app.use('/api/personas/impressions', createImpressionExportRouter({ serviceProvider: getGlabReviewService }));
 app.use('/api/personas/impression-requests', createImpressionRequestsRouter());
 app.use('/api/personas', personaExportRoutes);
+// AI プレイテスト感想 (Ingenium)。人の感想とは別の表に置く匿名の AI 由来の声。
+const aiPlaytestReviewService = createAiPlaytestReviewService({ store: createAiPlaytestReviewRepository() });
+app.use('/api/ai-playtests/reviews', createAiPlaytestReviewRouter({
+  serviceProvider: () => aiPlaytestReviewService,
+  writeAuth: createAiPlaytestAuth({ expectedToken: config.aiPlaytest.token }),
+  readAuth: createPersonaExportAuth(),
+}));
 
 if (fs.existsSync(path.join(frontendDirectory, 'index.html'))) {
   mountFrontend(app, frontendDirectory);

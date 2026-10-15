@@ -16,7 +16,7 @@ const { EmotionCurveEvaluationService } = require('./services/emotionCurveEvalua
 const { ProfileMediaStore } = require('./services/profileMediaStore');
 const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
 const { createEvidenceStores } = require('./local/createEvidenceStores');
-const { createConfiguredContext } = require('./local/localContext');
+const { createConfiguredContext, storeContext } = require('./local/localContext');
 const { createCaptureSessionRoutes } = require('./local/captureSessionRoutes');
 const {
   createCaptureAnalysisService,
@@ -33,6 +33,10 @@ const { createGameInsightService } = require('./local/gameInsightComposition');
 const { createLocalVoiceAnalysisRoutes } = require('./local/voiceAnalysisRoutes');
 const { VoiceAnalysisService } = require('./services/voiceAnalysis/voiceAnalysisService');
 const { ProfileRecordStore } = require('./local/profileRecordStore');
+const { LocalAiPlaytestReviewStore } = require('./local/localAiPlaytestReviewStore');
+const { createAiPlaytestReviewRouter } = require('./routes/aiPlaytestReviews');
+const { createAiPlaytestAuth } = require('./middleware/aiPlaytestAuth');
+const { createAiPlaytestReviewService } = require('./services/aiPlaytest/aiPlaytestReviewService');
 const {
   companionStatus,
   readCompanionConfig,
@@ -65,6 +69,8 @@ function createLocalApp({
   companionInfo = () => companionStatus(readCompanionConfig()),
   frontendDirectory = path.resolve(__dirname, '../frontend/dist'),
   serveFrontend = true,
+  aiPlaytestToken = config.aiPlaytest.token,
+  aiPlaytestReviewStore = new LocalAiPlaytestReviewStore(),
 } = {}) {
   if (serveFrontend) assertFrontendBuild(frontendDirectory);
 
@@ -138,6 +144,14 @@ function createLocalApp({
     configuredContext,
     voiceStore: evidenceStores.voices,
     analysisStore: new ProfileRecordStore('voice-analyses'),
+  }));
+  // AI プレイテスト感想 (Ingenium)。データリポジトリの ai-playtests/ に置き、回答者名のフォルダには入れない。
+  // 書き込みは専用の固定トークンだけ (ローカルに Cernere は無い)、読み出しは他のローカル API と同じく無認証。
+  const aiPlaytestReviewService = createAiPlaytestReviewService({ store: aiPlaytestReviewStore });
+  app.use('/api/ai-playtests/reviews', createAiPlaytestReviewRouter({
+    serviceProvider: () => aiPlaytestReviewService,
+    writeAuth: createAiPlaytestAuth({ expectedToken: aiPlaytestToken, serviceTokens: false }),
+    resolveContext: async () => ({ repositoryRoot: storeContext(await configuredContext()).repositoryRoot }),
   }));
   app.use('/api/local', createLocalRoutes({
     configStore,

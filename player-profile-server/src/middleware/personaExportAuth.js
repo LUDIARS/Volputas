@@ -96,7 +96,9 @@ function createPersonaExportAuth({
 
 module.exports = {
   PERSONA_EXPORT_SCOPE,
+  SERVICE_TOKEN_PREFIX,
   bearerToken,
+  defaultServiceTokenVerifier,
   createPersonaExportAuth,
   tokensMatch,
 };
