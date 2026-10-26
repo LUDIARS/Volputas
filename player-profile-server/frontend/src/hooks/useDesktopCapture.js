@@ -14,7 +14,7 @@ import {
 } from '../lib/captureRecording';
 
 // Desktop capture for the active session (spec/feature/emotion-capture-companion.md
-// §デスクトップキャプチャ): the face camera + microphone and the game screen are
+// §デスクトップキャプチャ): only the microphone and game screen are
 // recorded in this browser tab and uploaded once the session has stopped.
 // Recording start/stop is stamped on the session clock so the server can
 // replay every stream against gaze, markers and speech.
@@ -28,18 +28,17 @@ function stopStream(stream) {
 
 /** @implements SPEC-EMOTION-CAPTURE-COMPANION */
 export function useDesktopCapture({ active, onUploaded, onError }) {
-  const [face, setFace] = useState(IDLE);
+  const [microphone, setMicrophone] = useState(IDLE);
   const [screen, setScreen] = useState(IDLE);
-  const [faceStream, setFaceStream] = useState(null);
   const [uploading, setUploading] = useState(false);
   // Recorders and the session they belong to live in refs: they must survive
   // re-renders and be reachable from the effect that reacts to the session
   // ending under our feet (game-signalled stop).
-  const recorders = useRef({ face: null, audio: null, screen: null });
-  const streams = useRef({ face: null, screen: null });
+  const recorders = useRef({ audio: null, screen: null });
+  const streams = useRef({ microphone: null, screen: null });
   const session = useRef(null); // { id, startedAt }
   // Frame sizes are read at start; the tracks are gone by upload time.
-  const frameSizes = useRef({ face: {}, screen: {} });
+  const frameSizes = useRef({ screen: {} });
   const activeRef = useRef(active);
   activeRef.current = active;
 
@@ -52,26 +51,18 @@ export function useDesktopCapture({ active, onUploaded, onError }) {
     }
   }, []);
 
-  const startFace = useCallback(async () => {
+  const startMicrophone = useCallback(async () => {
     let stream = null;
-    let videoRecorder = null;
     let audioRecorder = null;
-    setFace({ ...IDLE, status: 'starting' });
+    setMicrophone({ ...IDLE, status: 'starting' });
     try {
       bindSession();
       const targetSessionId = session.current.id;
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 }, facingMode: 'user' },
+        video: false,
         audio: true,
       });
-      streams.current.face = stream;
-      frameSizes.current.face = stream.getVideoTracks()[0]?.getSettings?.() || {};
-      setFaceStream(stream);
-      videoRecorder = new TrackRecorder({
-        stream,
-        mimeType: pickMimeType(VIDEO_MIME_CANDIDATES, globalThis.MediaRecorder),
-        sessionClock: clock,
-      });
+      streams.current.microphone = stream;
       const audioTracks = stream.getAudioTracks();
       audioRecorder = audioTracks.length > 0
         ? new TrackRecorder({
@@ -80,25 +71,19 @@ export function useDesktopCapture({ active, onUploaded, onError }) {
           sessionClock: clock,
         })
         : null;
-      recorders.current.face = videoRecorder;
       recorders.current.audio = audioRecorder;
-      const startSessionMs = await videoRecorder.start();
+      if (!audioRecorder) throw new Error('マイクを利用できません。');
+      const startSessionMs = await audioRecorder.start();
       if (activeRef.current?.id !== targetSessionId) {
         throw new Error('キャプチャセッションが録画開始前に終了しました。');
       }
-      if (audioRecorder) await audioRecorder.start();
-      if (activeRef.current?.id !== targetSessionId) {
-        throw new Error('キャプチャセッションが録画開始前に終了しました。');
-      }
-      setFace({ status: 'recording', error: '', startSessionMs });
+      setMicrophone({ status: 'recording', error: '', startSessionMs });
     } catch (reason) {
-      await Promise.allSettled([audioRecorder?.stop(), videoRecorder?.stop()].filter(Boolean));
-      if (recorders.current.face === videoRecorder) recorders.current.face = null;
+      await Promise.allSettled([audioRecorder?.stop()].filter(Boolean));
       if (recorders.current.audio === audioRecorder) recorders.current.audio = null;
       stopStream(stream);
-      streams.current.face = null;
-      setFaceStream(null);
-      setFace({ ...IDLE, status: 'error', error: reason.message });
+      streams.current.microphone = null;
+      setMicrophone({ ...IDLE, status: 'error', error: reason.message });
       onError?.(reason.message);
     }
   }, [bindSession, clock, onError]);
@@ -151,13 +136,13 @@ export function useDesktopCapture({ active, onUploaded, onError }) {
   // and before the server closes the clock.
   const stopRecorders = useCallback(async () => {
     const results = {};
-    const entries = ['face', 'audio', 'screen']
+    const entries = ['audio', 'screen']
       .map((key) => [key, recorders.current[key]])
       .filter(([, recorder]) => Boolean(recorder));
     // Transfer ownership to this stop operation immediately. A later session
     // may create new recorders while these results are uploading; completion
     // of the old upload must never clear those new references.
-    recorders.current = { face: null, audio: null, screen: null };
+    recorders.current = { audio: null, screen: null };
     if (entries.length > 0) setUploading(true);
     const settled = await Promise.allSettled(entries.map(([, recorder]) => recorder.stop()));
     const stopErrors = [];
@@ -169,11 +154,10 @@ export function useDesktopCapture({ active, onUploaded, onError }) {
     if (stopErrors.length > 0) {
       onError?.(`一部の録画を正常に停止できませんでした (${stopErrors.join(' / ')})`);
     }
-    stopStream(streams.current.face);
+    stopStream(streams.current.microphone);
     stopStream(streams.current.screen);
-    streams.current = { face: null, screen: null };
-    setFaceStream(null);
-    setFace((current) => (current.status === 'recording' ? { ...current, status: 'stopped' } : current));
+    streams.current = { microphone: null, screen: null };
+    setMicrophone((current) => (current.status === 'recording' ? { ...current, status: 'stopped' } : current));
     setScreen((current) => (current.status === 'recording' ? { ...current, status: 'stopped' } : current));
     return results;
   }, [onError]);
@@ -186,7 +170,7 @@ export function useDesktopCapture({ active, onUploaded, onError }) {
     const uploaded = [];
     const errors = [];
     try {
-      const { face: faceResult, audio: audioResult, screen: screenResult } = results;
+      const { audio: audioResult, screen: screenResult } = results;
       const ownsTarget = () => session.current?.id === target.id;
       const size = (kind) => ({
         width: frameSizes.current[kind].width,
@@ -205,20 +189,6 @@ export function useDesktopCapture({ active, onUploaded, onError }) {
         assertBlobWithinLimit(audioResult.blob, AUDIO_MAX_BYTES, '音声');
         await localPutRaw(`${BASE}/${target.id}/audio`, audioResult.blob, audioHeaders(audioResult));
       });
-      if (faceResult && faceResult.blob.size > 0) {
-        if (ownsTarget()) setFace((current) => ({ ...current, status: 'uploading' }));
-        await attempt('face', async () => {
-          assertBlobWithinLimit(faceResult.blob, VIDEO_MAX_BYTES, '顔カメラ映像');
-          await localPutRaw(
-            `${BASE}/${target.id}/recordings/face`,
-            faceResult.blob,
-            recordingHeaders({ ...faceResult, ...size('face') })
-          );
-          if (ownsTarget()) setFace((current) => ({ ...current, status: 'uploaded' }));
-        }, (reason) => {
-          if (ownsTarget()) setFace((current) => ({ ...current, status: 'error', error: reason.message }));
-        });
-      }
       if (screenResult && screenResult.blob.size > 0) {
         if (ownsTarget()) setScreen((current) => ({ ...current, status: 'uploading' }));
         await attempt('screen', async () => {
@@ -271,24 +241,23 @@ export function useDesktopCapture({ active, onUploaded, onError }) {
   }, [active, stopRecorders, uploadRecordings, onError]);
 
   useEffect(() => () => {
-    stopStream(streams.current.face);
+    stopStream(streams.current.microphone);
     stopStream(streams.current.screen);
   }, []);
 
   const reset = useCallback(() => {
     session.current = null;
-    setFace(IDLE);
+    setMicrophone(IDLE);
     setScreen(IDLE);
   }, []);
 
   return {
-    face,
+    microphone,
     screen,
-    faceStream,
     uploading,
-    starting: face.status === 'starting' || screen.status === 'starting',
-    recording: face.status === 'recording' || screen.status === 'recording',
-    startFace,
+    starting: microphone.status === 'starting' || screen.status === 'starting',
+    recording: microphone.status === 'recording' || screen.status === 'recording',
+    startMicrophone,
     startScreen,
     finish,
     reset,

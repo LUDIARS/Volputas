@@ -5,6 +5,8 @@ import CaptureDesktopPanel from '../components/CaptureDesktopPanel';
 import CaptureRecordingUpload from '../components/CaptureRecordingUpload';
 import GazeAnalysisControl from '../components/GazeAnalysisControl';
 import { useDesktopCapture } from '../hooks/useDesktopCapture';
+import { usePrivateLiveTracking } from '../hooks/usePrivateLiveTracking';
+import PrivateLiveTrackingPanel from '../components/PrivateLiveTrackingPanel';
 
 // 感情キャプチャ (spec/feature/emotion-capture-companion.md)。ゲーム合図または
 // 手動でセッションを開始し、この PC の顔カメラ/マイク/画面録画、iPhone コンパニオン
@@ -52,7 +54,6 @@ export default function CaptureSessionPage() {
   const [busyRecordId, setBusyRecordId] = useState(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
-  const shouldPollActiveSession = active !== null;
 
   const reload = useCallback(async () => {
     const [companionData, analysisData, activeData, recordData] = await Promise.all([
@@ -75,13 +76,13 @@ export default function CaptureSessionPage() {
     }
   }, [reload]);
   const capture = useDesktopCapture({ active, onError: showError, onUploaded });
+  const tracking = usePrivateLiveTracking(active);
 
   useEffect(() => {
     reload().catch((reason) => setError(reason.message));
   }, [reload]);
 
   useEffect(() => {
-    if (!shouldPollActiveSession) return undefined;
     const timer = setInterval(() => {
       localApi(`${BASE}/active`)
         .then((data) => {
@@ -91,7 +92,7 @@ export default function CaptureSessionPage() {
         .catch((reason) => setError(reason.message));
     }, ACTIVE_POLL_MS);
     return () => clearInterval(timer);
-  }, [shouldPollActiveSession, reload]);
+  }, [reload]);
 
   async function run(action) {
     setError('');
@@ -111,6 +112,7 @@ export default function CaptureSessionPage() {
   // Recorders stop first so their end lands on the session clock, then the
   // session, then the recordings upload against the completed session.
   const stop = () => run(async () => {
+    tracking.stop();
     await capture.finish(() => localApi(`${BASE}/active/stop`, { method: 'POST', body: {} }));
     setPairing(null);
   });
@@ -183,9 +185,8 @@ export default function CaptureSessionPage() {
         <h2>感情キャプチャ</h2>
         <p>
           プレイ中のセッションをゲームと同じ時間軸で記録します。ゲームからの合図
-          (POST {BASE}/signal) か下のボタンで開始し、この PC の顔カメラ・マイク・画面録画、
-          または iPhone をペアリングして視線・音声・ワンタップ記録をタイムラインに載せます。
-          終了後は文字起こし→感情分析、顔映像からの視線推定、画面録画に視線を重ねたリプレイができます。
+          または下のボタンで開始すると、この端末内で目と顔を追跡します。
+          カメラ映像は表示・保存・送信しません。音声やゲーム画面の記録は個別に開始できます。
         </p>
       </div>
       {error && <div className="error-message">{error}</div>}
@@ -222,6 +223,7 @@ export default function CaptureSessionPage() {
               </button>
             ))}
           </div>
+          <PrivateLiveTrackingPanel tracking={tracking} />
           <CaptureDesktopPanel
             active={active}
             capture={capture}

@@ -28,7 +28,7 @@ export async function assertGazeModelAvailable(fetchImpl = fetch) {
 }
 
 /** @implements SPEC-EMOTION-CAPTURE-COMPANION */
-export async function loadFaceLandmarker({ importVision = () => import('@mediapipe/tasks-vision') } = {}) {
+export async function loadFaceLandmarker({ importVision = () => import('@mediapipe/tasks-vision'), tracking = false } = {}) {
   await assertGazeModelAvailable();
   const { FaceLandmarker, FilesetResolver } = await importVision();
   const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_URL);
@@ -36,10 +36,13 @@ export async function loadFaceLandmarker({ importVision = () => import('@mediapi
     baseOptions: { modelAssetPath: FACE_LANDMARKER_MODEL_URL, delegate: 'GPU' },
     runningMode: 'VIDEO',
     numFaces: 1,
-    outputFaceBlendshapes: false,
-    outputFacialTransformationMatrixes: false,
+    outputFaceBlendshapes: tracking,
+    outputFacialTransformationMatrixes: tracking,
   });
   return {
+    detectTracking(videoElement, timestampMs) {
+      return landmarker.detectForVideo(videoElement, timestampMs);
+    },
     // Returns the 478 landmarks of the first face or null.
     detect(videoElement, timestampMs) {
       const result = landmarker.detectForVideo(videoElement, timestampMs);

@@ -1,5 +1,11 @@
 # 感情キャプチャ・コンパニオン (ゲーム同期タイムライン + iPhone キャプチャ)
 
+> 2026-10-25 camera privacy override: live browser capture now follows
+> [SPEC-PRIVATE-LIVE-TRACKING](private-live-tracking.md). Camera images are
+> device-local tracking input only, never previewed, recorded or uploaded.
+> The face-recording capture UI described below is historical; existing imported
+> recordings and their post-hoc analysis remain separate legacy functionality.
+
 > Spec ID: `SPEC-EMOTION-CAPTURE-COMPANION`
 >
 > 状態: 実装 (2026-08-13)、追補 (2026-08-16: デスクトップキャプチャ・録画・事後視線推定・
