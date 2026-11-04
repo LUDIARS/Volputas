@@ -1,0 +1,17 @@
+{
+  "name": "dependency-locks",
+  "description": "既存の親要求レンジを維持する依存固定版更新と、その整合性を観測する契約境界。アプリケーションの業務ロジックは所有しない。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)contracts/(?:contract-runtime|dependency-locks(?:\\.test)?|overlay-lock\\.contract|server-lock\\.contract)\\.mjs$"
+    },
+    {
+      "pathPattern": "(^|/)(?:overlay-app|player-profile-server)/package-lock\\.json$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-MEDIUM-DEPENDENCY-LOCKS"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "contractsDir": "contracts",
+  "importFrom": "./contract-runtime.mjs",
+  "runtimeFile": "contracts/contract-runtime.mjs",
+  "contracts": [
+    {
+      "id": "C-1",
+      "criterion": "C-1 inspectOverlayLock(lock): dompurify 3.4.17 を mermaid の既存要求 ^3.3.3 内で固定し公開 registry の整合性情報を保持する",
+      "symbol": "inspectOverlayLock",
+      "file": "contracts/dependency-locks.mjs",
+      "module": "contracts/overlay-lock.contract.mjs",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-2",
+      "criterion": "C-2 inspectServerLock(lock): body-parser 配下の qs だけを既存要求 ~6.16.0 内の 6.16.2 に固定し express の ~6.15.1 と qs 6.15.3 を維持する",
+      "symbol": "inspectServerLock",
+      "file": "contracts/dependency-locks.mjs",
+      "module": "contracts/server-lock.contract.mjs",
+      "mode": "observe",
+      "sample": 1
+    }
+  ]
+}
