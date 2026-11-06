@@ -12,22 +12,25 @@ const CORPUS_SERVICE_MANIFEST = Object.freeze({
       title: 'Survey catalog',
       path: '/api/v1/integrations/glab/surveys',
       scope: 'multi',
+      delegation: { GET: { action: 'survey.list' } },
     },
     {
       id: 'survey-detail',
       title: 'Survey detail',
       path: '/api/v1/integrations/glab/surveys/:id',
       scope: 'multi',
+      delegation: { GET: { action: 'survey.read' } },
     },
     {
       id: 'survey-response',
       title: 'Survey response',
       path: '/api/v1/integrations/glab/surveys/:id/response',
       scope: 'multi',
+      delegation: { PUT: { action: 'survey.respond' } },
     },
   ],
   panels: [],
-  auth: 'cernere-project-token',
+  auth: 'cernere-delegated-operation',
   cernereProjectKey: 'voluptas',
 });
 

@@ -70,7 +70,7 @@ test('a specific analysis catalog route consumes one proof without falling into 
   const delegation = fixtureDelegation({ id: 'subject' }, async (_action, operation) => {
     consumed++;
     assert.equal(operation.action, 'review.analysis.catalog');
-    return { allowed: true, projectKey: 'volputas', sourceProject: 'glab',
+    return { allowed: true, projectKey: 'voluptas', sourceProject: 'glab',
       user: { id: 'subject', displayName: 'Fixture', email: null, role: 'general' },
       requestId: operation.requestId, risk: 'read', expiresAt: new Date(Date.now() + 4_000).toISOString() };
   });

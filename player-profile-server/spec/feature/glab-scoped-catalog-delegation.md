@@ -39,7 +39,7 @@ still on the incompatible credential contract.
 
 Before switching, the administrator must verify the existing Ex-managed
 CERNERE_BASE_URL, CERNERE_PROJECT_CLIENT_ID and CERNERE_PROJECT_CLIENT_SECRET
-belong to managed project `volputas`. The SDK validates that returned project
+belong to managed project `voluptas`. The SDK validates that returned project
 key. Cernere's administrator-owned target hub_url must match Voluptas's published
 origin, and source GLAB must have its own registered hub_url/composite_origins,
 scoped consent and target delegation permissions. No credential value is copied

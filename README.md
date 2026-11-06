@@ -10,7 +10,7 @@ Cernere認証を使うオンラインモードで利用できます。既定のE
 | モード | 認証 | データの正本 |
 |---|---|---|
 | ローカル | なし | 指定したVolputasData Gitリポジトリ |
-| オンライン | Cernere OIDC | Cernereの`volputas` managed project |
+| オンライン | Cernere OIDC | Cernereの`voluptas` managed project |
 
 オンラインでは、アンケート回答、ゲームプレイ情報、ユーザの声、感情曲線、
 ペルソナ分析、メディア参照情報をCernereが所有します。スクリーンショットと動画の
@@ -199,13 +199,16 @@ Voluptas単体利用向けに独立して残す。
 ### Corpus / GLAB
 
 Voluptasは認証不要の`/.well-known/corpus-service.json`を公開する。GLAB connectorは
-Excubitor topologyの`VOLUPTAS_URL`からbackendへ接続し、Cernere user access tokenを
-`projectKey=volputas`の短命PASETOへ交換して転送する。
+Excubitor topologyの`VOLUPTAS_URL`からbackendへ接続する。利用者はGLABのopaque sessionを使い、
+GLABは現在の本人・同意・操作内容へ束縛した一度限りのdelegationをbackendへ転送する。
+認証project keyはCr migration063とEx launch targetの`voluptas`。旧`volputas`認証keyや
+global user tokenの転送は受け付けない。媒体のアップロードは別の単発予約/確定契約で保護する。
 
 Voluptas側では`CERNERE_BASE_URL`と`VOLUPTAS_AUDIENCE`を公開設定として使い、
 `CERNERE_PROJECT_CLIENT_ID` / `CERNERE_PROJECT_CLIENT_SECRET`はExcubitorが起動ごとに
 注入する。実credentialを`.env`やrepositoryへ保存しない。詳細は
-[Corpus survey integration](./player-profile-server/spec/feature/corpus-survey-integration.md)を参照。
+[scoped catalog delegation](./player-profile-server/spec/feature/glab-scoped-catalog-delegation.md)と
+[bounded evidence upload](./player-profile-server/spec/feature/glab-scoped-evidence-upload.md)を参照。
 
 ## API概要
 

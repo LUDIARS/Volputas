@@ -43,7 +43,7 @@ function routerFor(service, overrides = {}) {
     const expiresAt = new Date(Date.now() + 4_000).toISOString();
     const authority = async (action, operation) => {
       const metadata = { allowed: true, user: { id: OWNER, role: 'general', displayName: 'Fixture', email: null },
-        projectKey: 'volputas', sourceProject: 'glab', expiresAt, requestId: operation.requestId,
+        projectKey: 'voluptas', sourceProject: 'glab', expiresAt, requestId: operation.requestId,
         risk: operation.action.startsWith('evidence.curves.read') || operation.action === 'evidence.media.read' || operation.action === 'evidence.media.ticket'
           ? 'sensitive_read' : 'important' };
       if (action === 'begin-upload') return { ...metadata, receipt: 'r'.repeat(43), limits: { maximumBytes: 2 * 1024 ** 3, timeoutSeconds: 5 },
@@ -51,7 +51,7 @@ function routerFor(service, overrides = {}) {
       if (action === 'cancel-upload') return {};
       return metadata;
     };
-    return { delegations: new CompositeDelegations(authority, 'volputas'), uploads: new CompositeUploads(authority, 'volputas') };
+    return { delegations: new CompositeDelegations(authority, 'voluptas'), uploads: new CompositeUploads(authority, 'voluptas') };
   };
   return createGlabEvidenceRouter({
     delegation: createGlabDelegation({ composite }),

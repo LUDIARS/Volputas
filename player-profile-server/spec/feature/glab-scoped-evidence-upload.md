@@ -5,6 +5,10 @@ GLAB evidence requests use the accepted Cernere Composite backend contract at
 ticket alone cannot replace an online one-operation delegation. Local profile
 and spectator APIs keep their independent contracts.
 
+The registered authentication project is `voluptas`, as required by Cr063 and
+the actual Ex launch target. Old `volputas` authentication grants are refused;
+the unchanged storage_slug/UI module URL cannot select or alias that identity.
+
 For uploads, the destination reserves the arrival capability before receiving
 bytes. The SDK binds source/target/user/service session/action/exact path/query,
 semantic headers and actual body digest/count. Each destination attempt is

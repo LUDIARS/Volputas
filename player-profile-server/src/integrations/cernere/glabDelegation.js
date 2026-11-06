@@ -4,17 +4,26 @@ const { AppError } = require('../../middleware/errorHandler');
 const { UploadSpool } = require('./uploadSpool');
 
 const MAXIMUM_JSON_BYTES = 1024 * 1024;
+const VOLUPTAS_PROJECT_KEY = 'voluptas';
 let client;
+
+/** Registered auth identity; storage/module URL spellings do not select scope.
+ * @implements SPEC-GLAB-SCOPED-CATALOG-DELEGATION
+ */
+async function createGlabComposite(settings) {
+  if (![settings.baseUrl, settings.projectClientId, settings.projectClientSecret].every(value => typeof value === 'string' && value.length > 0)) {
+    throw new AppError(503, 'CERNERE_CONFIGURATION_REQUIRED', 'Scoped Cernere integration is not configured');
+  }
+  const { CernereComposite } = await import('../../../vendor/cernere-composite/dist/composite.js');
+  return new CernereComposite({ cernereUrl: settings.baseUrl, projectKey: VOLUPTAS_PROJECT_KEY,
+    clientId: settings.projectClientId, clientSecret: settings.projectClientSecret });
+}
 
 async function getComposite() {
   if (!client) {
-    const settings = config.cernere;
-    if (!settings.baseUrl || !settings.projectClientId || !settings.projectClientSecret) {
-      throw new AppError(503, 'CERNERE_CONFIGURATION_REQUIRED', 'Scoped Cernere integration is not configured');
-    }
-    const { CernereComposite } = await import('../../../vendor/cernere-composite/dist/composite.js');
-    client ??= new CernereComposite({ cernereUrl: settings.baseUrl, projectKey: 'volputas',
-      clientId: settings.projectClientId, clientSecret: settings.projectClientSecret });
+    const prepared = await createGlabComposite(config.cernere);
+    if (client) prepared.dispose();
+    else client = prepared;
   }
   return client;
 }
@@ -115,4 +124,4 @@ function createGlabDelegation({ composite = getComposite, spool = new UploadSpoo
 }
 
 function closeGlabDelegation() { client?.dispose(); client = undefined; }
-module.exports = { createGlabDelegation, closeGlabDelegation };
+module.exports = { VOLUPTAS_PROJECT_KEY, createGlabComposite, createGlabDelegation, closeGlabDelegation };

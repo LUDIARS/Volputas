@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { Readable } = require('node:stream');
 const { EventEmitter } = require('node:events');
 const { createHash } = require('node:crypto');
-const { createGlabDelegation } = require('./glabDelegation');
+const { createGlabDelegation, createGlabComposite, VOLUPTAS_PROJECT_KEY } = require('./glabDelegation');
 
 const TOKEN = 'a'.repeat(43), REQUEST_ID = '22222222-2222-4222-8222-222222222222';
 const USER = { id: 'owner', displayName: 'Owner', email: null, role: 'general' };
@@ -19,9 +19,9 @@ function request(body, scheme = 'Cernere-Delegation') {
 async function client(call) {
   const { CompositeDelegations } = await import('../../../vendor/cernere-composite/dist/delegation.js');
   const { CompositeUploads } = await import('../../../vendor/cernere-composite/dist/upload.js');
-  return { delegations: new CompositeDelegations(call, 'volputas'), uploads: new CompositeUploads(call, 'volputas') };
+  return { delegations: new CompositeDelegations(call, 'voluptas'), uploads: new CompositeUploads(call, 'voluptas') };
 }
-const decision = operation => ({ allowed: true, projectKey: 'volputas', sourceProject: 'glab', user: USER,
+const decision = operation => ({ allowed: true, projectKey: 'voluptas', sourceProject: 'glab', user: USER,
   requestId: operation.requestId, risk: 'important', expiresAt: new Date(Date.now() + 4_000).toISOString() });
 
 test('exact raw body/path reaches the SDK; owner ACL precedes execution', async () => {
@@ -41,15 +41,41 @@ test('exact raw body/path reaches the SDK; owner ACL precedes execution', async 
   assert.equal(req.listenerCount('aborted'), 0); assert.equal(res.listenerCount('close'), 0);
 });
 
-for (const rejected of ['source', 'authority', 'acl']) test(`denied${rejected} never executes or falls back`, async () => {
+for (const rejected of ['source', 'authority', 'acl', 'retired-project']) test(`denied${rejected} never executes or falls back`, async () => {
   const boundary = createGlabDelegation({ composite: () => client(async (_action, operation) => {
     if (rejected === 'authority') throw new Error('private-authority-detail');
-    return { ...decision(operation), sourceProject: rejected === 'source' ? 'other-project' : 'glab' };
+    return { ...decision(operation), sourceProject: rejected === 'source' ? 'other-project' : 'glab',
+      projectKey: rejected === 'retired-project' ? 'volputas' : 'voluptas' };
   }) });
   const { req, res } = request('{}');
   await assert.rejects(boundary.run(req, res, { action: 'evidence.curves.create', risk: 'important',
     authorizeResource: () => rejected !== 'acl', execute: () => assert.fail('Must not execute'),
   }), error => error.statusCode === 503 && !error.message.includes('private-authority-detail'));
+});
+
+for (const authProject of ['voluptas', 'volputas']) test(`backend SDK authenticates the registered identity and rejects the retired one (${authProject})`, async t => {
+  let checked = 0;
+  const expiresAt = new Date(Date.now() + 240_000).toISOString();
+  const grant = { projectToken: 'scoped', sessionBinding: 'b'.repeat(43), projectKey: 'voluptas', user: USER, expiresAt };
+  t.mock.method(globalThis, 'fetch', async (input, init) => {
+    const url = new URL(String(input)); assert.equal(url.origin, 'https://authority.example');
+    if (url.pathname === '/api/auth/login') {
+      assert.deepEqual(JSON.parse(init.body), { grant_type: 'project_credentials', client_id: 'fixture-client', client_secret: 'fixture-only-secret' });
+      return Response.json({ tokenType: 'project', accessToken: 'project-credential', expiresIn: 300, project: { key: authProject } });
+    }
+    assert.equal(url.pathname, '/api/auth/service/check'); checked++;
+    assert.equal(new Headers(init.headers).get('authorization'), 'Bearer project-credential');
+    return Response.json(grant);
+  });
+  const sdk = await createGlabComposite({ baseUrl: 'https://authority.example', projectClientId: 'fixture-client', projectClientSecret: 'fixture-only-secret' });
+  try {
+    if (authProject === 'voluptas') {
+      assert.equal((await sdk.sessions.check(grant)).projectKey, 'voluptas'); assert.equal(checked, 1);
+    } else {
+      await assert.rejects(sdk.sessions.check(grant), /Invalid project credential response/); assert.equal(checked, 0);
+    }
+  } finally { sdk.dispose(); }
+  assert.equal(VOLUPTAS_PROJECT_KEY, 'voluptas');
 });
 
 test('a database failure after execution starts is not mislabeled as an authorization outage', async () => {

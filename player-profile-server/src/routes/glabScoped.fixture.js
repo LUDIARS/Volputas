@@ -5,11 +5,11 @@ function fixtureDelegation(user, authority) {
   return createGlabDelegation({ composite: async () => {
     const { CompositeDelegations } = await import('../../vendor/cernere-composite/dist/delegation.js');
     return { delegations: new CompositeDelegations(authority ?? (async (_action, operation) => ({
-      allowed: true, projectKey: 'volputas', sourceProject: 'glab',
+      allowed: true, projectKey: 'voluptas', sourceProject: 'glab',
       user: { displayName: 'Fixture', email: null, role: 'general', ...user }, requestId: operation.requestId,
       risk: operation.action === 'review.analysis.catalog' ? 'read' : operation.method === 'GET' ? 'sensitive_read' : 'important',
       expiresAt: new Date(Date.now() + 4_000).toISOString(),
-    })), 'volputas') };
+    })), 'voluptas') };
   } });
 }
 function scopedFetch(url, init = {}) {
