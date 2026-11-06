@@ -10,6 +10,49 @@ const { createGlabEvidenceService } = require('./glabEvidenceService');
 const OWNER = 'ba8e37c8-0f60-4f22-9c1a-6b0a7cbd7e01';
 const GAME_ID = '3f1a2b4c-5d6e-4f70-8192-a3b4c5d6e7f8';
 
+test('captured media commits repeat current ownership immediately before adoption', async () => {
+  let current = true, adopted = false, checks = 0;
+  const deps = stubs({ evidenceStore: { findForOwner: async () => {
+    checks++; return current ? { kind: 'emotion-curves' } : null;
+  } }, mediaStore: { adopt: async context => {
+    current = false;
+    await context.authorize(); adopted = true;
+    return { bytes: 5, discard: async () => {} };
+  } } });
+  const service = createGlabEvidenceService(deps);
+  await assert.rejects(service.saveCapturedMedia(OWNER, { kind: 'videos', recordId: 'r1', contentType: 'video/mp4',
+    captured: {}, owner: { isCurrent: () => true },
+  }), error => error.code === 'PROFILE_RECORD_NOT_FOUND');
+  assert.equal(adopted, false); assert.equal(checks, 1);
+});
+
+test('concurrent media commits for the same owner/record are rejected through metadata completion', async () => {
+  let beginMetadata, endMetadata;
+  const started = new Promise(resolve => { beginMetadata = resolve; });
+  const closed = new Promise(resolve => { endMetadata = resolve; });
+  const deps = stubs({ evidenceStore: { saveMediaForOwner: async () => { beginMetadata(); await closed; } },
+    mediaStore: { adopt: async context => { await context.authorize(); return { bytes: 5, discard: async () => {} }; } } });
+  const service = createGlabEvidenceService(deps);
+  const input = { kind: 'videos', recordId: 'r1', contentType: 'video/mp4', captured: {}, owner: { isCurrent: () => true } };
+  const first = service.saveCapturedMedia(OWNER, input);
+  try {
+    await started;
+    await assert.rejects(service.saveCapturedMedia(OWNER, input), error => error.statusCode === 409);
+  } finally { endMetadata(); }
+  await first;
+});
+
+test('metadata failure discards only this attempt and preserves the explicit failure', async () => {
+  const failure = new Error('metadata outcome unknown'); let discarded = 0;
+  const deps = stubs({ evidenceStore: { saveMediaForOwner: async () => { throw failure; } },
+    mediaStore: { adopt: async context => { await context.authorize(); return { bytes: 5, discard: async () => { discarded++; } }; } } });
+  const service = createGlabEvidenceService(deps);
+  await assert.rejects(service.saveCapturedMedia(OWNER, { kind: 'videos', recordId: 'r1', contentType: 'video/mp4',
+    captured: {}, owner: { isCurrent: () => true },
+  }), error => error === failure);
+  assert.equal(discarded, 1);
+});
+
 function emotionCurveBody(overrides = {}) {
   return {
     gameTitle: '手入力のゲーム名',

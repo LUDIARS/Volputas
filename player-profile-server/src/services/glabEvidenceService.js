@@ -71,7 +71,43 @@ function createGlabEvidenceService({
     return owned;
   }
 
+  const committing = new Set();
+  async function authorizeMedia(ownerId, { kind, recordId, requireStored = false }) {
+    const owned = await evidenceStore.findForOwner(ownerId, recordId);
+    if (!owned || !mediaKindMatchesRecord(kind, owned.kind)) {
+      throw new AppError(404, 'PROFILE_RECORD_NOT_FOUND', 'Profile record not found');
+    }
+    if (requireStored && !await evidenceStore.findMediaForOwner(ownerId, recordId, kind)) {
+      throw new AppError(404, 'MEDIA_NOT_FOUND', 'Media not found');
+    }
+    return true;
+  }
+
   return {
+    authorizeMedia,
+    authorizeEmotionCurve: async (ownerId, recordId) => { await ownedEmotionCurve(ownerId, recordId); return true; },
+
+    /** @implements SPEC-GLAB-SCOPED-EVIDENCE-UPLOAD */
+    async saveCapturedMedia(ownerId, { kind, recordId, contentType, captured, owner }) {
+      const key = `${ownerId}/${recordId}`;
+      if (committing.has(key)) throw new AppError(409, 'MEDIA_COMMIT_IN_PROGRESS', 'A media commit is already in progress');
+      committing.add(key);
+      try {
+        const authorize = async () => {
+          if (!owner.isCurrent()) throw new AppError(408, 'UPLOAD_ENDED', 'Upload ended');
+          await authorizeMedia(ownerId, { kind, recordId });
+          if (!owner.isCurrent()) throw new AppError(408, 'UPLOAD_ENDED', 'Upload ended');
+        };
+        const result = await mediaStore.adopt({ ...mediaContext(ownerId, kind, recordId), contentType, captured, authorize });
+        try {
+          await evidenceStore.saveMediaForOwner(ownerId, { recordId, kind, contentType, bytes: result.bytes });
+        } catch (error) {
+          await result.discard().catch(() => { /* Preserve the metadata failure; owned orphan cleanup is best effort. */ });
+          throw error;
+        }
+        return { bytes: result.bytes, contentType };
+      } finally { committing.delete(key); }
+    },
     async listEmotionCurves(ownerId) {
       const records = await evidenceStore.listForOwner(ownerId, EMOTION_CURVES);
       return records.map(evidenceView);

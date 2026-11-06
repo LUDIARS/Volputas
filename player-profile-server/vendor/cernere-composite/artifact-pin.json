@@ -1,0 +1,22 @@
+{
+  "compiler": "typescript@5.9.3",
+  "sourceRevision": "71d6c368dc188bbb95f9af323d347060425d99d6",
+  "hashes": {
+    "captured-operation.d.ts": "092d7ebeee6bfd3e3e39f451d05c7ecee8b33095311c735ebca46bb1cdc334ba",
+    "captured-operation.js": "636810c91b46d51330a3a27f4f5c71251d7cf0ab4e4ecadd2d650a7ec1a1ebbe",
+    "composite.d.ts": "8e6a4b12541cba3c0fc17fd986b7034f22e0873209bee15fbf41e78cf8aed1e9",
+    "composite.js": "dcc561113444fbd57566819520d55e5a757c154964912120d3ac2c8129851207",
+    "delegation.d.ts": "5c6dac2963e45cb9abc8fca2f99e97148150769c391badde3660dbbd8991e70d",
+    "delegation.js": "d2150746a6c1576a3b1c4e0f90a50092ae050dc60d924572e870f9163f8795c9",
+    "service-identity.d.ts": "2689bcbbe9ee5d2ce78566db0dfa4808ac2f39cba5058658747435510b86cfd8",
+    "service-identity.js": "718c69239faaccd87bec302855cdfd45b5cf843ccb3f6d8e9740cc1cc8c17853",
+    "service-session.d.ts": "a328b4510499f2c53b587c78210ad0119bb7a5a62d38ac40b942aabb01b08622",
+    "service-session.js": "964020c307d4159dc3c9a6261cbad384e807edc0c84eb987774b9f1e52ed257d",
+    "types.d.ts": "d8e0a947d8f13034cac2a5a8a35ccdbef43b7d8ceae75495561c6e3954ff3a31",
+    "types.js": "552f1ad0e86e02365a8e1a92f33079612195a552ee7f25d2e7c7596361661495",
+    "upload-body.d.ts": "57d92443c19c842b057f365dd01b1c296541def2c35c7f215022ca9bdaf62472",
+    "upload-body.js": "65013ac682df21be40743f1f180f7fcf4e352eabdd4ff612736989857a01967c",
+    "upload.d.ts": "f9673842a82e00a0996f77607cbd7c93a2ec2fa7c8c36689bdcb9889d58b1a31",
+    "upload.js": "0a15ac25a2f8483413c77165b7594c96a2bfc41fc3383c9a374c23e26fb12d49"
+  }
+}

@@ -18,6 +18,7 @@ const {
 } = require('./services/discutereImpressionPusher');
 const { discuterePersonaBridgeBearer } = require('./services/discuterePersonaBridgeAuth');
 const { closeProfileEvidenceStore } = require('./integrations/cernere/createProfileEvidenceStore');
+const { closeGlabDelegation } = require('./integrations/cernere/glabDelegation');
 const { assertFrontendBuild, mountFrontend } = require('./services/frontendAssets');
 const { assertOnlineConfiguration } = require('./services/onlineConfiguration');
 const { assertHasterConfiguration } = require('./haster/environment');
@@ -344,6 +345,7 @@ function stop() {
     stopDiscutereImpressionPush?.();
     stopDiscutereImpressionPush = null;
     closeProfileEvidenceStore();
+    closeGlabDelegation();
     const activeIntegration = glabSurveyService;
     glabSurveyService = null;
     glabReviewService = null;

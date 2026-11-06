@@ -5,10 +5,14 @@
   "templateRules": [],
   "membership": [
     {
+      "pathPattern": "(^|/)player-profile-server/(spec/feature/glab-scoped-evidence-upload\\.md|src/integrations/cernere/(uploadSpool|glabDelegation)(\\.test)?\\.js|src/services/profileMediaStore(\\.test)?\\.js)$"
+    },
+    {
       "pathPattern": "(^|/)player-profile-server/(migrations/016_game_catalog\\.sql|spec/feature/glab-(game-catalog|emotion-curves)\\.md|src/(app\\.js|corpus/(gameContract|surveyContract|surveyDefinitionContract)(\\.test)?\\.js|integrations/cernere/profileEvidenceStore\\.js|middleware/cernere(Admin|ProjectAuth)(\\.test)?\\.js|models/(gameModel|surveyModel)\\.js|routes/(corpusRateLimits|glabEvidence|glabGames|glabSurveys)(\\.test)?\\.js|services/(glabEvidenceService|glabGameSelection|glabGameService|glabReviewService|glabSurveyService|mediaTicketService)(\\.test)?\\.js|services/profileEvidenceSchemas(\\.gamereview)?(\\.test)?\\.js))$"
     }
   ],
   "specRefs": [
+    "SPEC-GLAB-SCOPED-EVIDENCE-UPLOAD",
     "SPEC-GLAB-ADMIN-AUTHORIZATION",
     "SPEC-GLAB-GAME-CATALOG",
     "SPEC-GLAB-GAME-SELECTION",

@@ -64,6 +64,31 @@ const MEDIA_RULES = {
 assertMediaRulesCoverRegistry(MEDIA_RULES);
 
 class ProfileMediaStore {
+  /** The SDK already digested this owned private capture; never accept a client path.
+   * @implements SPEC-GLAB-SCOPED-EVIDENCE-UPLOAD
+   */
+  async adopt({ repositoryRoot, name, kind, recordId, contentType, captured, authorize }) {
+    const rule = MEDIA_RULES[kind], extension = rule?.contentTypes[contentType];
+    if (!extension) throw Object.assign(new Error('Unsupported media type'), { code: 'UNSUPPORTED_MEDIA_TYPE' });
+    if (!captured || typeof captured.adopt !== 'function' || !(captured.body instanceof Blob)
+      || captured.body.size < 1 || captured.body.size > rule.maximumBytes || typeof authorize !== 'function') {
+      throw new TypeError('An owned bounded capture and current owner authorization are required');
+    }
+    assertSafeSegment(recordId, 'Record ID');
+    const directory = insideRepository(collectionDirectory(repositoryRoot, 'media', name), kind);
+    const filePath = insideRepository(directory, `${recordId}${extension}`);
+    await fsPromises.mkdir(directory, { recursive: true });
+    await authorize();
+    await captured.adopt(filePath);
+    const identity = await fsPromises.stat(filePath);
+    return { filePath, bytes: captured.body.size, contentType, async discard() {
+      // The service serializes commits for this record through metadata completion.
+      // This additionally avoids deleting a replacement written by another owner.
+      const current = await fsPromises.stat(filePath).catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
+      if (current && current.dev === identity.dev && current.ino === identity.ino && current.size === identity.size) await fsPromises.unlink(filePath);
+    } };
+  }
+
   async save({ repositoryRoot, name, kind, recordId, contentType, stream }) {
     const rule = MEDIA_RULES[kind];
     const extension = rule?.contentTypes[contentType];

@@ -5,6 +5,9 @@
   "templateRules": [],
   "membership": [
     {
+      "pathPattern": "(^|/)player-profile-server/(vendor/cernere-composite/.*|scripts/(vendor-composite|pin-composite-artifact)\\.mjs)$"
+    },
+    {
       "pathPattern": "(^|/)player-profile-server/src/integrations/(?:.*/)?[^/]+$"
     }
   ]
