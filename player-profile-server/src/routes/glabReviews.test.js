@@ -4,6 +4,7 @@ const express = require('express');
 const { once } = require('node:events');
 const { errorHandler } = require('../middleware/errorHandler');
 const { createGlabReviewRouter } = require('./glabReviews');
+const { fixtureDelegation, scopedFetch } = require('./glabScoped.fixture');
 
 const OWNER = 'ba8e37c8-0f60-4f22-9c1a-6b0a7cbd7e01';
 
@@ -14,7 +15,6 @@ function passThrough(req, _res, next) {
 
 async function withRouter(router, exercise) {
   const app = express();
-  app.use(express.json());
   app.use('/reviews', router);
   app.use(errorHandler);
   const server = app.listen(0, '127.0.0.1');
@@ -33,7 +33,7 @@ async function withRouter(router, exercise) {
 
 function routerFor(service) {
   return createGlabReviewRouter({
-    authMiddleware: passThrough,
+    delegation: fixtureDelegation({ id: OWNER }),
     transportRateLimiter: passThrough,
     userRateLimiter: passThrough,
     serviceProvider: () => service,
@@ -61,7 +61,7 @@ test('created review response preserves the GLAB relay queue fields', async () =
   };
 
   await withRouter(routerFor(service), async (baseUrl) => {
-    const response = await fetch(baseUrl, {
+    const response = await scopedFetch(baseUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ comment: 'client input' }),

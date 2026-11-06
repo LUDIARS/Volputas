@@ -31,8 +31,8 @@ test('mounts the manifest and protected GLAB survey backend routes', () => {
     'Corpus transport limiting must run before parsing request bodies',
   );
   assert.ok(
-    bodyParserIndex < protectedRouterIndex,
-    'Corpus authentication router must receive normalized parsed JSON',
+    protectedRouterIndex < bodyParserIndex,
+    'Scoped authentication must consume exact raw bytes before global parsing',
   );
   assert.ok(
     corpusRouteIndex < generalLimiterIndex,

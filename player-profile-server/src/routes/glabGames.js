@@ -1,5 +1,6 @@
 const { Router } = require('express');
-const { createCernereProjectAuth } = require('../middleware/cernereProjectAuth');
+const { installGlabRequestGates } = require('./glabRequestGate');
+const { AppError } = require('../middleware/errorHandler');
 const { isCernereAdmin, requireCernereAdmin } = require('../middleware/cernereAdmin');
 const { createGlabGameService } = require('../services/glabGameService');
 const {
@@ -8,7 +9,7 @@ const {
 } = require('./corpusRateLimits');
 
 function createGlabGameRouter({
-  authMiddleware = createCernereProjectAuth(),
+  delegation,
   transportRateLimiter = createCorpusTransportRateLimiter(),
   userRateLimiter = createCorpusUserRateLimiter(),
   adminMiddleware = requireCernereAdmin,
@@ -24,7 +25,16 @@ function createGlabGameRouter({
     next();
   });
   if (transportRateLimiter) router.use(transportRateLimiter);
-  router.use(authMiddleware);
+  const admin = decision => {
+    if (!isCernereAdmin(decision.user)) throw new AppError(403, 'ADMIN_REQUIRED', 'This operation requires a Cernere administrator');
+    return true;
+  };
+  installGlabRequestGates(router, [
+    { method: 'GET', path: '/', action: 'games.list', risk: 'sensitive_read', authorizeResource: () => true },
+    { method: 'POST', path: '/', action: 'games.create', risk: 'important', authorizeResource: admin },
+    { method: 'PATCH', path: '/:id', action: 'games.update', risk: 'important',
+      authorizeResource: async (decision, params) => { admin(decision); return resolveService().authorizeGame(params.id); } },
+  ], { delegation });
   router.use(userRateLimiter);
 
   router.get('/', async (req, res, next) => {

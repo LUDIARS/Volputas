@@ -6,6 +6,7 @@ const { createGlabReviewService } = require('./glabReviewService');
 const { createGlabReviewRouter } = require('../routes/glabReviews');
 const { errorHandler } = require('../middleware/errorHandler');
 const { validateGlabVoiceInput } = require('./profileEvidenceSchemas');
+const { fixtureDelegation, scopedFetch } = require('../routes/glabScoped.fixture');
 
 // GLAB で書いた感想に Voluptas 本体と同じ追加ヒアリング・体験解析を通す (SPEC-GLAB-VOICE-FOLLOW-UP)。
 
@@ -79,10 +80,9 @@ test('only the owner\'s own voice record is reachable', async () => {
 
 async function withApp(service, analysisService, exercise, ownerId = OWNER) {
   const app = express();
-  app.use(express.json());
-  const pass = (req, _res, next) => { req.cernereUser = { id: ownerId }; next(); };
+  const pass = (_req, _res, next) => next();
   app.use('/reviews', createGlabReviewRouter({
-    authMiddleware: pass, transportRateLimiter: pass, userRateLimiter: pass,
+    delegation: fixtureDelegation({ id: ownerId }), transportRateLimiter: pass, userRateLimiter: pass,
     serviceProvider: () => service, analysisService,
   }));
   app.use(errorHandler);
@@ -99,21 +99,21 @@ async function withApp(service, analysisService, exercise, ownerId = OWNER) {
 test('the GLAB routes answer follow-ups and map closed questions to 409 and others\' records to 404', async () => {
   const service = serviceWith({ [OWNER]: [{ kind: 'voices', record: glabVoice({ playProgress: 'early' }) }] });
   await withApp(service, null, async (base) => {
-    const next = await (await fetch(`${base}/v1/follow-up`)).json();
+    const next = await (await scopedFetch(`${base}/v1/follow-up`)).json();
     assert.equal(next.data.question.id, 'sentiment');
-    const answer = await fetch(`${base}/v1/follow-up`, {
+    const answer = await scopedFetch(`${base}/v1/follow-up`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ questionId: 'sentiment', answer: 0 }),
     });
     assert.equal(answer.status, 200);
     assert.equal((await answer.json()).data.record.sentiment, 0);
-    const again = await fetch(`${base}/v1/follow-up`, {
+    const again = await scopedFetch(`${base}/v1/follow-up`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ questionId: 'sentiment', answer: 1 }),
     });
     assert.equal(again.status, 409);
-    assert.equal((await fetch(`${base}/missing/follow-up`)).status, 404);
+    assert.equal((await scopedFetch(`${base}/missing/follow-up`)).status, 404);
   });
   await withApp(service, null, async (base) => {
-    assert.equal((await fetch(`${base}/v1/follow-up`)).status, 404);
+    assert.equal((await scopedFetch(`${base}/v1/follow-up`)).status, 404);
   }, OTHER);
 });
 
@@ -130,14 +130,14 @@ test('the GLAB analysis route requires consent and saves the result on the owner
     },
   };
   await withApp(service, analysisService, async (base) => {
-    const refused = await fetch(`${base}/analysis/v1`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+    const refused = await scopedFetch(`${base}/analysis/v1`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
     assert.equal(refused.status, 400);
-    const done = await fetch(`${base}/analysis/v1`, {
+    const done = await scopedFetch(`${base}/analysis/v1`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ consent: true }),
     });
     assert.equal(done.status, 200);
     assert.equal((await done.json()).data.analysis.result, 'ok');
-    assert.equal((await (await fetch(`${base}/analysis/v1`)).json()).data.analysis.result, 'ok');
+    assert.equal((await (await scopedFetch(`${base}/analysis/v1`)).json()).data.analysis.result, 'ok');
   });
   assert.equal(analyses.length, 1);
 });

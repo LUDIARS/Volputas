@@ -18,7 +18,7 @@ test('marks protected survey data private and no-store before authentication', (
   const source = readFileSync(resolve(__dirname, 'glabSurveys.js'), 'utf8');
   const noStore = source.indexOf("res.set('Cache-Control', 'private, no-store')");
   const transportLimit = source.indexOf('router.use(transportRateLimiter)');
-  const auth = source.indexOf('router.use(authMiddleware)');
+  const auth = source.indexOf('installGlabRequestGates(router,');
   const userLimit = source.indexOf('router.use(userRateLimiter)');
 
   assert.ok(noStore >= 0);

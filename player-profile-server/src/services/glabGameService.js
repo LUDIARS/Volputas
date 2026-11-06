@@ -19,6 +19,12 @@ function asConflict(error) {
 /** @implements SPEC-GLAB-GAME-CATALOG */
 function createGlabGameService({ repository = gameModel } = {}) {
   return {
+    /** @implements SPEC-GLAB-SCOPED-CATALOG-DELEGATION */
+    async authorizeGame(gameIdValue) {
+      const id = validateGameId(gameIdValue);
+      if (!await repository.findById(id)) throw new AppError(404, 'NOT_FOUND', 'Game not found');
+      return true;
+    },
     // 一般ユーザには公開中のゲームだけを見せる。 管理者は停止済みも含めて
     // 一覧できないと復帰させられないので、 includeInactive を分岐に使う。
     async listGames({ includeInactive = false } = {}) {

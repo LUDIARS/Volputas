@@ -56,6 +56,13 @@ function createGlabSurveyService({
   }
 
   return {
+    /** @implements SPEC-GLAB-SCOPED-CATALOG-DELEGATION */
+    async authorizeSurvey(surveyIdValue, { admin = false } = {}) {
+      const id = validateSurveyId(surveyIdValue);
+      const row = admin ? await surveyRepository.findById(id) : await surveyRepository.findForGlabById(id);
+      if (!row) throw new AppError(404, 'NOT_FOUND', 'Survey not found');
+      return true;
+    },
     async listSurveys(userIdValue, categoryValue, gameIdValue) {
       const userId = validateUserId(userIdValue);
       const category = validateCategory(categoryValue);

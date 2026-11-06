@@ -1,9 +1,9 @@
 // GLAB 経由の管理操作 (ゲームマスタ登録・アンケート公開) の認可。
 //
-// 権限の正本は Cernere の users.role で、 project token の role クレームとして
-// 届く。 GLAB 側にも管理者判定 (Corpus の adminIds) はあるが、 それは画面を
+// 権限の正本は Cernere の users.role。GLAB integration ではオンラインで消費した
+// scoped delegation の現在の user.role を SDK から受け取る。 GLAB 側にも管理者判定 (Corpus の adminIds) はあるが、 それは画面を
 // 出すかどうかの判断でしかない。 GLAB を迂回して Voluptas を直接叩かれても
-// 書けないよう、 サーバ側はトークンのクレームだけで判定する。
+// 書けないよう、 サーバ側でも確認済みの現在の本人 role で判定する。
 const ADMIN_ROLES = Object.freeze(new Set(['admin']));
 
 function isCernereAdmin(user) {

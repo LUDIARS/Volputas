@@ -174,14 +174,8 @@ app.use(
   createGlabEvidenceRouter({ serviceProvider: getGlabEvidenceService }),
 );
 
-// Body parsing
-app.use(express.json({ limit: '1mb' }));
-app.use(normalizeJsonBodyError);
-
-// Corpus discovery contract (public metadata, no user data).
-app.use('/.well-known/corpus-service.json', corpusManifestRoutes);
-
-// Corpus requests are limited per verified Cernere subject inside this router.
+// Raw bytes reach the scoped SDK before parsing on every GLAB integration.
+// Each router then limits requests per authority-verified current subject.
 app.use(
   glabSurveyPath,
   createGlabSurveyRouter({
@@ -208,6 +202,11 @@ app.use(
     transportRateLimiter: null,
   }),
 );
+
+// Other application routes keep their existing JSON boundary.
+app.use(express.json({ limit: '1mb' }));
+app.use(normalizeJsonBodyError);
+app.use('/.well-known/corpus-service.json', corpusManifestRoutes);
 
 // General rate limiter
 app.use(rateLimit({

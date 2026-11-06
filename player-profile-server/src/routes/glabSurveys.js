@@ -1,6 +1,7 @@
 const { Router } = require('express');
-const { createCernereProjectAuth } = require('../middleware/cernereProjectAuth');
-const { requireCernereAdmin } = require('../middleware/cernereAdmin');
+const { requireCernereAdmin, isCernereAdmin } = require('../middleware/cernereAdmin');
+const { installGlabRequestGates } = require('./glabRequestGate');
+const { AppError } = require('../middleware/errorHandler');
 const { createGlabSurveyService } = require('../services/glabSurveyService');
 const {
   cernereUserKey,
@@ -9,7 +10,7 @@ const {
 } = require('./corpusRateLimits');
 
 function createGlabSurveyRouter({
-  authMiddleware = createCernereProjectAuth(),
+  delegation,
   transportRateLimiter = createCorpusTransportRateLimiter(),
   userRateLimiter = createCorpusUserRateLimiter(),
   adminMiddleware = requireCernereAdmin,
@@ -25,7 +26,19 @@ function createGlabSurveyRouter({
     next();
   });
   if (transportRateLimiter) router.use(transportRateLimiter);
-  router.use(authMiddleware);
+  const admin = decision => {
+    if (!isCernereAdmin(decision.user)) throw new AppError(403, 'ADMIN_REQUIRED', 'This operation requires a Cernere administrator');
+    return true;
+  };
+  const published = (_decision, params) => resolveService().authorizeSurvey(params.id);
+  installGlabRequestGates(router, [
+    { method: 'GET', path: '/', action: 'survey.list', risk: 'sensitive_read', authorizeResource: () => true },
+    { method: 'POST', path: '/', action: 'survey.create', risk: 'important', authorizeResource: admin },
+    { method: 'GET', path: '/:id', action: 'survey.read', risk: 'sensitive_read', authorizeResource: published },
+    { method: 'PATCH', path: '/:id', action: 'survey.update', risk: 'important',
+      authorizeResource: async (decision, params) => { admin(decision); return resolveService().authorizeSurvey(params.id, { admin: true }); } },
+    { method: 'PUT', path: '/:id/response', action: 'survey.respond', risk: 'important', authorizeResource: published },
+  ], { delegation });
   router.use(userRateLimiter);
 
   router.get('/', async (req, res, next) => {

@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const rateLimit = require('express-rate-limit');
 const config = require('../config');
-const { createCernereProjectAuth } = require('../middleware/cernereProjectAuth');
+const { installGlabRequestGates } = require('./glabRequestGate');
 const { AppError, asInputError } = require('../middleware/errorHandler');
 const { createVoiceAnalysisRoutes } = require('./voiceAnalysisRoutes');
 
@@ -19,7 +19,7 @@ function positiveInteger(value, fallback, maximum, minimum = 0) {
 
 /** @implements SPEC-GLAB-REVIEW-RELAY */
 function createGlabReviewRouter({
-  authMiddleware = createCernereProjectAuth(),
+  delegation,
   transportRateLimiter = rateLimit({
     windowMs: config.rateLimit.general.windowMs,
     max: config.rateLimit.general.max * 10,
@@ -45,7 +45,22 @@ function createGlabReviewRouter({
     next();
   });
   if (transportRateLimiter) router.use(transportRateLimiter);
-  router.use(authMiddleware);
+  const owned = async (decision, params) => {
+    await serviceProvider().loadVoice(decision.user.id, params.recordId).catch(error => { throw ownedVoiceError(error); });
+    return true;
+  };
+  installGlabRequestGates(router, [
+    { method: 'GET', path: '/', action: 'review.list', risk: 'sensitive_read', authorizeResource: () => true },
+    { method: 'POST', path: '/', action: 'review.create', risk: 'important', authorizeResource: () => true },
+    { method: 'GET', path: '/recent-games', action: 'games.recent', risk: 'sensitive_read', authorizeResource: () => true },
+    { method: 'GET', path: '/:recordId/follow-up', action: 'review.follow-up.read', risk: 'sensitive_read', authorizeResource: owned },
+    { method: 'POST', path: '/:recordId/follow-up', action: 'review.follow-up.write', risk: 'important', authorizeResource: owned },
+    ...(analysisService ? [
+      { method: 'GET', path: '/analysis/catalog', action: 'review.analysis.catalog', risk: 'read', authorizeResource: () => true },
+      { method: 'GET', path: '/analysis/:recordId', action: 'review.analysis.read', risk: 'sensitive_read', authorizeResource: owned },
+      { method: 'POST', path: '/analysis/:recordId', action: 'review.analysis.create', risk: 'important', authorizeResource: owned },
+    ] : []),
+  ], { delegation });
   router.use(userRateLimiter);
 
   router.get('/', async (req, res, next) => {
