@@ -1,6 +1,6 @@
 {
   "service": "voluptas-dependency-locks",
-  "include": ["contracts/dependency-locks.mjs"],
+  "include": ["contracts/dependency-locks.mjs", "contracts/rustls-lock.mjs"],
   "exclude": [],
   "rules": {},
   "importFrom": "./contract-runtime.mjs"

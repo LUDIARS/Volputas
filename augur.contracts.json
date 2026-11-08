@@ -5,6 +5,15 @@
   "runtimeFile": "contracts/contract-runtime.mjs",
   "contracts": [
     {
+      "id": "C-3",
+      "criterion": "C-3 inspectRustlsLock(lock, baseline, manifest, baselineManifest): rustls のみを公開 checksum の 0.23.46 に更新し他のロック内容と Cargo.toml を維持する",
+      "symbol": "inspectRustlsLock",
+      "file": "contracts/rustls-lock.mjs",
+      "module": "contracts/rustls-lock.contract.mjs",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
       "id": "C-1",
       "criterion": "C-1 inspectOverlayLock(lock): dompurify 3.4.17 を mermaid の既存要求 ^3.3.3 内で固定し公開 registry の整合性情報を保持する",
       "symbol": "inspectOverlayLock",

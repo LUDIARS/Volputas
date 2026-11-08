@@ -5,10 +5,10 @@
   "templateRules": [],
   "membership": [
     {
-      "pathPattern": "(^|/)contracts/(?:contract-runtime|dependency-locks(?:\\.test)?|overlay-lock\\.contract|server-lock\\.contract)\\.mjs$"
+      "pathPattern": "(^|/)contracts/(?:contract-runtime|dependency-locks(?:\\.test)?|overlay-lock\\.contract|server-lock\\.contract|rustls-lock(?:\\.contract|\\.test)?)\\.mjs$"
     },
     {
-      "pathPattern": "(^|/)(?:overlay-app|player-profile-server)/package-lock\\.json$"
+      "pathPattern": "(^|/)(?:overlay-app|player-profile-server)/package-lock\\.json$|(^|/)overlay-app/src-tauri/Cargo\\.lock$"
     }
   ],
   "specRefs": [
