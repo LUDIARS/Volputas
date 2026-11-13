@@ -1,0 +1,23 @@
+{
+  "name": "creator-insight",
+  "description": "同意済みのログ・コード・ポートフォリオ・アンケートから、人生脚本・性格・プレイタイプの対話用の仮説を作るスキルと、その集計ツール。遊び手の15軸の算出はペルソナ分析が所有し、ここは結果を読むだけにする。API、画面、保存は所有しない。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)skills/creator-insight/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/creatorInsight/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/scripts/creator-insight\\.js$"
+    },
+    {
+      "pathPattern": "(^|/)spec/feature/creator-insight\\.md$"
+    }
+  ],
+  "specRefs": [
+    "SPEC-CREATOR-INSIGHT"
+  ]
+}
