@@ -18,8 +18,10 @@ COPY lib/ ./lib/
 
 # sentiment-core is a file: dependency that ships only sources — build its dist
 # before the production install so require('@ludiars/sentiment-core') resolves.
+# --legacy-peer-deps matches scripts/setup-submodules.js: npm 10.9 (Node 22) crashes
+# while loading peer dependencies for this lockless install.
 RUN cd lib/lapilli/packages/sentiment-core \
-    && npm install --include=dev --package-lock=false \
+    && npm install --include=dev --package-lock=false --legacy-peer-deps \
     && npm run build \
     && rm -rf node_modules \
     && cd /app \

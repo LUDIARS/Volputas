@@ -9,6 +9,14 @@ const {
   websocketUrl,
 } = require('./projectSocketClient');
 
+// The client's timeout timers are unref'd, and these tests use fake sockets, so
+// nothing else holds the event loop open while a test awaits a timeout. When the
+// loop drains, the test runner cancels that test and the rest of this file
+// ("Promise resolution is still pending but the event loop has already resolved").
+// Hold one ref'd timer for the lifetime of the file.
+const keepEventLoopAlive = setInterval(() => {}, 60_000);
+test.after(() => clearInterval(keepEventLoopAlive));
+
 class FakeSocket extends EventEmitter {
   constructor({ autoClose = true } = {}) {
     super();
