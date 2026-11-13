@@ -55,7 +55,11 @@ function isEmptyDirectory(directory) {
   return fs.readdirSync(directory).length === 0;
 }
 
-runNpm(['install', '--include=dev', '--package-lock=false']);
+// --legacy-peer-deps: Node 22 に付属する npm 10.9 は、lock 無しで sentiment-core の
+// devDependencies を解決すると peer 依存の読み込みで落ちる
+// (Cannot read properties of null (reading 'edgesOut'))。build に要るのは tsup と
+// typescript だけなので、peer 依存の自動解決を切って回避する。
+runNpm(['install', '--include=dev', '--package-lock=false', '--legacy-peer-deps']);
 runNpm(['run', 'build']);
 
 function runNpm(argumentsList) {
