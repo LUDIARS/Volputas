@@ -3,8 +3,9 @@
 // the server itself starts fine without a key.
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { resolveAnthropicModel } = require('./resolveAnthropicModel.mjs');
 
-const DEFAULT_MODEL = 'claude-opus-5';
+const DEFAULT_MODEL = 'opus';
 const DEFAULT_MAX_TOKENS = 16000;
 
 const IMAGE_MEDIA_TYPES = new Map([
@@ -67,6 +68,7 @@ class AnthropicTextClient {
   /** @implements SPEC-GAME-INSIGHT */
   async generate({ system, prompt, imagePaths = [], maxTokens = DEFAULT_MAX_TOKENS }) {
     if (!this.isConfigured()) throw configurationError();
+    const model = resolveAnthropicModel(this.model);
     if (!this.client) {
       // Lazy require: the SDK is only loaded when the feature is actually used.
       const Anthropic = require('@anthropic-ai/sdk');
@@ -76,7 +78,7 @@ class AnthropicTextClient {
     // recommended substitute model instead of surfacing as empty output.
     const content = await buildUserContent(prompt, imagePaths);
     const response = await this.client.beta.messages.create({
-      model: this.model,
+      model,
       max_tokens: maxTokens,
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',

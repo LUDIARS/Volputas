@@ -68,7 +68,7 @@ class ClaudeCliTextClient {
       throw configurationError(`VOLUPTAS_LLM_MODEL contains unsupported characters: ${model}`);
     }
     this.command = command;
-    this.model = resolveModel(model, 'claude');
+    this.model = model;
     this.timeoutMs = timeoutMs;
     this.spawnImpl = spawnImpl;
   }
@@ -85,8 +85,8 @@ class ClaudeCliTextClient {
   /** @implements SPEC-GAME-INSIGHT */
   async generate({ system, prompt, imagePaths = [], disableTools = false }) {
     const imageAccess = prepareImageAccess(prompt, imagePaths);
-    const args = ['-p', '--output-format', 'text'];
-    if (this.model) args.push('--model', this.model);
+    const model = resolveModel(this.model, 'claude');
+    const args = ['-p', '--output-format', 'text', '--model', model];
     if (disableTools) {
       if (imagePaths.length) throw imagePathError();
       args.push('--tools', '', '--disallowedTools', '*', '--strict-mcp-config',
@@ -152,7 +152,7 @@ class ClaudeCliTextClient {
           }));
           return;
         }
-        finish(null, { text, model: this.model || 'claude-cli' });
+        finish(null, { text, model });
       });
 
       child.stdin.on('error', () => { /* close/error races surface via 'error'/'close'; best-effort */ });

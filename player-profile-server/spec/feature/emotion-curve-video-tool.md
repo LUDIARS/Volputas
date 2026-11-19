@@ -46,7 +46,7 @@ valence/arousal を読むため、スタンプのみの記録でも分析が成�
 {
   "schemaVersion": 2,
   "extractor": "llm",              // provenance (persona-engine-v2 §4.4 の流儀)
-  "model": "claude-opus-5",
+  "model": "claude-example-model",
   "text": "…Markdown…",
   "judgments": { /* 二流派の判定 (西洋/東洋/合議) — emotion-judgment-lenses.md §構造化。v1 記録には無い */ },
   "evaluatedAt": "ISO8601",
@@ -80,12 +80,16 @@ evaluate は都度実行 (再実行で上書き)。ペルソナは保存済み `
     Claude Code CLI を `claude -p --output-format text` で起動し、プロンプトは stdin で渡す。
     API キー不要。CLI 不在なら `LLM_NOT_CONFIGURED` (503) で **fail-fast**
     (RULE_CODE §7.1: 無言スタブ禁止)。コマンドは `VOLUPTAS_CLAUDE_CLI` で差し替え可、
-    モデルは `VOLUPTAS_LLM_MODEL` (未指定なら共有起動ライブラリの Claude 既定)。timeout 5 分。
+    モデルは `VOLUPTAS_LLM_MODEL` (既定 `sonnet`)。timeout 5 分。
     起動境界は `shared-one-shot.md` に従う。
   - **`anthropic` (明示 opt-in)** — `src/services/llm/anthropicTextClient.js`。
     `ANTHROPIC_API_KEY` 必須、未設定なら `LLM_NOT_CONFIGURED` (503)。
-    モデルは `VOLUPTAS_LLM_MODEL` (既定 `claude-opus-5`)。サーバ側 fallback
+    モデルは `VOLUPTAS_LLM_MODEL` (既定 `opus`)。サーバ側 fallback
     (`fallbacks: "default"`) を有効化し、ポリシー由来の refusal は推奨代替モデルで再実行される。
+  - 両バックエンドで `VOLUPTAS_LLM_MODEL` に Claude の役割名または明示モデル ID を設定できる。
+    役割名は Lapilli が Concordia の対応表から呼び出し時に解決する。Anthropic API に必要な
+    モデル ID を解決できない場合は `LLM_NOT_CONFIGURED` (503) を返す。
+    Actio: `actio:8eda554b-ffec-4ecc-a8d8-6b6a06e3f262`。
 - **LLM 使用の明示**: UI (レコードカード) に「スタンプ・メモ・プレイ時間・ゲームログと
   ペルソナ分析を LLM (Claude) に送信して生成する」旨を常時表示する。送信されるのは
   当該レコードと保存済みペルソナ分析のみで、他レコードや認証情報は含まない。

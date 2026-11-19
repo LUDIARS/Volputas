@@ -65,7 +65,7 @@ test('evaluation service wraps LLM output with provenance metadata', async () =>
         calls.push(input);
         return {
           text: '## 分析結果\n## 西洋の判定 (機序)\n- 確度: 高\n## 東洋の判定 (全体観)\n- 確度: 中\n## 合議\n一致度: 中',
-          model: 'claude-opus-5',
+          model: 'claude-fixture-model',
         };
       },
     },
@@ -89,7 +89,7 @@ test('evaluation service wraps LLM output with provenance metadata', async () =>
   assert.deepEqual(rest, {
     schemaVersion: 2,
     extractor: 'llm',
-    model: 'claude-opus-5',
+    model: 'claude-fixture-model',
     text: '## 分析結果\n## 西洋の判定 (機序)\n- 確度: 高\n## 東洋の判定 (全体観)\n- 確度: 中\n## 合議\n一致度: 中',
     evaluatedAt: '2026-07-27T12:00:00.000Z',
     personaAnalyzedAt: PERSONA.analyzedAt,

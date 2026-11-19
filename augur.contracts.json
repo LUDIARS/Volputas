@@ -5,6 +5,15 @@
   "runtimeFile": "contracts/contract-runtime.mjs",
   "contracts": [
     {
+      "id": "C-5",
+      "criterion": "C-5 resolveAnthropicModel(model): Claude の役割は Concordia の対応表か共有の環境変数で解決し、明示モデル ID は維持する",
+      "symbol": "resolveAnthropicModel",
+      "file": "player-profile-server/src/services/llm/resolveAnthropicModel.mjs",
+      "module": "contracts/anthropic-model.contract.mjs",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
       "id": "C-3",
       "criterion": "C-3 inspectRustlsLock(lock, baseline, manifest, baselineManifest): rustls のみを公開 checksum の 0.23.46 に更新し他のロック内容と Cargo.toml を維持する",
       "symbol": "inspectRustlsLock",

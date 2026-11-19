@@ -10,6 +10,28 @@ const { ClaudeCliTextClient } = require('./claudeCliTextClient');
 const { resolveModel } = require('@ludiars/one-shot');
 const { createLlmTextClient } = require('./createLlmTextClient');
 
+async function useModelRoleMap(t, roles) {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'voluptas-model-roles-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const mapPath = path.join(directory, 'model-roles.json');
+  await fs.writeFile(mapPath, JSON.stringify({ schemaVersion: 1, roles: { claude: roles } }));
+
+  const overrides = {
+    LUDIARS_MODEL_ROLES_FILE: mapPath,
+    VOLUPTAS_LLM_MODEL: undefined,
+    LUDIARS_ONESHOT_MODEL_OPUS: undefined,
+  };
+  const setEnv = (key, value) => {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  };
+  for (const [key, value] of Object.entries(overrides)) {
+    const previous = process.env[key];
+    t.after(() => setEnv(key, previous));
+    setEnv(key, value);
+  }
+}
+
 function fakeChild() {
   const child = new EventEmitter();
   child.stdout = new EventEmitter();
@@ -49,7 +71,7 @@ test('claude-cli client streams the prompt over stdin and returns trimmed stdout
   const child = fakeChild();
   const client = new ClaudeCliTextClient({
     command: 'claude',
-    model: 'claude-opus-5',
+    model: 'claude-fixture-model',
     spawnImpl: (command, args, options) => {
       spawned = { command, args, options };
       return child;
@@ -61,10 +83,10 @@ test('claude-cli client streams the prompt over stdin and returns trimmed stdout
   child.emit('close', 0);
   const result = await pending;
 
-  assert.deepEqual(result, { text: '評価テキスト', model: 'claude-opus-5' });
+  assert.deepEqual(result, { text: '評価テキスト', model: 'claude-fixture-model' });
   assert.equal(spawned.command, 'claude');
   assert.equal(spawned.options.shell, false);
-  assert.deepEqual(spawned.args, ['-p', '--output-format', 'text', '--model', 'claude-opus-5']);
+  assert.deepEqual(spawned.args, ['-p', '--output-format', 'text', '--model', 'claude-fixture-model']);
   assert.equal(child.stdin.written, 'SYS\n\nPROMPT');
 });
 
@@ -123,11 +145,53 @@ test('anthropic client sends supplied frames as image blocks', async (t) => {
   assert.equal(request.messages[0].content[0].type, 'image');
   assert.equal(request.messages[0].content[0].source.media_type, 'image/jpeg');
   assert.equal(request.messages[0].content[0].source.data, '/9j/2Q==');
+  assert.equal(request.model, 'test-model');
   assert.deepEqual(request.messages[0].content[1], { type: 'text', text: 'p' });
 
   await client.generate({ system: 's', prompt: `frame: ${framePath}`, imagePaths: [framePath] });
   assert.equal(request.messages[0].content[1].text, 'frame: [attached image 1]');
   assert.doesNotMatch(request.messages[0].content[1].text, /voluptas-llm-image-/);
+});
+
+test('anthropic client sends the Concordia model ID for its default opus role', async (t) => {
+  const mappedModel = 'claude-fixture-opus';
+  await useModelRoleMap(t, { opus: mappedModel });
+  const client = new AnthropicTextClient({ apiKey: 'test-key' });
+  client.client = {
+    beta: {
+      messages: {
+        create: async ({ model }) => {
+          assert.equal(model, mappedModel);
+          return { model, stop_reason: 'end_turn', content: [{ type: 'text', text: 'ok' }] };
+        },
+      },
+    },
+  };
+  assert.deepEqual(await client.generate({ system: 's', prompt: 'p' }), { text: 'ok', model: mappedModel });
+});
+
+test('anthropic client reports missing role mappings before contacting the API', async (t) => {
+  await useModelRoleMap(t, {});
+  const client = new AnthropicTextClient({ apiKey: 'test-key' });
+  await assert.rejects(
+    client.generate({ system: 's', prompt: 'p' }),
+    (error) => error.code === 'LLM_NOT_CONFIGURED' && error.statusCode === 503,
+  );
+  assert.equal(client.client, null);
+});
+
+test('claude-cli client resolves a configured role when generating', async (t) => {
+  const child = fakeChild();
+  let args;
+  const client = new ClaudeCliTextClient({ model: 'opus', spawnImpl: (_command, argv) => { args = argv; return child; } });
+  const mappedModel = 'claude-fixture-opus';
+  await useModelRoleMap(t, { opus: mappedModel });
+
+  const pending = client.generate({ system: 's', prompt: 'p' });
+  child.stdout.emit('data', 'ok');
+  child.emit('close', 0);
+  assert.equal(args[args.indexOf('--model') + 1], mappedModel);
+  assert.deepEqual(await pending, { text: 'ok', model: mappedModel });
 });
 
 test('claude-cli client fails fast when the CLI binary is missing', async () => {
