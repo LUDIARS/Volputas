@@ -261,6 +261,8 @@ Ludellus-Server では刺激の提示がサーバー起点になるため、ネ�
 | `outcome` / `score` | 正誤。部分点があるゲームのため score (0.0〜1.0) を併設 |
 | `answer_detail` | 誤答分析用。**自由入力の生テキストは入れない** (§11)。選択肢 index、または誤答の編集距離などの派生量のみ |
 | `rtt_ms` | 対戦時のみ。直近の RTT 計測値 |
+| `attempt` | 同じ出題への何回目の解答か (1 始まり、省略時 1)。誤答後に同じ問題を答え直すゲームは、答えるたびに `trial_result` を送り `attempt` を増やす。初回正答率は `attempt` = 1 だけから出す (v1.1) |
+| `since_wrong_ms` | 同じ出題の直前の誤答 (か時間切れ) から今回の解答確定まで。`attempt` ≥ 2 のときだけ (v1.1) |
 
 > **アンチパターン:** `trial_result` を正解時のみ送る、タイムアウトを送らない、といった間引きは正答率・タイムアウト率の分母を壊すため禁止。
 
@@ -340,6 +342,22 @@ Ludellus-Server では刺激の提示がサーバー起点になるため、ネ�
 ```json
 { "…共通…", "rtt_ms": 42, "jitter_ms": 6, "server_clock_offset_ms": -13 }
 ```
+
+### 6.10 `ludellus.metric` (v1.1)
+
+ゲームごとに決めた基準 (連続正解の最大数・ヒントの使用回数など) を 1 つの名前付きの数値として送る。
+
+```json
+{ "…共通…", "name": "combo.max", "value": 5, "item_id": "vocab_ja_00123" }
+```
+
+`name` は `[a-z][a-z0-9_.-]{0,63}`、`value` は有限数、`item_id` は任意。これ以外の項目は持たない。
+
+### 6.11 `ludellus.session_summary` (v1.1、サーバ生成)
+
+WebSocket 経路 (`spec/feature/ludellus-play-stream.md`) でセッションが終わったときにサーバが作る集計。
+クライアントは送らない。`duration_ms`・正誤数・`first_try_accuracy`・`response_ms_median`・`since_wrong_ms_median`・
+`metrics` を持ち、Ludellus の管理画面の統計の元になる。
 
 ---
 
@@ -493,7 +511,7 @@ Ludellus-Server では刺激の提示がサーバー起点になるため、ネ�
 | 本設計の要素 | 既存基盤での実装 |
 |--------------|------------------|
 | セッションログ (§5) | `play_sessions.metadata` — 変更不要 |
-| イベントログ (§6) | `play_events` (`event_type` / `event_data`) — 変更不要。送信は既存 batch API |
+| イベントログ (§6) | `play_events` (`event_type` / `event_data`) — 変更不要。送信は既存 batch API か、WebSocket `/api/v1/play-stream` (v1.1、`spec/feature/ludellus-play-stream.md`) |
 | コンテンツマスタ (§7) | **新規テーブル** `content_items` (migration 003) |
 | 能力スナップショット (§8) | **新規テーブル** `player_ability_snapshots` (migration 003) |
 | チューニングパラメータ (§9) | **新規テーブル** `player_tuning_params` (migration 003) + 取得 API `GET /api/v1/games/:gameId/tuning/me` |
@@ -516,3 +534,4 @@ Ludellus-Server では刺激の提示がサーバー起点になるため、ネ�
 | バージョン | 日付 | 内容 |
 |------------|------|------|
 | 1.0 | 2026-07-02 | 初版作成 |
+| 1.1 | 2026-11-21 | `trial_result` に `attempt` / `since_wrong_ms`、`ludellus.metric` / `ludellus.session_summary` を追加。WebSocket 経路を追加 |

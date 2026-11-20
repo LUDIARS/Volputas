@@ -9,6 +9,7 @@
 const {
   isTrialResultType,
   isCalibrationType,
+  isMetricType,
   TRIAL_OUTCOMES,
 } = require('./trialResult');
 
@@ -99,6 +100,12 @@ function validateTrialResult(eventData) {
   checkOptional(errors, eventData.corrections, isNonNegativeInteger, 'corrections must be a non-negative integer');
   checkOptional(errors, eventData.rtt_ms, (v) => isFiniteNumber(v) && v >= 0, 'rtt_ms must be a non-negative number');
   checkOptional(errors, eventData.score, (v) => isFiniteNumber(v) && v >= 0 && v <= 1, 'score must be between 0 and 1');
+  checkOptional(errors, eventData.attempt, (v) => Number.isInteger(v) && v > 0, 'attempt must be a positive integer');
+  checkOptional(errors, eventData.since_wrong_ms, (v) => isFiniteNumber(v) && v >= 0, 'since_wrong_ms must be a non-negative number');
+  if (eventData.since_wrong_ms !== undefined && eventData.since_wrong_ms !== null
+      && !(Number.isInteger(eventData.attempt) && eventData.attempt >= 2)) {
+    errors.push('since_wrong_ms is only for attempt >= 2');
+  }
 
   if (!TRIAL_OUTCOMES.includes(eventData.outcome)) {
     errors.push(`outcome must be one of: ${TRIAL_OUTCOMES.join(', ')}`);
@@ -135,17 +142,38 @@ function validateCalibrationResult(eventData) {
   return errors;
 }
 
+const METRIC_NAME = /^[a-z][a-z0-9_.-]{0,63}$/;
+const METRIC_KEYS = new Set(['v', 'seq', 'round_id', 'client_ts', 'mono_ms', 'name', 'value', 'item_id']);
+
+// Validate a §6.10 metric payload: one named number a game decided to track.
+function validateMetric(eventData) {
+  const errors = [];
+  if (!isPlainObject(eventData)) return ['event_data must be an object'];
+  validateEnvelope(errors, eventData);
+  for (const key of Object.keys(eventData)) {
+    if (!METRIC_KEYS.has(key)) errors.push(`${key} is not a metric field`);
+  }
+  if (typeof eventData.name !== 'string' || !METRIC_NAME.test(eventData.name)) {
+    errors.push('name must match [a-z][a-z0-9_.-]{0,63}');
+  }
+  if (!isFiniteNumber(eventData.value)) errors.push('value must be a finite number');
+  checkOptional(errors, eventData.item_id, isNonEmptyString, 'item_id must be a non-empty string');
+  return errors;
+}
+
 // Dispatch on event_type. Unknown / non-ludellus events pass with no errors so
 // existing preference events (level_clear, pvp_match, …) are unaffected.
 function validateLudellusEvent(eventType, eventData) {
   if (isTrialResultType(eventType)) return validateTrialResult(eventData);
   if (isCalibrationType(eventType)) return validateCalibrationResult(eventData);
+  if (isMetricType(eventType)) return validateMetric(eventData);
   return [];
 }
 
 module.exports = {
   validateTrialResult,
   validateCalibrationResult,
+  validateMetric,
   validateLudellusEvent,
   FREE_TEXT_KEYS,
   MAX_ANSWER_STRING_LEN,

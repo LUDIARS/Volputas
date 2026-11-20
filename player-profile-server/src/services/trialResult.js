@@ -8,6 +8,9 @@
 const EVENT_NAMESPACE = 'ludellus';
 const TRIAL_RESULT_EVENT_TYPE = 'ludellus.trial_result';
 const CALIBRATION_EVENT_TYPE = 'ludellus.calibration_result';
+// Game-defined metric (§6.10) and the server-built per-session summary (§6.11).
+const METRIC_EVENT_TYPE = 'ludellus.metric';
+const SESSION_SUMMARY_EVENT_TYPE = 'ludellus.session_summary';
 
 // Outcome enum for a single trial (§6.4).
 const TRIAL_OUTCOMES = ['correct', 'wrong', 'timeout', 'abandoned'];
@@ -20,6 +23,10 @@ function isTrialResultType(eventType) {
 
 function isCalibrationType(eventType) {
   return eventType === CALIBRATION_EVENT_TYPE || eventType === 'calibration_result';
+}
+
+function isMetricType(eventType) {
+  return eventType === METRIC_EVENT_TYPE;
 }
 
 // A trial is "correct" when its §6.4 outcome is `correct`. The legacy timeline
@@ -54,6 +61,9 @@ function extractTrial(eventData) {
     presentedMonoMs: finiteOrNull(data.presented_mono_ms),
     firstInputMs: finiteOrNull(data.first_input_ms),
     responseMs: finiteOrNull(data.response_ms),
+    // Re-answers of the same item (§6.4 attempt / since_wrong_ms). Absent = first answer.
+    attempt: Number.isInteger(data.attempt) && data.attempt > 0 ? data.attempt : 1,
+    sinceWrongMs: Number.isFinite(data.since_wrong_ms) ? data.since_wrong_ms : null,
     pausedMs: finiteOrNull(data.paused_ms) ?? 0,
     rttMs: finiteOrNull(data.rtt_ms),
     inputEvents: finiteOrNull(data.input_events),
@@ -71,9 +81,12 @@ module.exports = {
   EVENT_NAMESPACE,
   TRIAL_RESULT_EVENT_TYPE,
   CALIBRATION_EVENT_TYPE,
+  METRIC_EVENT_TYPE,
+  SESSION_SUMMARY_EVENT_TYPE,
   TRIAL_OUTCOMES,
   isTrialResultType,
   isCalibrationType,
+  isMetricType,
   isCorrectOutcome,
   extractTrial,
 };

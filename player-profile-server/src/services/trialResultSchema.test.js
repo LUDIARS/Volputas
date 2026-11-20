@@ -66,3 +66,17 @@ test('validateLudellusEvent dispatches by type and ignores non-ludellus events',
   assert.deepEqual(validateLudellusEvent('ludellus.trial_result', validTrial), []);
   assert.ok(validateLudellusEvent('ludellus.trial_result', { outcome: 'x' }).length > 0);
 });
+
+test('validateTrialResult accepts re-answers with since_wrong_ms from the second attempt', () => {
+  assert.deepEqual(validateTrialResult({ ...validTrial, attempt: 2, since_wrong_ms: 900 }), []);
+  assert.equal(validateTrialResult({ ...validTrial, attempt: 0 }).length, 1);
+  assert.equal(validateTrialResult({ ...validTrial, attempt: 1, since_wrong_ms: 900 }).length, 1);
+  assert.equal(validateTrialResult({ ...validTrial, since_wrong_ms: -1 }).length >= 1, true);
+});
+
+test('validateLudellusEvent checks ludellus.metric payloads', () => {
+  assert.deepEqual(validateLudellusEvent('ludellus.metric', { v: 1, seq: 3, name: 'combo.max', value: 5, item_id: 'q1' }), []);
+  assert.ok(validateLudellusEvent('ludellus.metric', { name: 'Combo', value: 5 }).length > 0);
+  assert.ok(validateLudellusEvent('ludellus.metric', { name: 'combo', value: 'five' }).length > 0);
+  assert.ok(validateLudellusEvent('ludellus.metric', { name: 'combo', value: 1, transcript: 'x' }).length > 0);
+});

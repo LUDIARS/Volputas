@@ -74,6 +74,7 @@ const { createPersonaExportAuth } = require('./middleware/personaExportAuth');
 const { createAiPlaytestReviewService } = require('./services/aiPlaytest/aiPlaytestReviewService');
 const { createAiPlaytestReviewRepository } = require('./models/aiPlaytestReviewRepository');
 const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
+const { setupPlayStream } = require('./playStream/setupPlayStream');
 
 const app = express();
 const frontendDirectory = path.resolve(__dirname, '../frontend/dist');
@@ -89,6 +90,8 @@ let glabGameService = null;
 let glabEvidenceService = null;
 let stopSessionMaintenance = null;
 let stopDiscutereImpressionPush = null;
+// Ludellus のプレイ記録 (spec/feature/ludellus-play-stream.md)。固定 subject が未設定なら null。
+const playStream = setupPlayStream(process.env, { hasterEnabled: config.haster.enabled });
 
 function getGlabSurveyService() {
   if (!glabSurveyService) glabSurveyService = createGlabSurveyService();
@@ -254,6 +257,8 @@ app.use('/api/v1', impressionRoutes);
 app.use('/api/v1', impressionReactionRoutes);
 app.use('/api/v1', impressionDiscussionRoutes);
 app.use('/api/v1/profile-data', profileEvidenceRoutes);
+// Ludellus のプレイ記録の統計 (loopback・Origin 許可リストだけ)。記録そのものは WebSocket で受ける。
+if (playStream) app.use('/api/v1/play-stream', playStream.router);
 // 遊んだ感想の書き出し (Discutere)。ペルソナ書き出しと同じサービス間認証。
 app.use('/api/personas/impressions', createImpressionExportRouter({ serviceProvider: getGlabReviewService }));
 app.use('/api/personas/impression-requests', createImpressionRequestsRouter());
@@ -318,6 +323,10 @@ async function start() {
   server = app.listen(config.port, listenHost, () => {
     console.log(`Player Profile Server running on port ${config.port} [${config.nodeEnv}]`);
   });
+  // WebSocket はプレイ記録の口 (/api/v1/play-stream) だけ。それ以外の upgrade は閉じる。
+  server.on('upgrade', (request, socket, head) => {
+    if (!playStream?.socket.handleUpgrade(request, socket, head)) socket.destroy();
+  });
   return server;
 }
 
@@ -339,6 +348,7 @@ function stop() {
     } catch (error) {
       serverCloseError = error;
     }
+    playStream?.socket.close();
     stopSessionMaintenance?.();
     stopSessionMaintenance = null;
     stopDiscutereImpressionPush?.();
