@@ -1,8 +1,9 @@
 // /api/v1/play-stream の WebSocket 受け口 (SPEC-VO-PLAY-STREAM-SOCKET)。
-// 到達判定は playStreamReach、検証は playStreamFrames、保存と返事は playStreamRecorder が持つ。
+// 到達と本人の判定は playStreamReach、検証は playStreamFrames、保存と返事は playStreamRecorder が持つ。
+// 本人 (Cernere の user id) は接続ごとに中継が渡し、その接続の全フレームをその人の記録にする。
 
 const { WebSocketServer } = require('ws');
-const { checkPlayStreamReach } = require('./playStreamReach');
+const { checkPlayStreamRelay } = require('./playStreamReach');
 const { parsePlayStreamFrame } = require('./playStreamFrames');
 
 const PLAY_STREAM_SOCKET_PATH = '/api/v1/play-stream';
@@ -14,7 +15,7 @@ const CLOSE_UNSUPPORTED = 1003;
 const CLOSE_POLICY = 1008;
 const CLOSE_UNAVAILABLE = 1013;
 
-const STATUS_TEXT = { 400: 'Bad Request', 403: 'Forbidden', 404: 'Not Found', 503: 'Service Unavailable' };
+const STATUS_TEXT = { 400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden', 404: 'Not Found', 503: 'Service Unavailable' };
 
 function rejectUpgrade(socket, status) {
   socket.end(`HTTP/1.1 ${status} ${STATUS_TEXT[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
@@ -28,14 +29,14 @@ function pathOf(url) {
 
 /**
  * HTTP サーバの upgrade に付ける。自分のパスでなければ何もしない (false を返す)。
- * @param {{ config: { allowedOrigins: string[], maxConnections: number }, recorder: { handle: Function }, resolveUserId: () => Promise<string> }} options
+ * @param {{ config: { relayTokenDigest: Buffer, maxConnections: number }, recorder: { handle: Function }, resolveUserId: (cernereSub: string) => Promise<string> }} options
  * @implements SPEC-VO-PLAY-STREAM-SOCKET
  */
 function createPlayStreamSocket({ config, recorder, resolveUserId }) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_FRAME_BYTES, perMessageDeflate: false });
   let open = 0;
 
-  function serve(ws) {
+  function serve(ws, cernereSub) {
     open += 1;
     let pending = 0;
     let chain = Promise.resolve();
@@ -48,32 +49,32 @@ function createPlayStreamSocket({ config, recorder, resolveUserId }) {
       const text = data.toString('utf8');
       // 同じ接続のメッセージは届いた順に処理する (session_start より先に記録を書かない)。
       chain = chain
-        .then(() => handleText(text))
+        .then(() => handleText(text, cernereSub))
         .then((reply) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(reply)); })
         .catch(() => ws.close(CLOSE_UNAVAILABLE))
         .finally(() => { pending -= 1; });
     });
   }
 
-  async function handleText(text) {
+  async function handleText(text, cernereSub) {
     const parsed = parsePlayStreamFrame(text);
     if (!parsed.ok) return { type: 'error', code: 'invalid_frame', sessionId: parsed.sessionId, seq: parsed.seq, detail: parsed.detail };
-    const userId = await resolveUserId();
+    const userId = await resolveUserId(cernereSub);
     return recorder.handle(userId, parsed.frame);
   }
 
   function handleUpgrade(request, socket, head) {
     if (pathOf(request.url) !== PLAY_STREAM_SOCKET_PATH) return false;
-    const denied = checkPlayStreamReach({ remoteAddress: socket.remoteAddress, headers: request.headers }, config);
-    if (denied) {
-      rejectUpgrade(socket, denied.status);
+    const reach = checkPlayStreamRelay({ remoteAddress: socket.remoteAddress, headers: request.headers }, config);
+    if (!reach.cernereSub) {
+      rejectUpgrade(socket, reach.status);
       return true;
     }
     if (open >= config.maxConnections) {
       rejectUpgrade(socket, 503);
       return true;
     }
-    wss.handleUpgrade(request, socket, head, serve);
+    wss.handleUpgrade(request, socket, head, (ws) => serve(ws, reach.cernereSub));
     return true;
   }
 

@@ -23,18 +23,22 @@ Ludellus のデータ解析基盤の第1段 (neco 指示 2026-11-21)。ゲーム
 §6.4 に `attempt` / `since_wrong_ms`、§6.10 に `ludellus.metric`、§6.11 に `ludellus.session_summary` を足した。
 既存の HTTP 経路 (`/api/v1/sessions/*`) は変えない。終了時には既存の §12 ジョブ (能力推定・出題の較正) も走らせる。
 
-扱わないもの: Cernere ログインの本人確認 (第1段は固定モードだけ)、別端末 (中継) からの接続、記録の削除・書き出し。
+記録の本人はログイン中の Cernere の user id (neco 指示 2026-11-21「Cr のログイン対応入れる」)。受けるのは Ludellus Web の中継
+(ludellus-web `scripts/play-stream-proxy.mjs`) からだけで、ブラウザから直接は受けない。以前の固定モード
+(`VOLUPTAS_PLAY_STREAM_FIXED_CERNERE_SUBJECT`) と許可 Origin (`VOLUPTAS_PLAY_STREAM_ALLOWED_ORIGINS`) は廃止した。
+
+扱わないもの: 子ども (Ludellus の player) ごとの分け方 (記録の本人は保護者の Cernere アカウント)、記録の削除・書き出し。
 
 ## Contract
 
-- `SPEC-VO-PLAY-STREAM-IDENTITY`: `VOLUPTAS_PLAY_STREAM_FIXED_CERNERE_SUBJECT` (1〜64 文字の `[A-Za-z0-9_-]`) を
-  設定したときだけ口を開き、全セッションをその Cernere subject の人として保存する。subject は
+- `SPEC-VO-PLAY-STREAM-IDENTITY`: 中継と共有する合言葉 `VOLUPTAS_PLAY_STREAM_RELAY_TOKEN` (32 文字以上、Excubitor Vault) を
+  設定したときだけ口を開く。本人は中継が `X-Ludellus-Cernere-Sub` で渡す Cernere の user id (`[A-Za-z0-9_-]{1,64}`)。
   `federated_identities (provider = 'cernere')` で `users.id` に結びつけ、居なければ通常ログインと同じ
-  `findOrCreateUser` で作る (表示名「Ludellus 自宅プレイヤー」)。未設定・HASTER では WebSocket も統計 API も開かない。
-  形式違反は起動時に例外。
-- `SPEC-VO-PLAY-STREAM-REACH`: WebSocket と統計 API は、相手アドレスが loopback で、`Origin` が無いか
-  `VOLUPTAS_PLAY_STREAM_ALLOWED_ORIGINS` (カンマ区切り、`*` は無視) にあるときだけ受ける。
-  `X-Forwarded-For` / `Forwarded` / `X-Real-IP` / `CF-Connecting-IP` 付きは中継とみなして `403`。
+  `findOrCreateUser` で作る (表示名「Ludellus プレイヤー」)。WebSocket は接続ごとに本人が決まり、その接続の全フレームを
+  その人の記録にする。未設定・HASTER では WebSocket も統計 API も開かない。短い合言葉は起動時に例外。
+- `SPEC-VO-PLAY-STREAM-REACH`: WebSocket と統計 API は、相手アドレスが loopback で、`Origin` が無く (ブラウザから直接は受けない)、
+  `X-Forwarded-For` / `Forwarded` / `X-Real-IP` / `CF-Connecting-IP` が無く、`X-Ludellus-Play-Relay-Token` が合言葉と一致
+  (sha256 を timingSafeEqual で比べる) するときだけ受ける。外れたら `403`、`X-Ludellus-Cernere-Sub` が無い・不正なら `401`。
 - `SPEC-VO-PLAY-STREAM-SOCKET`: `GET /api/v1/play-stream` の WebSocket upgrade (`ws`、圧縮なし)。
   1 フレーム 16 KiB まで、バイナリは close `1003`。同時接続は `VOLUPTAS_PLAY_STREAM_WS_MAX` (既定 16) まで、超えたら `503`。
   同じ接続のメッセージは届いた順に処理し、処理待ちが 256 を超えたら close `1008`。他のパスの upgrade は閉じる。
@@ -54,8 +58,8 @@ Ludellus のデータ解析基盤の第1段 (neco 指示 2026-11-21)。ゲーム
   `items`、`first_try_correct` / `first_try_accuracy` (attempt = 1 が正解だった問題 / 解答のあった問題、0 問なら null)、
   `response_ms_median` (attempt = 1、timeout の null は除く)、`since_wrong_ms_median`、`metrics` (名前ごとの count/sum/min/max/last)。
   その後 `runPostSessionJobs` を待たずに走らせる。
-- `SPEC-VO-PLAY-STREAM-STATS`: `GET /api/v1/play-stream/stats?game_id=` (到達判定は REACH と同じ、許可 Origin にだけ CORS)。
-  固定モードの人の終わったセッション (新しい順 500 件まで) から、ゲームごとの回数・完走数・合計時間・正誤数・
+- `SPEC-VO-PLAY-STREAM-STATS`: `GET /api/v1/play-stream/stats?game_id=` (到達と本人の判定は REACH / IDENTITY と同じ、CORS なし)。
+  その本人の終わったセッション (新しい順 500 件まで) から、ゲームごとの回数・完走数・合計時間・正誤数・
   問題数で重み付けした初回正答率・反応時間の中央値・指標の合計と、直近 20 セッションの集計を返す。生の記録は返さない。
 
 ## Storage

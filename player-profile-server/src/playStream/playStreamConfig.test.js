@@ -1,54 +1,55 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { createHash, randomBytes } = require('node:crypto');
 const { readPlayStreamConfig } = require('./playStreamConfig');
-const { checkPlayStreamReach } = require('./playStreamReach');
-const { createFixedUserResolver } = require('./playStreamIdentity');
+const { checkPlayStreamRelay } = require('./playStreamReach');
+const { createCernereUserResolver } = require('./playStreamIdentity');
 
-test('stays closed without a fixed subject and under HASTER (SPEC-VO-PLAY-STREAM-IDENTITY)', () => {
+// 合言葉はテストのたびにその場で作る (固定の値をソースに置かない)。
+const TOKEN = randomBytes(24).toString('hex');
+const SUB = '0d3c5a2e-7b1f-4c8e-9a6d-2f4b8e1c7a90';
+
+test('stays closed without a relay token and under HASTER (SPEC-VO-PLAY-STREAM-IDENTITY)', () => {
   assert.equal(readPlayStreamConfig({}), null);
-  assert.equal(readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_FIXED_CERNERE_SUBJECT: ' ' }), null);
-  assert.equal(readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_FIXED_CERNERE_SUBJECT: '1' }, { hasterEnabled: true }), null);
+  assert.equal(readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_RELAY_TOKEN: '' }), null);
+  assert.equal(readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_RELAY_TOKEN: TOKEN }, { hasterEnabled: true }), null);
 });
 
-test('reads the subject, origins and connection cap', () => {
-  assert.deepEqual(readPlayStreamConfig({
-    VOLUPTAS_PLAY_STREAM_FIXED_CERNERE_SUBJECT: '1',
-    VOLUPTAS_PLAY_STREAM_ALLOWED_ORIGINS: 'http://localhost:5381, http://127.0.0.1:5381/ ,*',
-    VOLUPTAS_PLAY_STREAM_WS_MAX: '4',
-  }), {
-    fixedCernereSubject: '1',
-    allowedOrigins: ['http://localhost:5381', 'http://127.0.0.1:5381'],
-    maxConnections: 4,
-  });
+test('reads the relay token digest and the connection cap', () => {
+  const config = readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_RELAY_TOKEN: TOKEN, VOLUPTAS_PLAY_STREAM_WS_MAX: '4' });
+  assert.deepEqual(config.relayTokenDigest, createHash('sha256').update(TOKEN).digest());
+  assert.equal(config.maxConnections, 4);
 });
 
-test('throws on malformed values', () => {
-  assert.throws(() => readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_FIXED_CERNERE_SUBJECT: '1; drop' }));
-  assert.throws(() => readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_FIXED_CERNERE_SUBJECT: '1', VOLUPTAS_PLAY_STREAM_WS_MAX: '0' }));
-  assert.throws(() => readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_FIXED_CERNERE_SUBJECT: '1', VOLUPTAS_PLAY_STREAM_ALLOWED_ORIGINS: 'nope' }));
+test('throws on a short token or a bad cap', () => {
+  assert.throws(() => readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_RELAY_TOKEN: 'short' }));
+  assert.throws(() => readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_RELAY_TOKEN: TOKEN, VOLUPTAS_PLAY_STREAM_WS_MAX: '0' }));
 });
 
-test('reach: loopback only, allowed origins only, no relays (SPEC-VO-PLAY-STREAM-REACH)', () => {
-  const config = { allowedOrigins: ['http://localhost:5381'] };
-  assert.equal(checkPlayStreamReach({ remoteAddress: '127.0.0.1', headers: {} }, config), null);
-  assert.equal(checkPlayStreamReach({ remoteAddress: '::ffff:127.0.0.1', headers: { origin: 'http://localhost:5381' } }, config), null);
-  assert.equal(checkPlayStreamReach({ remoteAddress: '192.168.1.20', headers: {} }, config).code, 'NOT_LOOPBACK');
-  assert.equal(checkPlayStreamReach({ remoteAddress: '127.0.0.1', headers: { origin: 'https://evil.example' } }, config).code, 'ORIGIN_NOT_ALLOWED');
-  assert.equal(checkPlayStreamReach({ remoteAddress: '127.0.0.1', headers: { 'x-forwarded-for': '203.0.113.9' } }, config).code, 'RELAYED');
+test('relay check: loopback, no browser origin, no forwarding, matching token and a Cernere sub (SPEC-VO-PLAY-STREAM-REACH)', () => {
+  const config = readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_RELAY_TOKEN: TOKEN });
+  const headers = { 'x-ludellus-play-relay-token': TOKEN, 'x-ludellus-cernere-sub': SUB };
+  assert.deepEqual(checkPlayStreamRelay({ remoteAddress: '::ffff:127.0.0.1', headers }, config), { cernereSub: SUB });
+  assert.equal(checkPlayStreamRelay({ remoteAddress: '192.168.1.20', headers }, config).code, 'NOT_LOOPBACK');
+  assert.equal(checkPlayStreamRelay({ remoteAddress: '127.0.0.1', headers: { ...headers, origin: 'http://localhost:5381' } }, config).code, 'BROWSER_NOT_ALLOWED');
+  assert.equal(checkPlayStreamRelay({ remoteAddress: '127.0.0.1', headers: { ...headers, 'x-forwarded-for': '203.0.113.9' } }, config).code, 'FORWARDED');
+  assert.equal(checkPlayStreamRelay({ remoteAddress: '127.0.0.1', headers: { ...headers, 'x-ludellus-play-relay-token': `${TOKEN}x` } }, config).code, 'RELAY_TOKEN_MISMATCH');
+  assert.equal(checkPlayStreamRelay({ remoteAddress: '127.0.0.1', headers: { 'x-ludellus-play-relay-token': TOKEN } }, config).status, 401);
+  assert.equal(checkPlayStreamRelay({ remoteAddress: '127.0.0.1', headers: { ...headers, 'x-ludellus-cernere-sub': 'bad sub!' } }, config).status, 401);
 });
 
-test('the fixed user is resolved once through the cernere federated identity', async () => {
+test('each Cernere sub is resolved once through the cernere federated identity', async () => {
   const calls = [];
-  const resolve = createFixedUserResolver('1', {
-    findOrCreate: async (provider, subject, profile) => {
-      calls.push([provider, subject, profile.displayName]);
+  const resolve = createCernereUserResolver({
+    findOrCreate: async (provider, subject) => {
+      calls.push([provider, subject]);
       if (calls.length === 1) throw new Error('db down');
-      return 'user-uuid';
+      return `user-of-${subject}`;
     },
   });
-  await assert.rejects(resolve(), /db down/);
-  assert.equal(await resolve(), 'user-uuid');
-  assert.equal(await resolve(), 'user-uuid');
-  assert.equal(calls.length, 2);
-  assert.deepEqual(calls[0].slice(0, 2), ['cernere', '1']);
+  await assert.rejects(resolve(SUB), /db down/);
+  assert.equal(await resolve(SUB), `user-of-${SUB}`);
+  assert.equal(await resolve(SUB), `user-of-${SUB}`);
+  assert.equal(await resolve('other-sub'), 'user-of-other-sub');
+  assert.deepEqual(calls, [['cernere', SUB], ['cernere', SUB], ['cernere', 'other-sub']]);
 });

@@ -1,0 +1,24 @@
+{
+  "name": "ludellus-play-stream",
+  "description": "Ludellus のプレイ記録の集積口。Ludellus Web の中継だけから WebSocket で 1 解答ごとの ludellus.trial_result とゲーム別の ludellus.metric を受け、中継が渡すログイン中の Cernere の user id の人として既存の play_sessions / play_events に冪等に保存し、終了時に ludellus.session_summary を作り、その本人の統計を返す。中継の合言葉・loopback・Origin 無しで到達を絞る。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)player-profile-server/src/playStream/[^/]+\\.js$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/spec/feature/ludellus-play-stream\\.md$"
+    }
+  ],
+  "cardTemplate": "ludellus-play-stream ドメインを要約する: 中継の合言葉と Cernere の user id による到達と本人の判定、フレームの検査 (trialResultSchema への委譲)、(sessionId, seq) の冪等保存、終了時の集計 (初回正答率・反応時間と誤答後の時間の中央値・指標)、本人ごとの統計、扱わないもの (子ども単位の分け方、記録の削除・書き出し)。",
+  "specRefs": [
+    "SPEC-VO-PLAY-STREAM-IDENTITY",
+    "SPEC-VO-PLAY-STREAM-REACH",
+    "SPEC-VO-PLAY-STREAM-SOCKET",
+    "SPEC-VO-PLAY-STREAM-FRAMES",
+    "SPEC-VO-PLAY-STREAM-IDEMPOTENT",
+    "SPEC-VO-PLAY-STREAM-SUMMARY",
+    "SPEC-VO-PLAY-STREAM-STATS"
+  ]
+}
