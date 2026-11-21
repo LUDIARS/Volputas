@@ -6,6 +6,8 @@ const rateLimit = require('express-rate-limit');
 const fs = require('node:fs');
 const path = require('node:path');
 const config = require('./config');
+const db = require('./config/database');
+const { managementEventsUrl } = require('./config/managementEvents');
 const {
   errorHandler,
   normalizeJsonBodyError,
@@ -74,6 +76,8 @@ const { createPersonaExportAuth } = require('./middleware/personaExportAuth');
 const { createAiPlaytestReviewService } = require('./services/aiPlaytest/aiPlaytestReviewService');
 const { createDiscutereAiPlaytestDelivery } = require('./services/aiPlaytest/discutereAiPlaytestDelivery');
 const { createAiPlaytestReviewRepository } = require('./models/aiPlaytestReviewRepository');
+const { createManagementEventDeliveryRepository } = require('./models/managementEventDeliveryRepository');
+const { startManagementEventDelivery } = require('./services/managementEvents/startManagementEventDelivery');
 const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
 const { setupPlayStream } = require('./playStream/setupPlayStream');
 
@@ -92,6 +96,7 @@ let glabEvidenceService = null;
 let stopSessionMaintenance = null;
 let stopDiscutereImpressionPush = null;
 let stopDiscutereAiPlaytestPush = null;
+let stopManagementEventPush = null;
 // Ludellus のプレイ記録 (spec/feature/ludellus-play-stream.md)。固定 subject が未設定なら null。
 const playStream = setupPlayStream(process.env, { hasterEnabled: config.haster.enabled });
 
@@ -333,6 +338,7 @@ async function start() {
   if (server) return server;
   assertOnlineConfiguration(config);
   assertHasterConfiguration(config);
+  const ccEventsUrl = managementEventsUrl(process.env, { hasterEnabled: config.haster.enabled });
   assertFrontendBuild(frontendDirectory);
   getGlabSurveyService();
   getGlabReviewService();
@@ -342,6 +348,10 @@ async function start() {
   stopSessionMaintenance = startSessionMaintenance();
   stopDiscutereImpressionPush = startImpressionPushIfEnabled();
   stopDiscutereAiPlaytestPush = startAiPlaytestPushIfEnabled();
+  stopManagementEventPush = startManagementEventDelivery({
+    url: ccEventsUrl,
+    store: createManagementEventDeliveryRepository(db),
+  });
 
   // The HASTER bearer fixture is deliberately public, so its process must not
   // accept connections from the network even if a catalog is misconfigured.
@@ -381,6 +391,8 @@ function stop() {
     stopDiscutereImpressionPush = null;
     stopDiscutereAiPlaytestPush?.();
     stopDiscutereAiPlaytestPush = null;
+    stopManagementEventPush?.();
+    stopManagementEventPush = null;
     closeProfileEvidenceStore();
     closeGlabDelegation();
     const activeIntegration = glabSurveyService;

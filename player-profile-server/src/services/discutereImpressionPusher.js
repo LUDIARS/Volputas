@@ -1,4 +1,5 @@
 const { normalizeBridgeBaseUrl } = require('./discussionBridgeClient');
+const { startPeriodicPush } = require('./periodicPush');
 
 // Discutere accepts at most 200 impressions per request and rejects any
 // impression carrying a field outside these six (receiver-side anonymity check).
@@ -140,22 +141,11 @@ function createDiscutereImpressionPusher(deps) {
  * @implements SPEC-GLAB-IMPRESSION-EXPORT
  */
 function startDiscutereImpressionPush({ intervalMinutes, pusher }) {
-  let isRunning = false;
-  const run = async () => {
-    if (isRunning) return;
-    isRunning = true;
-    try {
-      await pusher.pushOnce();
-    } catch {
-      console.warn(`${LOG_LABEL} failed (reason=unexpected)`);
-    } finally {
-      isRunning = false;
-    }
-  };
-  const timer = setInterval(run, intervalMinutes * 60_000);
-  timer.unref();
-  void run();
-  return () => clearInterval(timer);
+  return startPeriodicPush({
+    intervalMinutes,
+    pusher,
+    onError: () => console.warn(`${LOG_LABEL} failed (reason=unexpected)`),
+  });
 }
 
 module.exports = {

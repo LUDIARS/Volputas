@@ -5,6 +5,33 @@
   "runtimeFile": "contracts/contract-runtime.mjs",
   "contracts": [
     {
+      "id": "C-8",
+      "criterion": "C-8 toAiManagementEvent(review): AI 感想の公開項目から同じキーの 2000 文字以内の変更通知を作る",
+      "symbol": "toAiManagementEvent",
+      "file": "player-profile-server/src/services/managementEvents/managementEventPayload.mjs",
+      "module": "contracts/vo-ai-management-event.contract.mjs",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-9",
+      "criterion": "C-9 toHumanManagementEvent(impression): 人の感想は本文と個人識別情報を含めず保存を通知する",
+      "symbol": "toHumanManagementEvent",
+      "file": "player-profile-server/src/services/managementEvents/managementEventPayload.mjs",
+      "module": "contracts/vo-human-management-event.contract.mjs",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-10",
+      "criterion": "C-10 postManagementEvent(deps): 2xx を配送済み、4xx を再送停止、通信失敗と 5xx を再送待ちにする",
+      "symbol": "postManagementEvent",
+      "file": "player-profile-server/src/services/managementEvents/managementEventsClient.mjs",
+      "module": "contracts/vo-management-delivery.contract.mjs",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
       "id": "C-6",
       "criterion": "C-6 toAiPlaytestMaterial(review): 保存済み AI 感想から AI 由来の印と run_id を持つ議論材料を許可項目だけで作る",
       "symbol": "toAiPlaytestMaterial",

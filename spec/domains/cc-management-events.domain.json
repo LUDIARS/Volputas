@@ -1,0 +1,15 @@
+{
+  "name": "cc-management-events",
+  "description": "Voluptas に保存した感想を Concordia の CDGD 変更列へ届ける。通知の公開項目と、周期配送および永続的な配送結果を所有する。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    { "pathPattern": "(^|/)player-profile-server/src/config/managementEvents(\\.test)?\\.js$" },
+    { "pathPattern": "(^|/)player-profile-server/src/models/managementEventDeliveryRepository(\\.test)?\\.js$" },
+    { "pathPattern": "(^|/)player-profile-server/src/services/managementEvents/[^/]+\\.m?js$" },
+    { "pathPattern": "(^|/)player-profile-server/migrations/020_cc_management_event_delivery\\.sql$" },
+    { "pathPattern": "(^|/)contracts/vo-(ai-management-event|human-management-event|management-delivery)\\.contract\\.mjs$" },
+    { "pathPattern": "(^|/)spec/feature/cc-management-events\\.md$" }
+  ],
+  "specRefs": ["SPEC-VO-CC-MANAGEMENT-EVENTS"]
+}

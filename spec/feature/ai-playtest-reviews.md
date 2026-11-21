@@ -10,6 +10,7 @@
 Ingenium の LLM プレイヤーが説明書と画面だけを見て遊んだ感想 (`ai-playtest-review/1`) を、Voluptas が匿名の「AI 由来の声」として保存する。
 オンラインで保存した AI 感想は Discutere に議論材料として渡す。人の書き手を持たない記録なので、
 人の感想 (GLAB の voices、play_impressions)、人の統計・ペルソナ分析、Cernere の個人データ列から分離する。
+Concordia の変更列にも保存を通知する。詳細は [Concordia への感想通知](cc-management-events.md) を参照。
 
 ## 口
 
