@@ -1,7 +1,8 @@
 // AI プレイテスト感想の保存と一覧。保存先 (store) はモードごとに差し替える:
 // オンラインは Voluptas 自身の DB (aiPlaytestReviewRepository)、ローカルはデータリポジトリ
 // (localAiPlaytestReviewStore)。AI の感想は人の書き手を持たないので Cernere の個人データ列には置かず、
-// 人の感想 (voices / play_impressions) とも別に持つ。人の統計・ペルソナ分析・Discutere への送信には混ざらない。
+// 人の感想 (voices / play_impressions)、人の統計、ペルソナ分析から分けて持つ。
+// オンラインでは同じ保存行を AI 専用の Discutere 配送処理が読み取る。
 // 同じ run_id の再送は同じ記録を返す (Idempotency-Key = run_id)。
 const { createHash } = require('node:crypto');
 const { AppError } = require('../../middleware/errorHandler');

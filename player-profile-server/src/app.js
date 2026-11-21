@@ -72,6 +72,7 @@ const { createAiPlaytestReviewRouter } = require('./routes/aiPlaytestReviews');
 const { createAiPlaytestAuth } = require('./middleware/aiPlaytestAuth');
 const { createPersonaExportAuth } = require('./middleware/personaExportAuth');
 const { createAiPlaytestReviewService } = require('./services/aiPlaytest/aiPlaytestReviewService');
+const { createDiscutereAiPlaytestDelivery } = require('./services/aiPlaytest/discutereAiPlaytestDelivery');
 const { createAiPlaytestReviewRepository } = require('./models/aiPlaytestReviewRepository');
 const { router: profileEvidenceRoutes } = require('./routes/profileEvidence');
 const { setupPlayStream } = require('./playStream/setupPlayStream');
@@ -90,6 +91,7 @@ let glabGameService = null;
 let glabEvidenceService = null;
 let stopSessionMaintenance = null;
 let stopDiscutereImpressionPush = null;
+let stopDiscutereAiPlaytestPush = null;
 // Ludellus のプレイ記録 (spec/feature/ludellus-play-stream.md)。固定 subject が未設定なら null。
 const playStream = setupPlayStream(process.env, { hasterEnabled: config.haster.enabled });
 
@@ -267,7 +269,8 @@ app.use('/api/personas/impressions', createImpressionExportRouter({ serviceProvi
 app.use('/api/personas/impression-requests', createImpressionRequestsRouter());
 app.use('/api/personas', personaExportRoutes);
 // AI プレイテスト感想 (Ingenium)。人の感想とは別の表に置く匿名の AI 由来の声。
-const aiPlaytestReviewService = createAiPlaytestReviewService({ store: createAiPlaytestReviewRepository() });
+const aiPlaytestReviewStore = createAiPlaytestReviewRepository();
+const aiPlaytestReviewService = createAiPlaytestReviewService({ store: aiPlaytestReviewStore });
 app.use('/api/ai-playtests/reviews', createAiPlaytestReviewRouter({
   serviceProvider: () => aiPlaytestReviewService,
   writeAuth: createAiPlaytestAuth({ expectedToken: config.aiPlaytest.token }),
@@ -305,6 +308,25 @@ function startImpressionPushIfEnabled() {
   });
 }
 
+// @implements SPEC-VO-AI-PLAYTEST-REVIEWS
+function startAiPlaytestPushIfEnabled() {
+  if (config.haster.enabled || !config.discutereImpressionPush.enabled) return null;
+  const controller = new AbortController();
+  const stopPush = startDiscutereImpressionPush({
+    intervalMinutes: config.discutereImpressionPush.intervalMinutes,
+    pusher: createDiscutereAiPlaytestDelivery({
+      store: aiPlaytestReviewStore,
+      baseUrl: config.discuterePersonaBridge.baseUrl,
+      resolveBearer: discuterePersonaBridgeBearer(),
+      signal: controller.signal,
+    }),
+  });
+  return () => {
+    stopPush();
+    controller.abort();
+  };
+}
+
 // Start server
 // @implements SPEC-HASTER-ISOLATION
 async function start() {
@@ -319,6 +341,7 @@ async function start() {
   console.log('JWKS key store initialized');
   stopSessionMaintenance = startSessionMaintenance();
   stopDiscutereImpressionPush = startImpressionPushIfEnabled();
+  stopDiscutereAiPlaytestPush = startAiPlaytestPushIfEnabled();
 
   // The HASTER bearer fixture is deliberately public, so its process must not
   // accept connections from the network even if a catalog is misconfigured.
@@ -356,6 +379,8 @@ function stop() {
     stopSessionMaintenance = null;
     stopDiscutereImpressionPush?.();
     stopDiscutereImpressionPush = null;
+    stopDiscutereAiPlaytestPush?.();
+    stopDiscutereAiPlaytestPush = null;
     closeProfileEvidenceStore();
     closeGlabDelegation();
     const activeIntegration = glabSurveyService;

@@ -5,6 +5,24 @@
   "runtimeFile": "contracts/contract-runtime.mjs",
   "contracts": [
     {
+      "id": "C-6",
+      "criterion": "C-6 toAiPlaytestMaterial(review): 保存済み AI 感想から AI 由来の印と run_id を持つ議論材料を許可項目だけで作る",
+      "symbol": "toAiPlaytestMaterial",
+      "file": "player-profile-server/src/services/aiPlaytest/discutereAiPlaytestClient.mjs",
+      "module": "contracts/ai-playtest-material.contract.mjs",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
+      "id": "C-7",
+      "criterion": "C-7 pushAiPlaytestReview(deps): AI 専用の受け口へ run_id を冪等キーとして送り、同じ run_id の成功応答がある場合だけ送信済みとする",
+      "symbol": "pushAiPlaytestReview",
+      "file": "player-profile-server/src/services/aiPlaytest/discutereAiPlaytestClient.mjs",
+      "module": "contracts/ai-playtest-delivery.contract.mjs",
+      "mode": "observe",
+      "sample": 1
+    },
+    {
       "id": "C-5",
       "criterion": "C-5 resolveAnthropicModel(model): Claude の役割は Concordia の対応表か共有の環境変数で解決し、明示モデル ID は維持する",
       "symbol": "resolveAnthropicModel",

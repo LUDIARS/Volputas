@@ -54,6 +54,28 @@ function createAiPlaytestReviewRepository(database = db) {
       const { rows } = await database.query('SELECT * FROM ai_playtest_reviews ORDER BY created_at DESC, id LIMIT $1', [limit]);
       return rows.map(mapReview);
     },
+
+    async listPendingDelivery({ limit }) {
+      const { rows } = await database.query(
+        `SELECT * FROM ai_playtest_reviews
+         WHERE discutere_delivered_at IS NULL
+         ORDER BY discutere_attempted_at NULLS FIRST, created_at, id
+         LIMIT $1`,
+        [limit],
+      );
+      return rows.map(mapReview);
+    },
+
+    async recordDeliveryAttempt(runId, { delivered, reason = null }) {
+      await database.query(
+        `UPDATE ai_playtest_reviews
+         SET discutere_attempted_at = now(),
+             discutere_delivered_at = CASE WHEN $2 THEN now() ELSE NULL END,
+             discutere_delivery_error = $3
+         WHERE run_id = $1 AND discutere_delivered_at IS NULL`,
+        [runId, delivered, reason],
+      );
+    },
   };
 }
 

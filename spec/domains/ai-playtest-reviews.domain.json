@@ -1,11 +1,20 @@
 {
   "name": "ai-playtest-reviews",
-  "description": "AI プレイテスト感想の受け口: Ingenium (ingenium playtest) が送る ai-playtest-review/1 を、許可した項目だけで組み直して匿名の AI 由来の声として保存する (良い点・悪い点は必須、決めていない項目は拒否)。人の感想・Cernere の個人データ列とは別に、オンラインは Voluptas の表、ローカルはデータリポジトリの ai-playtests/ に置き、人の統計・ペルソナ分析・Discutere 送信には混ぜない。",
+  "description": "Ingenium の AI 試遊感想を匿名の AI 由来の声として保存する。オンラインの ai_playtest_reviews から AI 専用の persona-bridge 受け口へ run_id をキーに送り、失敗時は再試行する。人の感想、人の統計、ペルソナ分析、Cernere の個人データから分離する。",
   "presetRules": [],
   "templateRules": [],
   "membership": [
     {
-      "pathPattern": "(^|/)player-profile-server/src/services/aiPlaytest/[^/]+\\.js$"
+      "pathPattern": "(^|/)player-profile-server/src/services/aiPlaytest/[^/]+\\.m?js$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/src/models/aiPlaytestReviewRepository(\\.test)?\\.js$"
+    },
+    {
+      "pathPattern": "(^|/)player-profile-server/migrations/(018_ai_playtest_reviews|019_ai_playtest_review_delivery)\\.sql$"
+    },
+    {
+      "pathPattern": "(^|/)contracts/ai-playtest-(material|delivery)\\.contract\\.mjs$"
     },
     {
       "pathPattern": "(^|/)spec/feature/ai-playtest-reviews\\.md$"
