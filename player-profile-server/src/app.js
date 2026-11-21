@@ -235,6 +235,11 @@ app.get('/api/runtime', (_req, res) => {
   res.json({ ok: true, data: { mode: 'online', authentication: 'cernere' } });
 });
 
+// Ludellus のプレイ記録の統計 (loopback・Origin 許可リストだけ)。記録そのものは WebSocket で受ける。
+// '/api/v1' 直下に付く認証付きのルータ (timeline / tuning / ability / impression*) より先に置く。
+// 後ろに置くと、それらの router.use(authenticate) が先に 401 を返して届かない (2026-11-21 実測)。
+if (playStream) app.use('/api/v1/play-stream', playStream.router);
+
 // API v1 routes
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/users', profileRoutes);
@@ -257,8 +262,6 @@ app.use('/api/v1', impressionRoutes);
 app.use('/api/v1', impressionReactionRoutes);
 app.use('/api/v1', impressionDiscussionRoutes);
 app.use('/api/v1/profile-data', profileEvidenceRoutes);
-// Ludellus のプレイ記録の統計 (loopback・Origin 許可リストだけ)。記録そのものは WebSocket で受ける。
-if (playStream) app.use('/api/v1/play-stream', playStream.router);
 // 遊んだ感想の書き出し (Discutere)。ペルソナ書き出しと同じサービス間認証。
 app.use('/api/personas/impressions', createImpressionExportRouter({ serviceProvider: getGlabReviewService }));
 app.use('/api/personas/impression-requests', createImpressionRequestsRouter());
