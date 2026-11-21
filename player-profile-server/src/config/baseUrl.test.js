@@ -44,10 +44,41 @@ test('rejects plaintext HTTP for every non-loopback host', () => {
     'http://10.0.0.1',
     'http://192.168.1.10',
     'http://[::ffff:127.0.0.1]',
+    'http://100.63.255.255',
+    'http://100.128.0.0',
+    'http://host.tailnet-example.ts.net',
+    'http://[::ffff:100.94.102.46]',
   ]) {
     assert.throws(
       () => normalizeOptionalBaseUrl(value, 'TEST_URL'),
       /TEST_URL must use HTTPS unless the host is loopback/,
+    );
+  }
+});
+
+test('allows plaintext HTTP for Tailscale IPv4 literals (100.64.0.0/10)', () => {
+  for (const value of [
+    'http://100.64.0.0',
+    'http://100.94.102.46:8086',
+    'http://100.127.255.255/base/',
+  ]) {
+    assert.match(normalizeOptionalBaseUrl(value, 'TEST_URL'), /^http:\/\/100\./);
+  }
+  assert.equal(
+    normalizeOptionalBaseUrl('http://100.94.102.46:8086/', 'CERNERE_BASE_URL'),
+    'http://100.94.102.46:8086',
+  );
+});
+
+test('keeps rejecting credentials, query, and fragment on Tailscale hosts', () => {
+  for (const value of [
+    'http://user:secret@100.94.102.46',
+    'http://100.94.102.46/?next=other',
+    'http://100.94.102.46/#fragment',
+  ]) {
+    assert.throws(
+      () => normalizeOptionalBaseUrl(value, 'TEST_URL'),
+      /TEST_URL must not contain credentials, query, or fragment/,
     );
   }
 });
