@@ -69,3 +69,17 @@ test('stops storing at the per-session limit', async () => {
   }
   assert.equal((await recorder.handle(USER, frame(metricFrame(MAX_EVENTS_PER_SESSION + 1, 'n', 1)))).code, 'limit');
 });
+
+test('keeps the child (Ludellus player) the relay verified, and a resend cannot switch the child', async () => {
+  const { store, recorder } = setup();
+  const CHILD = 'p_0123456789abcdef';
+  assert.equal((await recorder.handle(USER, frame(startFrame()), { playerId: CHILD })).type, 'ack');
+  assert.equal(store.sessions.get(SESSION_ID).ludellus_player_id, CHILD);
+  // つなぎ直しの session_start は同じ子なら受け、別の子・子なしでは受けない。
+  assert.equal((await recorder.handle(USER, frame(startFrame()), { playerId: CHILD })).type, 'ack');
+  assert.equal((await recorder.handle(USER, frame(startFrame()), { playerId: 'p_ffffffffffffffff' })).type, 'error');
+  assert.equal((await recorder.handle(USER, frame(startFrame()))).type, 'error');
+  await recorder.handle(USER, frame(endFrame(1)), { playerId: CHILD });
+  assert.equal((await store.listSummaries({ userId: USER, playerId: CHILD })).length, 1);
+  assert.equal((await store.listSummaries({ userId: USER, playerId: 'p_ffffffffffffffff' })).length, 0);
+});

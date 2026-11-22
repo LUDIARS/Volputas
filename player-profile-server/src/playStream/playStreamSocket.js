@@ -36,7 +36,7 @@ function createPlayStreamSocket({ config, recorder, resolveUserId }) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_FRAME_BYTES, perMessageDeflate: false });
   let open = 0;
 
-  function serve(ws, cernereSub) {
+  function serve(ws, { cernereSub, playerId }) {
     open += 1;
     let pending = 0;
     let chain = Promise.resolve();
@@ -49,18 +49,18 @@ function createPlayStreamSocket({ config, recorder, resolveUserId }) {
       const text = data.toString('utf8');
       // 同じ接続のメッセージは届いた順に処理する (session_start より先に記録を書かない)。
       chain = chain
-        .then(() => handleText(text, cernereSub))
+        .then(() => handleText(text, cernereSub, playerId))
         .then((reply) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(reply)); })
         .catch(() => ws.close(CLOSE_UNAVAILABLE))
         .finally(() => { pending -= 1; });
     });
   }
 
-  async function handleText(text, cernereSub) {
+  async function handleText(text, cernereSub, playerId) {
     const parsed = parsePlayStreamFrame(text);
     if (!parsed.ok) return { type: 'error', code: 'invalid_frame', sessionId: parsed.sessionId, seq: parsed.seq, detail: parsed.detail };
     const userId = await resolveUserId(cernereSub);
-    return recorder.handle(userId, parsed.frame);
+    return recorder.handle(userId, parsed.frame, { playerId });
   }
 
   function handleUpgrade(request, socket, head) {
@@ -74,7 +74,7 @@ function createPlayStreamSocket({ config, recorder, resolveUserId }) {
       rejectUpgrade(socket, 503);
       return true;
     }
-    wss.handleUpgrade(request, socket, head, (ws) => serve(ws, reach.cernereSub));
+    wss.handleUpgrade(request, socket, head, (ws) => serve(ws, reach));
     return true;
   }
 

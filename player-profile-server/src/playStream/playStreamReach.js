@@ -7,6 +7,9 @@ const { createHash, timingSafeEqual } = require('node:crypto');
 
 const RELAY_TOKEN_HEADER = 'x-ludellus-play-relay-token';
 const CERNERE_SUB_HEADER = 'x-ludellus-cernere-sub';
+// 遊んでいる子ども (Ludellus の player)。中継が保護者の子と確かめたときだけ付く。無ければ保護者だけの記録。
+const PLAYER_ID_HEADER = 'x-ludellus-player-id';
+const PLAYER_ID = /^p_[0-9A-Za-z]{16}$/;
 const FORWARDING_HEADERS = ['x-forwarded-for', 'forwarded', 'x-real-ip', 'cf-connecting-ip'];
 const CERNERE_SUB = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -27,7 +30,7 @@ function tokenMatches(token, digest) {
 }
 
 /**
- * 通すなら { cernereSub }、断るなら { status, code }。
+ * 通すなら { cernereSub, playerId }、断るなら { status, code }。playerId は無ければ null。
  * @param {{ remoteAddress?: string, headers: Record<string, string | string[] | undefined> }} request
  * @param {{ relayTokenDigest: Buffer }} config
  * @implements SPEC-VO-PLAY-STREAM-REACH
@@ -41,7 +44,9 @@ function checkPlayStreamRelay(request, config) {
   if (!tokenMatches(header(RELAY_TOKEN_HEADER), config.relayTokenDigest)) return { status: 403, code: 'RELAY_TOKEN_MISMATCH' };
   const cernereSub = header(CERNERE_SUB_HEADER);
   if (typeof cernereSub !== 'string' || !CERNERE_SUB.test(cernereSub)) return { status: 401, code: 'CERNERE_SUB_REQUIRED' };
-  return { cernereSub };
+  const playerId = header(PLAYER_ID_HEADER);
+  if (playerId !== undefined && (typeof playerId !== 'string' || !PLAYER_ID.test(playerId))) return { status: 400, code: 'PLAYER_ID_INVALID' };
+  return { cernereSub, playerId: playerId ?? null };
 }
 
-module.exports = { checkPlayStreamRelay, isLoopbackAddress, RELAY_TOKEN_HEADER, CERNERE_SUB_HEADER };
+module.exports = { checkPlayStreamRelay, isLoopbackAddress, RELAY_TOKEN_HEADER, CERNERE_SUB_HEADER, PLAYER_ID_HEADER };

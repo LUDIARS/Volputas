@@ -22,6 +22,7 @@ function buildPlayStreamStats(rows) {
     recent: rows.slice(0, RECENT_LIMIT).map((row) => ({
       session_id: row.id,
       game_id: row.game_id,
+      player_id: row.ludellus_player_id ?? null,
       started_at: toIso(row.started_at),
       ended_at: toIso(row.ended_at),
       ...pickSummary(row.summary),

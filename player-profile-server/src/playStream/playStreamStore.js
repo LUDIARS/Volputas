@@ -8,20 +8,20 @@ const { SESSION_SUMMARY_EVENT_TYPE } = require('../services/trialResult');
 function createPlayStreamStore(database) {
   return {
     /** @returns {Promise<'created' | 'duplicate'>} */
-    async createSession({ id, userId, gameId, startedAt, metadata }) {
+    async createSession({ id, userId, playerId = null, gameId, startedAt, metadata }) {
       const { rows } = await database.query(
-        `INSERT INTO play_sessions (id, user_id, game_id, started_at, metadata)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO play_sessions (id, user_id, ludellus_player_id, game_id, started_at, metadata)
+         VALUES ($1, $2, $6, $3, $4, $5)
          ON CONFLICT (id) DO NOTHING
          RETURNING id`,
-        [id, userId, gameId, startedAt, JSON.stringify({ ...metadata, source: 'ludellus.play_stream' })],
+        [id, userId, gameId, startedAt, JSON.stringify({ ...metadata, source: 'ludellus.play_stream' }), playerId],
       );
       return rows.length > 0 ? 'created' : 'duplicate';
     },
 
     async findSession(id) {
       const { rows } = await database.query(
-        'SELECT id, user_id, game_id, started_at, ended_at, metadata FROM play_sessions WHERE id = $1',
+        'SELECT id, user_id, ludellus_player_id, game_id, started_at, ended_at, metadata FROM play_sessions WHERE id = $1',
         [id],
       );
       return rows[0] || null;
@@ -82,16 +82,17 @@ function createPlayStreamStore(database) {
       });
     },
 
-    /** 統計用: その人の終わったセッションと集計を新しい順に。gameId を渡せばそのゲームだけ。 */
-    async listSummaries({ userId, gameId = null, limit = 200 }) {
+    /** 統計用: その人の終わったセッションと集計を新しい順に。gameId / playerId を渡せばそのゲーム・その子だけ。 */
+    async listSummaries({ userId, gameId = null, playerId = null, limit = 200 }) {
       const { rows } = await database.query(
-        `SELECT s.id, s.game_id, s.started_at, s.ended_at, e.event_data AS summary
+        `SELECT s.id, s.game_id, s.ludellus_player_id, s.started_at, s.ended_at, e.event_data AS summary
            FROM play_sessions s
            JOIN play_events e ON e.session_id = s.id AND e.event_type = $2
           WHERE s.user_id = $1 AND ($3::text IS NULL OR s.game_id = $3)
+            AND ($5::text IS NULL OR s.ludellus_player_id = $5)
           ORDER BY s.ended_at DESC
           LIMIT $4`,
-        [userId, SESSION_SUMMARY_EVENT_TYPE, gameId, limit],
+        [userId, SESSION_SUMMARY_EVENT_TYPE, gameId, limit, playerId],
       );
       return rows;
     },

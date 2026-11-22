@@ -29,7 +29,7 @@ test('throws on a short token or a bad cap', () => {
 test('relay check: loopback, no browser origin, no forwarding, matching token and a Cernere sub (SPEC-VO-PLAY-STREAM-REACH)', () => {
   const config = readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_RELAY_TOKEN: TOKEN });
   const headers = { 'x-ludellus-play-relay-token': TOKEN, 'x-ludellus-cernere-sub': SUB };
-  assert.deepEqual(checkPlayStreamRelay({ remoteAddress: '::ffff:127.0.0.1', headers }, config), { cernereSub: SUB });
+  assert.deepEqual(checkPlayStreamRelay({ remoteAddress: '::ffff:127.0.0.1', headers }, config), { cernereSub: SUB, playerId: null });
   assert.equal(checkPlayStreamRelay({ remoteAddress: '192.168.1.20', headers }, config).code, 'NOT_LOOPBACK');
   assert.equal(checkPlayStreamRelay({ remoteAddress: '127.0.0.1', headers: { ...headers, origin: 'http://localhost:5381' } }, config).code, 'BROWSER_NOT_ALLOWED');
   assert.equal(checkPlayStreamRelay({ remoteAddress: '127.0.0.1', headers: { ...headers, 'x-forwarded-for': '203.0.113.9' } }, config).code, 'FORWARDED');
@@ -52,4 +52,11 @@ test('each Cernere sub is resolved once through the cernere federated identity',
   assert.equal(await resolve(SUB), `user-of-${SUB}`);
   assert.equal(await resolve('other-sub'), 'user-of-other-sub');
   assert.deepEqual(calls, [['cernere', SUB], ['cernere', SUB], ['cernere', 'other-sub']]);
+});
+
+test('passes the child id the relay attaches and refuses a malformed one', () => {
+  const config = readPlayStreamConfig({ VOLUPTAS_PLAY_STREAM_RELAY_TOKEN: TOKEN });
+  const headers = { 'x-ludellus-play-relay-token': TOKEN, 'x-ludellus-cernere-sub': SUB };
+  assert.equal(checkPlayStreamRelay({ remoteAddress: '127.0.0.1', headers: { ...headers, 'x-ludellus-player-id': 'p_0123456789abcdef' } }, config).playerId, 'p_0123456789abcdef');
+  assert.equal(checkPlayStreamRelay({ remoteAddress: '127.0.0.1', headers: { ...headers, 'x-ludellus-player-id': '../etc' } }, config).code, 'PLAYER_ID_INVALID');
 });

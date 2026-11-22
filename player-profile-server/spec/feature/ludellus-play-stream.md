@@ -36,6 +36,8 @@ Ludellus のデータ解析基盤の第1段 (neco 指示 2026-11-21)。ゲーム
   `federated_identities (provider = 'cernere')` で `users.id` に結びつけ、居なければ通常ログインと同じ
   `findOrCreateUser` で作る (表示名「Ludellus プレイヤー」)。WebSocket は接続ごとに本人が決まり、その接続の全フレームを
   その人の記録にする。未設定・HASTER では WebSocket も統計 API も開かない。短い合言葉は起動時に例外。
+  遊んでいる子ども (Ludellus の player、`p_` + 16 字) は、中継が保護者の子と確かめたときだけ `X-Ludellus-Player-Id` で渡す。
+  形が違えば `400 PLAYER_ID_INVALID`。無ければ保護者だけの記録 (子ども不明)。クエリや本文では受けない (2026-11-23 neco 判断)。
 - `SPEC-VO-PLAY-STREAM-REACH`: WebSocket と統計 API は、相手アドレスが loopback で、`Origin` が無く (ブラウザから直接は受けない)、
   `X-Forwarded-For` / `Forwarded` / `X-Real-IP` / `CF-Connecting-IP` が無く、`X-Ludellus-Play-Relay-Token` が合言葉と一致
   (sha256 を timingSafeEqual で比べる) するときだけ受ける。外れたら `403`、`X-Ludellus-Cernere-Sub` が無い・不正なら `401`。
@@ -61,6 +63,8 @@ Ludellus のデータ解析基盤の第1段 (neco 指示 2026-11-21)。ゲーム
 - `SPEC-VO-PLAY-STREAM-STATS`: `GET /api/v1/play-stream/stats?game_id=` (到達と本人の判定は REACH / IDENTITY と同じ、CORS なし)。
   その本人の終わったセッション (新しい順 500 件まで) から、ゲームごとの回数・完走数・合計時間・正誤数・
   問題数で重み付けした初回正答率・反応時間の中央値・指標の合計と、直近 20 セッションの集計を返す。生の記録は返さない。
+  中継が子どもの id を付けたら、その子の記録だけを返す。最近の記録の各行に `player_id` (無ければ null) を付ける。
+  子どもの id は `play_sessions.ludellus_player_id` (migration 021) に置き、つなぎ直しで別の子へは変えられない。
 
 ## Storage
 

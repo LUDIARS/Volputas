@@ -21,6 +21,7 @@ function createPlayStreamRouter({ config, store, resolveUserId }) {
     const reach = checkPlayStreamRelay({ remoteAddress: req.socket?.remoteAddress, headers: req.headers }, config);
     if (!reach.cernereSub) return res.status(reach.status).json({ ok: false, error: { code: reach.code, message: 'Not reachable from here' } });
     req.playStreamCernereSub = reach.cernereSub;
+    req.playStreamPlayerId = reach.playerId;
     return next();
   });
 
@@ -31,7 +32,8 @@ function createPlayStreamRouter({ config, store, resolveUserId }) {
         return res.status(400).json({ ok: false, error: { code: 'VALIDATION_ERROR', message: 'game_id is invalid' } });
       }
       const userId = await resolveUserId(req.playStreamCernereSub);
-      const rows = await store.listSummaries({ userId, gameId, limit: MAX_SESSIONS });
+      // 子どもで絞るのは、中継が保護者の子と確かめて付けたときだけ (クエリでは受けない)。
+      const rows = await store.listSummaries({ userId, gameId, playerId: req.playStreamPlayerId, limit: MAX_SESSIONS });
       return res.json({ ok: true, data: buildPlayStreamStats(rows) });
     } catch (error) {
       return next(error);

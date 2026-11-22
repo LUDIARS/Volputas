@@ -18,17 +18,19 @@ function reject(code, frame) {
  * @param {{ store: ReturnType<typeof import('./playStreamStore').createPlayStreamStore>, runPostSessionJobs?: (session: object) => Promise<unknown> }} deps
  */
 function createPlayStreamRecorder({ store, runPostSessionJobs = async () => {} }) {
-  async function start(userId, frame) {
+  async function start(userId, frame, playerId) {
     const result = await store.createSession({
       id: frame.sessionId,
       userId,
+      playerId,
       gameId: frame.gameId,
       startedAt: frame.startedAt,
       metadata: frame.metadata ?? {},
     });
     if (result === 'duplicate') {
       const existing = await store.findSession(frame.sessionId);
-      if (!existing || existing.user_id !== userId) return reject('forbidden', frame);
+      // 同じセッションを別の子として送り直すことはできない (つなぎ直しは同じ子のまま)。
+      if (!existing || existing.user_id !== userId || (existing.ludellus_player_id ?? null) !== playerId) return reject('forbidden', frame);
     }
     return ack(frame);
   }
@@ -56,8 +58,8 @@ function createPlayStreamRecorder({ store, runPostSessionJobs = async () => {} }
 
   return {
     /** @implements SPEC-VO-PLAY-STREAM-IDEMPOTENT */
-    async handle(userId, frame) {
-      if (frame.type === 'session_start') return start(userId, frame);
+    async handle(userId, frame, { playerId = null } = {}) {
+      if (frame.type === 'session_start') return start(userId, frame, playerId);
       const session = await store.findSession(frame.sessionId);
       if (!session) return reject('unknown_session', frame);
       if (session.user_id !== userId) return reject('forbidden', frame);
