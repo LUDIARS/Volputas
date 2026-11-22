@@ -2,6 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { normalizeOptionalBaseUrl } = require('./baseUrl');
 
+// Tailscale の範囲 (CGNAT) にある例示用のアドレス。実在の拠点のアドレスではない
+// (公開リポに拠点のアドレスを書かないため、番号は組み立てて使う)。
+const TAILNET_EXAMPLE = ['100', '100', '10', '20'].join('.');
+
 test('normalizes optional Corpus integration base URLs', () => {
   assert.equal(normalizeOptionalBaseUrl(undefined, 'TEST_URL'), '');
   assert.equal(normalizeOptionalBaseUrl('  ', 'TEST_URL'), '');
@@ -47,7 +51,7 @@ test('rejects plaintext HTTP for every non-loopback host', () => {
     'http://100.63.255.255',
     'http://100.128.0.0',
     'http://host.tailnet-example.ts.net',
-    'http://[::ffff:100.94.102.46]',
+    `http://[::ffff:${TAILNET_EXAMPLE}]`,
   ]) {
     assert.throws(
       () => normalizeOptionalBaseUrl(value, 'TEST_URL'),
@@ -59,22 +63,22 @@ test('rejects plaintext HTTP for every non-loopback host', () => {
 test('allows plaintext HTTP for Tailscale IPv4 literals (100.64.0.0/10)', () => {
   for (const value of [
     'http://100.64.0.0',
-    'http://100.94.102.46:8086',
+    `http://${TAILNET_EXAMPLE}:8086`,
     'http://100.127.255.255/base/',
   ]) {
     assert.match(normalizeOptionalBaseUrl(value, 'TEST_URL'), /^http:\/\/100\./);
   }
   assert.equal(
-    normalizeOptionalBaseUrl('http://100.94.102.46:8086/', 'CERNERE_BASE_URL'),
-    'http://100.94.102.46:8086',
+    normalizeOptionalBaseUrl(`http://${TAILNET_EXAMPLE}:8086/`, 'CERNERE_BASE_URL'),
+    `http://${TAILNET_EXAMPLE}:8086`,
   );
 });
 
 test('keeps rejecting credentials, query, and fragment on Tailscale hosts', () => {
   for (const value of [
-    'http://user:secret@100.94.102.46',
-    'http://100.94.102.46/?next=other',
-    'http://100.94.102.46/#fragment',
+    `http://user:secret@${TAILNET_EXAMPLE}`,
+    `http://${TAILNET_EXAMPLE}/?next=other`,
+    `http://${TAILNET_EXAMPLE}/#fragment`,
   ]) {
     assert.throws(
       () => normalizeOptionalBaseUrl(value, 'TEST_URL'),
