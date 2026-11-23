@@ -6,10 +6,11 @@ const { extractTrial, isMetricType, isTrialResultType } = require('../services/t
 const SUMMARY_VERSION = 1;
 
 /**
- * @param {{ startedAt: string | Date, endedAt: string | Date, reason: string, events: Array<{ event_type: string, event_data: object }> }} input
+ * @param {{ startedAt: string | Date, endedAt: string | Date, reason: string, events: Array<{ event_type: string, event_data: object }>, closedBy?: 'idle' }} input
+ *   closedBy: クライアントの終了ではなくサーバが締めたとき (SPEC-VO-PLAY-STREAM-IDLE-CLOSE) の理由
  * @implements SPEC-VO-PLAY-STREAM-SUMMARY
  */
-function summarizePlaySession({ startedAt, endedAt, reason, events }) {
+function summarizePlaySession({ startedAt, endedAt, reason, events, closedBy }) {
   // response_ms は timeout で null になる。extractTrial は null を 0 に読むので、ここでは元の値を見る。
   const trials = events.filter((event) => isTrialResultType(event.event_type)).map((event) => ({
     ...extractTrial(event.event_data),
@@ -22,6 +23,7 @@ function summarizePlaySession({ startedAt, endedAt, reason, events }) {
   return {
     v: SUMMARY_VERSION,
     reason,
+    ...(closedBy ? { closed_by: closedBy } : {}),
     duration_ms: Math.max(0, new Date(endedAt).getTime() - new Date(startedAt).getTime()),
     answers: answered.length,
     correct: answered.filter((trial) => trial.outcome === 'correct').length,

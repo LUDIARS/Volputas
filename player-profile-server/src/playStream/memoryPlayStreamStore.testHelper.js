@@ -2,7 +2,8 @@
 
 const { SESSION_SUMMARY_EVENT_TYPE } = require('../services/trialResult');
 
-function createMemoryPlayStreamStore() {
+/** now: 記録の時刻 (play_events.occurred_at、本物は DB の now())。テストで進められる。 */
+function createMemoryPlayStreamStore({ now = () => new Date() } = {}) {
   const sessions = new Map();
   const events = [];
   return {
@@ -24,7 +25,7 @@ function createMemoryPlayStreamStore() {
       return events.filter((event) => event.session_id === sessionId).length;
     },
     async insertEvent({ sessionId, eventType, eventData }) {
-      events.push({ session_id: sessionId, event_type: eventType, event_data: eventData });
+      events.push({ session_id: sessionId, event_type: eventType, event_data: eventData, occurred_at: now() });
     },
     async listEvents(sessionId) {
       return events.filter((event) => event.session_id === sessionId);
@@ -33,7 +34,7 @@ function createMemoryPlayStreamStore() {
       const session = sessions.get(id);
       if (!session || session.user_id !== userId || session.ended_at) return null;
       session.ended_at = new Date(endedAt);
-      events.push({ session_id: id, event_type: SESSION_SUMMARY_EVENT_TYPE, event_data: summary });
+      events.push({ session_id: id, event_type: SESSION_SUMMARY_EVENT_TYPE, event_data: summary, occurred_at: new Date(endedAt) });
       return { ...session };
     },
     async listSummaries({ userId, gameId = null, playerId = null, limit = 200 }) {
@@ -50,6 +51,27 @@ function createMemoryPlayStreamStore() {
           ended_at: session.ended_at,
           summary: events.find((event) => event.session_id === session.id && event.event_type === SESSION_SUMMARY_EVENT_TYPE)?.event_data,
         }));
+    },
+    async listUnsummarizedSessions({ idleBefore, limit = 100 }) {
+      const summarized = (id) => events.some((event) => event.session_id === id && event.event_type === SESSION_SUMMARY_EVENT_TYPE);
+      return [...sessions.values()]
+        .filter((session) => !summarized(session.id))
+        .map((session) => {
+          const times = events.filter((event) => event.session_id === session.id).map((event) => event.occurred_at.getTime());
+          return { ...session, last_event_at: new Date(Math.max(session.started_at.getTime(), ...times)) };
+        })
+        .filter((session) => session.last_event_at < idleBefore)
+        .sort((a, b) => a.started_at - b.started_at)
+        .slice(0, limit);
+    },
+    async closeIdleSession({ id, seenEndedAt, endedAt, summary }) {
+      const session = sessions.get(id);
+      const timeOf = (value) => (value ? new Date(value).getTime() : null);
+      if (!session || timeOf(session.ended_at) !== timeOf(seenEndedAt)) return null;
+      if (events.some((event) => event.session_id === id && event.event_type === SESSION_SUMMARY_EVENT_TYPE)) return null;
+      session.ended_at = new Date(endedAt);
+      events.push({ session_id: id, event_type: SESSION_SUMMARY_EVENT_TYPE, event_data: summary, occurred_at: new Date(endedAt) });
+      return { ...session };
     },
   };
 }

@@ -94,6 +94,7 @@ let glabReviewService = null;
 let glabGameService = null;
 let glabEvidenceService = null;
 let stopSessionMaintenance = null;
+let stopPlayStreamIdleCloser = null;
 let stopDiscutereImpressionPush = null;
 let stopDiscutereAiPlaytestPush = null;
 let stopManagementEventPush = null;
@@ -346,6 +347,7 @@ async function start() {
   await initKeyStore();
   console.log('JWKS key store initialized');
   stopSessionMaintenance = startSessionMaintenance();
+  stopPlayStreamIdleCloser = playStream?.startIdleCloser() ?? null;
   stopDiscutereImpressionPush = startImpressionPushIfEnabled();
   stopDiscutereAiPlaytestPush = startAiPlaytestPushIfEnabled();
   stopManagementEventPush = startManagementEventDelivery({
@@ -387,6 +389,8 @@ function stop() {
     playStream?.socket.close();
     stopSessionMaintenance?.();
     stopSessionMaintenance = null;
+    stopPlayStreamIdleCloser?.();
+    stopPlayStreamIdleCloser = null;
     stopDiscutereImpressionPush?.();
     stopDiscutereImpressionPush = null;
     stopDiscutereAiPlaytestPush?.();

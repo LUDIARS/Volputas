@@ -60,6 +60,13 @@ Ludellus のデータ解析基盤の第1段 (neco 指示 2026-11-21)。ゲーム
   `items`、`first_try_correct` / `first_try_accuracy` (attempt = 1 が正解だった問題 / 解答のあった問題、0 問なら null)、
   `response_ms_median` (attempt = 1、timeout の null は除く)、`since_wrong_ms_median`、`metrics` (名前ごとの count/sum/min/max/last)。
   その後 `runPostSessionJobs` を待たずに走らせる。
+- `SPEC-VO-PLAY-STREAM-IDLE-CLOSE`: `session_end` が届かなかったセッション (スマホの画面が消えた・アプリを切り替えた・タブが
+  破棄された) を締める。5 分ごとに、プレイ記録の行 (`metadata.source = "ludellus.play_stream"`) で集計が無く、最後の記録
+  (`play_events.occurred_at`、無ければ開始) から 15 分経ったものを、最後の記録の時刻を `ended_at` にして
+  `reason: "abandoned"`・`closed_by: "idle"` の集計を作る (1 回 100 件まで、その後 `runPostSessionJobs`)。
+  行をロックしてから終了時刻と集計の有無を確かめ直すので、同時に届いた `session_end` と二重にならない。
+  締めた後に届いた `session_end` は `ack` だけ返す。Spectator の掃除 (`sessionModel.closeStale`) はプレイ記録の行を
+  閉じない。以前それが集計なしで閉じた行も同じ処理で集計を作る (2026-11-23、合計時間が短く出ていた不具合の修正)。
 - `SPEC-VO-PLAY-STREAM-STATS`: `GET /api/v1/play-stream/stats?game_id=` (到達と本人の判定は REACH / IDENTITY と同じ、CORS なし)。
   その本人の終わったセッション (新しい順 500 件まで) から、ゲームごとの回数・完走数・合計時間・正誤数・
   問題数で重み付けした初回正答率・反応時間の中央値・指標の合計と、直近 20 セッションの集計を返す。生の記録は返さない。
@@ -73,5 +80,5 @@ Ludellus のデータ解析基盤の第1段 (neco 指示 2026-11-21)。ゲーム
 
 ## Verification
 
-`src/playStream/*.test.js` (フレーム・集計・保存と冪等・統計・設定と到達判定・WebSocket の往復と統計 API)、
+`src/playStream/*.test.js` (フレーム・集計・保存と冪等・締め忘れの締め・統計・設定と到達判定・WebSocket の往復と統計 API)、
 `src/services/trialResultSchema.test.js` (attempt / since_wrong_ms / metric)。

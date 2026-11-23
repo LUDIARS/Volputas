@@ -5,6 +5,9 @@
 
 const { SESSION_SUMMARY_EVENT_TYPE } = require('../services/trialResult');
 
+/** play_sessions.metadata.source。プレイ記録の口が作った行の印。 */
+const PLAY_STREAM_SOURCE = 'ludellus.play_stream';
+
 function createPlayStreamStore(database) {
   return {
     /** @returns {Promise<'created' | 'duplicate'>} */
@@ -14,7 +17,7 @@ function createPlayStreamStore(database) {
          VALUES ($1, $2, $6, $3, $4, $5)
          ON CONFLICT (id) DO NOTHING
          RETURNING id`,
-        [id, userId, gameId, startedAt, JSON.stringify({ ...metadata, source: 'ludellus.play_stream' }), playerId],
+        [id, userId, gameId, startedAt, JSON.stringify({ ...metadata, source: PLAY_STREAM_SOURCE }), playerId],
       );
       return rows.length > 0 ? 'created' : 'duplicate';
     },
@@ -96,7 +99,61 @@ function createPlayStreamStore(database) {
       );
       return rows;
     },
+
+    /**
+     * 締め忘れ (SPEC-VO-PLAY-STREAM-IDLE-CLOSE): プレイ記録のセッションのうち集計が無く、最後の記録が idleBefore より前のもの。
+     * 終了時刻の無い行と、Spectator の掃除が集計なしで閉じた行の両方。古い順。
+     */
+    async listUnsummarizedSessions({ idleBefore, limit = 100 }) {
+      const { rows } = await database.query(
+        `SELECT s.id, s.user_id, s.ludellus_player_id, s.game_id, s.started_at, s.ended_at,
+                GREATEST(s.started_at, COALESCE(MAX(e.occurred_at), s.started_at)) AS last_event_at
+           FROM play_sessions s
+           LEFT JOIN play_events e ON e.session_id = s.id
+          WHERE s.metadata->>'source' = $4
+            AND NOT EXISTS (SELECT 1 FROM play_events x WHERE x.session_id = s.id AND x.event_type = $1)
+          GROUP BY s.id
+         HAVING GREATEST(s.started_at, COALESCE(MAX(e.occurred_at), s.started_at)) < $2
+          ORDER BY s.started_at ASC
+          LIMIT $3`,
+        [SESSION_SUMMARY_EVENT_TYPE, idleBefore, limit, PLAY_STREAM_SOURCE],
+      );
+      return rows;
+    },
+
+    /**
+     * 締め忘れを締める。見たときから終了時刻が変わっていた (その間に session_end が届いた) か、
+     * 既に集計があれば何もせず null。行をロックしてから確かめるので session_end と二重にはならない。
+     */
+    async closeIdleSession({ id, seenEndedAt, endedAt, summary }) {
+      return database.transaction(async (client) => {
+        const { rows: locked } = await client.query(
+          'SELECT ended_at FROM play_sessions WHERE id = $1 FOR UPDATE',
+          [id],
+        );
+        if (!locked[0] || timeOf(locked[0].ended_at) !== timeOf(seenEndedAt)) return null;
+        const { rows: summarized } = await client.query(
+          'SELECT 1 FROM play_events WHERE session_id = $1 AND event_type = $2 LIMIT 1',
+          [id, SESSION_SUMMARY_EVENT_TYPE],
+        );
+        if (summarized.length > 0) return null;
+        const { rows } = await client.query(
+          'UPDATE play_sessions SET ended_at = $2 WHERE id = $1 RETURNING *',
+          [id, endedAt],
+        );
+        await client.query(
+          `INSERT INTO play_events (session_id, event_type, event_data, occurred_at)
+           VALUES ($1, $2, $3, $4)`,
+          [id, SESSION_SUMMARY_EVENT_TYPE, JSON.stringify(summary), endedAt],
+        );
+        return rows[0] || null;
+      });
+    },
   };
 }
 
-module.exports = { createPlayStreamStore };
+function timeOf(value) {
+  return value === null || value === undefined ? null : new Date(value).getTime();
+}
+
+module.exports = { createPlayStreamStore, PLAY_STREAM_SOURCE };

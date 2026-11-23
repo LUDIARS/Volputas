@@ -40,6 +40,8 @@ const sessionModel = {
        SET ended_at = GREATEST(started_at, COALESCE(last_heartbeat_at, started_at))
        WHERE ended_at IS NULL
          AND COALESCE(last_heartbeat_at, started_at) < now() - ($1 * interval '1 hour')
+         -- プレイ記録の口の行は集計と一緒に締める (playStreamIdleCloser、SPEC-VO-PLAY-STREAM-IDLE-CLOSE)。
+         AND COALESCE(metadata->>'source', '') <> 'ludellus.play_stream'
        RETURNING id`,
       [staleHours]
     );

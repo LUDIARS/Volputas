@@ -9,6 +9,7 @@ const { createPlayStreamRecorder } = require('./playStreamRecorder');
 const { createPlayStreamRouter } = require('./playStreamRoutes');
 const { createPlayStreamSocket } = require('./playStreamSocket');
 const { createPlayStreamStore } = require('./playStreamStore');
+const { startPlayStreamIdleCloser } = require('./playStreamIdleCloser');
 
 function setupPlayStream(env, { hasterEnabled }) {
   const config = readPlayStreamConfig(env, { hasterEnabled });
@@ -19,6 +20,8 @@ function setupPlayStream(env, { hasterEnabled }) {
   return {
     router: createPlayStreamRouter({ config, store, resolveUserId }),
     socket: createPlayStreamSocket({ config, recorder, resolveUserId }),
+    /** 終わりが届かなかったセッションを定期的に締める。止める関数を返す。 */
+    startIdleCloser: () => startPlayStreamIdleCloser({ store, runPostSessionJobs }),
   };
 }
 
